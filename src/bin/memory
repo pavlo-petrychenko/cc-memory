@@ -1,0 +1,264 @@
+#!/usr/bin/env python3
+"""cc-memory CLI: workspace management, indexing, search, reflection, commit.
+
+Self-locates the repo (works via symlink) and imports the shared lib.
+"""
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+
+_SRC = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))  # <repo>/src
+sys.path.insert(0, _SRC)
+from lib import registry, resolve, worklog, index  # noqa: E402
+
+_REPO = os.path.dirname(_SRC)
+
+
+def _titleize(s):
+    return " ".join(w.capitalize() for w in re.split(r"[-_]", s) if w)
+
+
+# ---- workspace -------------------------------------------------------------
+
+def cmd_workspace_add(a):
+    ws_id = a.id
+    existing = registry.load()
+    kb = registry.expand(a.kb) if a.kb else registry.expand(f"~/Documents/{_titleize(ws_id)} Vault")
+    worklogs = registry.expand(a.worklogs) if a.worklogs else os.path.join(kb, "_Worklogs")
+    index_db = registry.expand(f"~/.claude/memory/{ws_id}/index.db")
+    new = {
+        "id": ws_id,
+        "match": [registry.expand(m) for m in a.match],
+        "kb": kb, "worklogs": worklogs,
+        "exclude": a.exclude or ["_Worklogs", "Archive", ".obsidian"],
+        "index_db": index_db,
+    }
+    registry.validate_new(new, [registry.expand_ws(w) for w in existing])
+
+    # scaffold
+    os.makedirs(kb, exist_ok=True)
+    os.makedirs(os.path.join(kb, ".obsidian"), exist_ok=True)
+    os.makedirs(worklogs, exist_ok=True)
+    os.makedirs(os.path.dirname(index_db), exist_ok=True)
+    gi = os.path.join(kb, ".gitignore")
+    if not os.path.exists(gi):
+        with open(gi, "w") as fh:
+            fh.write(".obsidian/workspace*\n.obsidian/cache\n.DS_Store\n")
+    home_note = os.path.join(kb, f"{_titleize(ws_id)}.md")
+    if not os.path.exists(home_note):
+        with open(home_note, "w") as fh:
+            fh.write(f"---\ntype: index\n---\n# {_titleize(ws_id)} — Knowledge Base Index\n\n"
+                     f"> Knowledge base for the **{ws_id}** workspace.\n")
+    if not os.path.isdir(os.path.join(kb, ".git")):
+        subprocess.run(["git", "-C", kb, "init", "-q"], capture_output=True)
+
+    # register (store tidy ~ paths)
+    stored = dict(new, match=[registry.tildify(m) for m in new["match"]],
+                  kb=registry.tildify(kb), worklogs=registry.tildify(worklogs),
+                  index_db=registry.tildify(index_db))
+    registry.save(existing + [stored])
+    stats = index.build(registry.expand_ws(stored))
+    print(f"✓ workspace '{ws_id}' added")
+    print(f"  kb       {kb}")
+    print(f"  worklogs {worklogs}")
+    print(f"  index_db {index_db}  ({stats['total']} notes)")
+    print(f"  match    {', '.join(new['match'])}")
+
+
+def cmd_workspace_rm(a):
+    existing = registry.load()
+    if not any(w["id"] == a.id for w in existing):
+        sys.exit(f"no such workspace: {a.id}")
+    keep = [w for w in existing if w["id"] != a.id]
+    registry.save(keep)
+    if a.purge:
+        ws = registry.expand_ws(next(w for w in existing if w["id"] == a.id))
+        for p in (ws["index_db"],):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+        print(f"✓ workspace '{a.id}' removed (index purged; vault left intact)")
+    else:
+        print(f"✓ workspace '{a.id}' unregistered (data left intact)")
+
+
+def cmd_workspace_ls(a):
+    rows = registry.load()
+    if not rows:
+        print("(no workspaces)")
+        return
+    for w in rows:
+        ws = registry.expand_ws(w)
+        n = "?"
+        try:
+            if os.path.isfile(ws["index_db"]):
+                conn = index.connect(ws)
+                n = conn.execute("SELECT COUNT(*) FROM notes").fetchone()[0]
+                conn.close()
+        except Exception:
+            pass
+        print(f"• {w['id']:12} {ws['kb']}  [{n} notes]")
+        print(f"  match: {', '.join(ws['match'])}")
+
+
+# ---- resolve / index / search ---------------------------------------------
+
+def cmd_resolve(a):
+    cwd = registry.expand(a.cwd)
+    ws = resolve.resolve(cwd)
+    if not ws:
+        print(f"no workspace for {cwd}")
+        return
+    print(f"workspace: {ws['id']}")
+    print(f"slug:      {resolve.slug(cwd, ws)}")
+    print(f"kb:        {ws['kb']}")
+    print(f"worklogs:  {ws['worklogs']}")
+    print(f"index_db:  {ws['index_db']}")
+
+
+def _targets(a):
+    if a.workspace:
+        w = registry.find(a.workspace)
+        if not w:
+            sys.exit(f"no such workspace: {a.workspace}")
+        return [registry.expand_ws(w)]
+    return [registry.expand_ws(w) for w in registry.load()]
+
+
+def cmd_reindex(a):
+    for ws in _targets(a):
+        stats = index.build(ws, incremental=not a.full)
+        print(f"{ws['id']}: +{stats['added']} ~{stats['updated']} -{stats['removed']} "
+              f"= {stats['total']} notes")
+
+
+def cmd_search(a):
+    if a.workspace:
+        ws = registry.expand_ws(registry.find(a.workspace) or sys.exit(f"no such workspace: {a.workspace}"))
+    else:
+        ws = resolve.resolve(registry.expand(a.cwd or os.getcwd()))
+        if not ws:
+            sys.exit("no workspace for cwd; pass --workspace")
+    hits = index.search(ws, a.query, limit=a.k, kind="worklog" if a.worklog else "notes")
+    if not hits:
+        print("(no hits)")
+        return
+    for h in hits:
+        rel = os.path.relpath(h["path"], ws["kb"]) if h["path"].startswith(ws["kb"]) else h["path"]
+        print(f"• {h['title']}  ({rel})\n  {h['snippet']}")
+
+
+# ---- commit (manual snapshot, local only) ---------------------------------
+
+def cmd_commit(a):
+    for ws in _targets(a):
+        kb = ws["kb"]
+        if not os.path.isdir(os.path.join(kb, ".git")):
+            print(f"{ws['id']}: not a git repo, skipping")
+            continue
+        subprocess.run(["git", "-C", kb, "add", "-A"], capture_output=True)
+        msg = a.message or "memory snapshot"
+        r = subprocess.run(["git", "-C", kb, "commit", "-m", msg], capture_output=True, text=True)
+        print(f"{ws['id']}: {'committed' if r.returncode == 0 else 'nothing to commit'}")
+
+
+# ---- reflect (delegates to reflector.py) ----------------------------------
+
+def cmd_reflect(a):
+    reflector = os.path.join(_SRC, "bin", "reflector.py")
+    if not os.path.isfile(reflector):
+        sys.exit("reflector not installed yet (Phase 4)")
+    for ws in _targets(a):
+        argv = [sys.executable, reflector, "--workspace", ws["id"]]
+        if a.if_due:
+            argv += ["--if-due", "--threshold-hours", str(a.threshold_hours)]
+        subprocess.run(argv)
+
+
+# ---- doctor (test hooks without a live session) ---------------------------
+
+def cmd_doctor(a):
+    import tempfile
+    print("registry:", registry.REGISTRY_PATH, "(ok)" if registry.load() else "(empty)")
+    cwd = registry.expand(a.cwd or os.getcwd())
+    ws = resolve.resolve(cwd)
+    print(f"cwd {cwd} -> {ws['id'] if ws else 'no workspace'}")
+    sid = "doctor-session"
+    tmp = tempfile.gettempdir()  # safe fallback cwd: resolves to no workspace
+    # READ-only hooks get a real valid run; WRITE hooks are only fail-open tested.
+    read_samples = {
+        "session-start.py": {"cwd": cwd, "session_id": sid, "source": "startup"},
+        "memory-inject.py": {"cwd": cwd, "session_id": sid, "prompt": a.prompt or "test"},
+        "wrap-gate.py": {"cwd": cwd, "session_id": sid, "stop_hook_active": True},  # active -> no write
+    }
+    write_hooks = ["worklog-floor.py", "compact-checkpoint.py"]
+    for name, payload in read_samples.items():
+        hook = os.path.join(_SRC, "hooks", name)
+        if not os.path.isfile(hook):
+            print(f"  {name}: (not installed)")
+            continue
+        r = subprocess.run([sys.executable, hook], input=json.dumps(payload),
+                           capture_output=True, text=True, timeout=15, cwd=tmp)
+        out = (r.stdout or "").strip()
+        print(f"  {name}: exit={r.returncode} out={out[:140] or '(none)'}")
+        _failopen(hook, tmp)
+    for name in write_hooks:
+        hook = os.path.join(_SRC, "hooks", name)
+        if not os.path.isfile(hook):
+            print(f"  {name}: (not installed)")
+            continue
+        print(f"  {name}: write hook (valid run skipped) — fail-open only")
+        _failopen(hook, tmp)
+
+
+def _failopen(hook, tmp):
+    rb = subprocess.run([sys.executable, hook], input="not json",
+                        capture_output=True, text=True, timeout=15, cwd=tmp)
+    if rb.returncode != 0:
+        print(f"    ⚠ FAIL-OPEN violated on bad input (exit {rb.returncode})")
+
+
+def main():
+    p = argparse.ArgumentParser(prog="memory", description="cc-memory CLI")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    w = sub.add_parser("workspace", help="manage workspaces").add_subparsers(dest="wcmd", required=True)
+    wa = w.add_parser("add"); wa.add_argument("id")
+    wa.add_argument("--match", nargs="+", required=True)
+    wa.add_argument("--kb"); wa.add_argument("--worklogs"); wa.add_argument("--exclude", nargs="*")
+    wa.set_defaults(func=cmd_workspace_add)
+    wr = w.add_parser("rm"); wr.add_argument("id"); wr.add_argument("--purge", action="store_true")
+    wr.set_defaults(func=cmd_workspace_rm)
+    wl = w.add_parser("ls"); wl.set_defaults(func=cmd_workspace_ls)
+
+    r = sub.add_parser("resolve"); r.add_argument("cwd", nargs="?", default=os.getcwd())
+    r.set_defaults(func=cmd_resolve)
+
+    ri = sub.add_parser("reindex"); ri.add_argument("workspace", nargs="?")
+    ri.add_argument("--full", action="store_true"); ri.set_defaults(func=cmd_reindex)
+
+    s = sub.add_parser("search"); s.add_argument("query")
+    s.add_argument("--workspace"); s.add_argument("--cwd"); s.add_argument("-k", type=int, default=5)
+    s.add_argument("--worklog", action="store_true"); s.set_defaults(func=cmd_search)
+
+    c = sub.add_parser("commit"); c.add_argument("workspace", nargs="?")
+    c.add_argument("-m", "--message"); c.set_defaults(func=cmd_commit)
+
+    rf = sub.add_parser("reflect"); rf.add_argument("--workspace")
+    rf.add_argument("--all", action="store_true", help="all workspaces (default when --workspace omitted)")
+    rf.add_argument("--if-due", action="store_true"); rf.add_argument("--threshold-hours", type=int, default=20)
+    rf.set_defaults(func=cmd_reflect)
+
+    d = sub.add_parser("doctor"); d.add_argument("--cwd"); d.add_argument("--prompt")
+    d.set_defaults(func=cmd_doctor)
+
+    a = p.parse_args()
+    a.func(a)
+
+
+if __name__ == "__main__":
+    main()

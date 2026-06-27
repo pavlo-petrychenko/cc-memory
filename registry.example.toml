@@ -1,0 +1,19 @@
+# cc-memory workspace registry — EXAMPLE. The real file lives at
+# ~/.claude/memory/registry.toml and is managed by `memory workspace …`.
+# Paths may use ~; they are expanded at load time. One block per workspace.
+
+[[workspace]]
+id = "mate"
+match = ["~/Desktop/project"]                  # cwd prefixes; longest match wins
+kb = "~/Documents/Mate Vault"                  # this workspace's KB (its own vault)
+worklogs = "~/Documents/Mate Vault/_Worklogs"  # short-term, inside the vault
+exclude = ["_Worklogs", "Archive", ".obsidian"]
+index_db = "~/.claude/memory/mate/index.db"    # derived index, OUTSIDE the vault
+
+# [[workspace]]
+# id = "homeserver"
+# match = ["~/homeserver", "~/Desktop/homeserver"]
+# kb = "~/Documents/Homeserver Vault"
+# worklogs = "~/Documents/Homeserver Vault/_Worklogs"
+# exclude = ["_Worklogs", ".obsidian"]
+# index_db = "~/.claude/memory/homeserver/index.db"

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.ccmemory.reflector</string>
+
+  <!-- Run the reflector for all workspaces, but only if a run is overdue. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>@PYTHON@</string>
+    <string>@MEMORYSCRIPT@</string>
+    <string>reflect</string>
+    <string>--all</string>
+    <string>--if-due</string>
+  </array>
+
+  <!-- launchd has a minimal PATH; give it ~/.local/bin (claude) + git. -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>@PATH@</string>
+  </dict>
+
+  <!-- Fire daily at 21:00. If the Mac was asleep, launchd runs the missed job
+       at wake; if it was off, RunAtLoad fires at next login. The --if-due guard
+       makes every trigger idempotent. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>21</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>@LOG@</string>
+  <key>StandardErrorPath</key>
+  <string>@LOG@</string>
+</dict>
+</plist>
