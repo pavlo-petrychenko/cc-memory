@@ -109,6 +109,25 @@ The Stop hook starts as a non-blocking nudge and only hard-blocks after repeated
 stops with large drift. Env vars: `CCMEM_BLOCK_AFTER` (default 2),
 `CCMEM_BLOCK_DRIFT` (default 5 files), `CCMEM_GATE_DISABLE=1` to disable blocking.
 
+## Tuning retrieval
+
+The index uses FTS5 **BM25 with Porter stemming** (so `inject` ↔ `injecting`) and
+**column weights** (title/tags outrank body). Query tokens are compound-split
+(`wrap-gate` → `wrap`, `gate`; `overallScore` → `overall`, `score`) so identifiers
+match prose and vice-versa. Auto-injection then link-reranks the BM25 candidates
+(a hit corroborated by another hit's `[[wikilink]]` gets a small boost) and applies
+a relevance floor. Env vars:
+
+- `CCMEM_INJECT_MIN_SCORE` (default `0.2`) — minimum BM25 strength to inject a hit;
+  raise it if chit-chat pulls in weak notes, lower it if relevant notes get dropped.
+- `CCMEM_LINK_BOOST` (default `0.5`) — strength added per corroborating in-link.
+- `CCMEM_INJECT_LOG` — every prompt appends a row to
+  `~/.claude/memory/<id>/inject.jsonl` (tokens, candidates + scores, what was
+  injected) for calibrating the above. Set `CCMEM_INJECT_LOG=0` to disable.
+
+A schema/tokenizer change bumps `index.SCHEMA_VERSION`; the next `build()` (every
+SessionStart) does a one-time full rebuild automatically.
+
 ## Uninstall / disable
 
 - Disable a hook: remove its entry from `~/.claude/settings.json`.
