@@ -21,7 +21,7 @@ are isolated to the current workspace (resolved from cwd).
 memory search "<query>"            # top KB notes for the cwd's workspace
 memory search "<query>" -k 8       # more hits
 memory search "<query>" --worklog  # search recent short-term worklogs instead
-memory search "<query>" --workspace mate   # force a workspace
+memory search "<query>" --workspace acme   # force a workspace
 ```
 Output is `• <title> (relative/path.md)` + a snippet per hit.
 

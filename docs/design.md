@@ -1,6 +1,6 @@
 # Persistent Memory for Claude Code — System Design
 
-Status: proposal (2026-06-27). Builds on Pavlo's existing Obsidian vault +
+Status: proposal (2026-06-27). Builds on an existing Obsidian vault +
 `save-learning` skill + `obsidian-kb-index.py` SessionStart hook. Nothing here
 replaces those; it extends them.
 
@@ -26,7 +26,7 @@ replaces those; it extends them.
 
 | Term | Was | Meaning |
 |---|---|---|
-| **Workspace** | "project" | Top-level domain with ONE shared KB. e.g. `mate`, `homeserver`. Maps to a set of directories. |
+| **Workspace** | "project" | Top-level domain with ONE shared KB. e.g. `acme`, `homeserver`. Maps to a set of directories. |
 | **Knowledge Base (KB)** | the vault | Long-term **semantic** memory for a workspace. Durable facts/docs. Shared across all worktrees. |
 | **Worklog / Working Memory** | (missing) | Short-term **episodic** memory, **one per worktree**, dated. Scratch, decisions-in-flight, "what happened today". |
 | **Reflector** | (missing) | Nightly consolidation agent: worklog → proposed KB promotions. |
@@ -37,17 +37,17 @@ Reflector = consolidation/"sleep".
 ## 2. Architecture
 
 ```
-WORKSPACE  "mate"   (resolved from cwd under ~/Desktop/project)
+WORKSPACE  "acme"   (resolved from cwd under ~/code/acme)
 │
-├── KNOWLEDGE BASE — long-term, shared           ~/Documents/Obsidian Vault
+├── KNOWLEDGE BASE — long-term, shared           ~/Documents/Acme Vault
 │     · atomic notes · typed [[wikilinks]] · per-feature index notes
 │     · READ: index always-on (SessionStart, already built) · notes on demand
 │     · WRITE: save-learning skill (your approval)  +  nightly Reflector
 │
 └── WORKING MEMORY — short-term, per worktree
-      ├─ worktree website-ai-sdr   → worklogs/mate/website-ai-sdr/2026-06-27.md
-      ├─ worktree website          → worklogs/mate/website/2026-06-27.md
-      └─ worktree infrastructure   → worklogs/mate/infrastructure/2026-06-27.md
+      ├─ worktree service-api   → worklogs/acme/service-api/2026-06-27.md
+      ├─ worktree web           → worklogs/acme/web/2026-06-27.md
+      └─ worktree infra         → worklogs/acme/infra/2026-06-27.md
         · READ: recent entries + open threads injected on SessionStart
                 (scoped to THIS worktree only — Agent A ≠ Agent B)
         · WRITE: agent self-authors at wrap (Stop-gate)
@@ -60,12 +60,12 @@ Workspace resolution: a small registry maps a cwd prefix → workspace →
 (KB path, worklog root). Hooks already receive `cwd` on stdin.
 
 ```
-~/Desktop/project/*  → workspace "mate"      KB: ~/Documents/Obsidian Vault
+~/code/acme/*        → workspace "acme"      KB: ~/Documents/Acme Vault
 ~/homeserver/* (etc) → workspace "homeserver" KB: <its vault>
 ```
 
-Worktree key = slug derived from cwd (e.g. `~/Desktop/project/website-ai-sdr` →
-`website-ai-sdr`). Git worktrees live at different paths → naturally separate
+Worktree key = slug derived from cwd (e.g. `~/code/acme/service-api` →
+`service-api`). Git worktrees live at different paths → naturally separate
 worklogs → satisfies "Agent A isolated from Agent B, shared KB".
 
 ## 3. The hooks (verified mechanics, 2026 docs)
@@ -153,8 +153,8 @@ for manual reflection), **CLAUDE.md** (always-on directives + the rules).
    browsable, one place) — but must stay clearly separated from durable KB notes;
    (b) a separate dir e.g. `~/.claude/memory/<workspace>/worklogs/` (keeps KB
    pristine, still git-versioned); (c) a second Obsidian vault.
-2. **Workspaces to support now:** just `mate` first, or build the registry for
-   `mate` + `homeserver` up front?
+2. **Workspaces to support now:** just `acme` first, or build the registry for
+   `acme` + `homeserver` up front?
 3. **Start building Phase 1 now**, or refine the design more first?
 
 ---
@@ -191,12 +191,12 @@ the registry's `kb` path handles both; everything keys off that root.
 
 ```toml
 [[workspace]]
-id       = "mate"
-match    = ["~/Desktop/project"]              # cwd prefixes (longest wins)
-kb       = "~/Documents/Obsidian Vault"       # vault OR subfolder
-worklogs = "~/Documents/Obsidian Vault/_Worklogs"  # markdown, lives in vault
+id       = "acme"
+match    = ["~/code/acme"]                    # cwd prefixes (longest wins)
+kb       = "~/Documents/Acme Vault"           # vault OR subfolder
+worklogs = "~/Documents/Acme Vault/_Worklogs"      # markdown, lives in vault
 exclude  = ["_Worklogs", "Archive", ".obsidian"]   # never indexed/injected
-index_db = "~/.claude/memory/mate/index.db"   # derived, OUTSIDE the vault
+index_db = "~/.claude/memory/acme/index.db"   # derived, OUTSIDE the vault
 
 [[workspace]]
 id       = "homeserver"
@@ -215,7 +215,7 @@ index_db = "~/.claude/memory/homeserver/index.db"
   `~/.claude/memory/<workspace>/` so a binary never syncs into Obsidian/git.
 
 **Worktree slug** = `cwd` relative to the matched prefix, slashes→dashes
-(`~/Desktop/project/website-ai-sdr` → `website-ai-sdr`). Git worktrees sit at
+(`~/code/acme/service-api` → `service-api`). Git worktrees sit at
 distinct paths → distinct slugs → isolated worklogs automatically.
 
 ## 10. Worklog schema (two-file model per worktree)
@@ -236,21 +236,22 @@ injects (resume context):
 ```markdown
 ---
 type: worktree-state
-workspace: mate
-worktree: website-ai-sdr
+workspace: acme
+worktree: service-api
 updated: 2026-06-27
 ---
-# website-ai-sdr — working state
+# service-api — working state
 
 ## Current focus
-Migrating AI SDR off serverless onto the API; prompts S3→Langfuse.
+Migrating the service off serverless onto the shared API; moving prompts into a
+versioned store.
 
 ## Open threads
-- [ ] DynamoDB→pg sync: confirm why Dynamo was used before cutover
-- [ ] Add Langfuse webhooks to run test suite on prompt change
+- [ ] Confirm why the legacy datastore was chosen before cutover
+- [ ] Add webhooks to run the test suite on every prompt change
 
 ## Working notes (ephemeral, not yet KB)
-- Playground (sdr-poc-playground) is being dropped, Langfuse replaces it (for now)
+- The old playground is being dropped; the versioned store replaces it (for now)
 
 ## Recent entries → 2026-06-27.md, 2026-06-26.md
 ```
@@ -258,13 +259,13 @@ Migrating AI SDR off serverless onto the API; prompts S3→Langfuse.
 **`<date>.md`** — append-only; one entry per session wrap (Stop-gate writes this):
 
 ```markdown
-## 16:40 — AI SDR migration planning
-**Did:** Scoped the serverless→API move; drafted migration doc outline.
-**Learned:** #promote Langfuse evals are per-prompt, not per-feature — fine for us, we want isolated prompt testing.
-**Decided:** Cutover happens on the Creatio side, not ours — why: they own the switch.
-**Open:** DynamoDB motivation unknown; webhooks for prompt-change test runs.
-**Refs:** branch feat/ai-sdr-api · ClickUp PF-... · files: (none yet)
-<!-- auto (SessionEnd): commits=0, files touched: docs/ai-sdr-migration.md (+120) -->
+## 16:40 — migration planning
+**Did:** Scoped the serverless→API move; drafted the migration doc outline.
+**Learned:** #promote The eval tool scores per-prompt, not per-feature — fine here, we want isolated prompt testing.
+**Decided:** Cutover happens on the upstream side, not ours — why: they own the switch.
+**Open:** Legacy datastore motivation unknown; webhooks for prompt-change test runs.
+**Refs:** branch feat/api-migration · tracker TICKET-123 · files: (none yet)
+<!-- auto (SessionEnd): commits=0, files touched: docs/migration.md (+120) -->
 ```
 
 - `#promote`-tagged lines (and `**Learned:**`/`**Decided:**`) are the explicit

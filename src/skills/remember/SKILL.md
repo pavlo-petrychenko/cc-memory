@@ -37,7 +37,7 @@ Create the file/dir if needed. Append (never overwrite) one entry:
 **Learned:** #promote <non-obvious facts worth keeping; tag durable ones #promote>
 **Decided:** <decisions + the why>
 **Open:** <in-flight threads / next steps>
-**Refs:** <branch · PR # · ClickUp · key files>
+**Refs:** <branch · PR # · issue tracker · key files>
 ```
 - Be concrete (name modules/tables/flags). `**Changes:**` must be a real summary
   of everything you did, not "did some work".

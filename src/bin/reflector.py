@@ -14,6 +14,7 @@ import datetime
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -70,7 +71,9 @@ def gather_candidates(ws, since):
             for line in text.splitlines():
                 s = line.strip()
                 if PROMOTE.search(s):
-                    out.append({"text": PROMOTE.sub("", s).strip(" -*"), "src": f"{slug}/{f}"})
+                    t = PROMOTE.sub("", s)
+                    t = re.sub(r"^\s*[-*]*\s*\*\*[A-Za-z]+:\*\*\s*", "", t)  # drop leading **Field:**
+                    out.append({"text": t.strip(" -*"), "src": f"{slug}/{f}"})
                 else:
                     m = FIELD.match(s)
                     if m and len(m.group(2).strip()) > 12:
@@ -178,11 +181,81 @@ def _write(path, lines):
         fh.write("\n".join(lines) + "\n")
 
 
+def write_brief(ws, date, candidates, related):
+    """Write the consolidation brief the interactive session reads."""
+    pdir = worklog.proposals_dir(ws)
+    os.makedirs(pdir, exist_ok=True)
+    path = os.path.join(pdir, f"_brief-{date}.md")
+    lines = [f"# Consolidation brief — {ws['id']} — {date}", "",
+             "Distilled from worklogs since the last run. For each candidate decide "
+             "ADD / UPDATE / INVALIDATE / NOOP against the existing KB; propose, then "
+             "apply approved ones via `save-learning` (ask before any KB write).", "",
+             "## Candidates"]
+    lines += [f"- ({c['src']}) {c['text']}" for c in candidates]
+    lines += ["", "## Existing related KB notes"]
+    lines += [f"- {r['title']} [{r['path']}]: {r['snippet']}" for r in related] or ["(none)"]
+    _write(path, lines)
+    return path
+
+
+def _tmux(*args):
+    return subprocess.run(["tmux", *args], capture_output=True, text=True)
+
+
+def tmux_available():
+    return shutil.which("tmux") is not None
+
+
+def tmux_has_session(name):
+    return _tmux("has-session", "-t", name).returncode == 0
+
+
+_SHELLS = {"zsh", "-zsh", "bash", "-bash", "sh", "-sh", "fish", "-fish", "dash"}
+
+
+def tmux_session_active(name):
+    """True if the session's active pane is running something other than a bare
+    shell — i.e. a consolidation (claude) is still in progress. A leftover shell
+    (claude already exited but the session lingers) counts as stale/inactive."""
+    r = _tmux("display-message", "-p", "-t", name, "#{pane_current_command}")
+    cmd = (r.stdout or "").strip().lower()
+    if not cmd:
+        return True  # unknown -> assume active, don't disturb
+    return cmd not in _SHELLS
+
+
+def spawn_consolidation(ws, brief, session):
+    """Launch a DETACHED tmux session running interactive consolidation.
+
+    The user attaches with `tmux attach -t <session>` to assist/approve. KB writes
+    require approval, so an unattended session simply waits.
+    """
+    cwd = ws["match"][0]                      # under the workspace -> resolves here
+    shell = os.environ.get("SHELL", "/bin/zsh")
+    # --dangerously-skip-permissions removes the trust/permission FRICTION so the
+    # session runs unattended; the prompt still tells Claude to confirm KB writes.
+    cmd_bin = os.environ.get("CCMEM_CONSOLIDATE_CMD", "claude --dangerously-skip-permissions")
+    prompt = (
+        f"cc-memory consolidation for the {ws['id']} workspace. Read the brief at "
+        f"{brief} . For each candidate decide ADD, UPDATE, INVALIDATE or NOOP against "
+        f"the existing KB (use memory-search to check). Propose the changes, then apply "
+        f"only the ones I approve via the save-learning skill. Do NOT write to the KB "
+        f"without my explicit approval. When finished, run memory reindex.")
+    inner = (f"{cmd_bin} '{prompt}'; echo; "
+             f"echo '[cc-memory consolidation finished -- Ctrl-b d to detach]'; exec {shell}")
+    r = _tmux("new-session", "-d", "-s", session, "-c", cwd, "sh", "-c", inner)
+    return r.returncode == 0, (r.stderr or "").strip()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--workspace", required=True)
     ap.add_argument("--if-due", action="store_true")
     ap.add_argument("--threshold-hours", type=int, default=20)
+    ap.add_argument("--headless", action="store_true",
+                    help="decide via `claude -p` and write a proposals file instead of a tmux session")
+    ap.add_argument("--force", action="store_true",
+                    help="replace an existing consolidation session even if it looks active")
     a = ap.parse_args()
 
     raw = registry.find(a.workspace)
@@ -215,11 +288,34 @@ def main():
         return
 
     related = related_notes(ws, candidates)
+
+    # Default: interactive consolidation in tmux (you can attend/assist).
+    if not a.headless and tmux_available():
+        session = f"cc-consolidate-{ws['id']}"
+        if tmux_has_session(session):
+            if not a.force and tmux_session_active(session):
+                print(f"{a.workspace}: consolidation already running -> "
+                      f"tmux attach -t {session}  (or rerun with --force)")
+                return  # active session: leave candidates pending; don't restamp
+            _tmux("kill-session", "-t", session)  # stale leftover (or --force): replace
+            print(f"{a.workspace}: replaced {'existing' if a.force else 'stale'} "
+                  f"consolidation session")
+        brief = write_brief(ws, date, candidates, related)
+        ok, err = spawn_consolidation(ws, brief, session)
+        if ok:
+            stamp(ws)
+            print(f"{a.workspace}: {len(candidates)} candidates -> interactive "
+                  f"consolidation in tmux '{session}'. Attach: tmux attach -t {session}\n"
+                  f"  brief: {brief}")
+            return
+        print(f"{a.workspace}: tmux spawn failed ({err}); falling back to headless")
+
+    # Fallback: headless decision + proposals file.
     decisions, err = decide_with_llm(candidates, related)
     path, n = write_proposals(ws, date, decisions or [], candidates, error=err)
     stamp(ws)
     print(f"{a.workspace}: {len(candidates)} candidates -> {n} proposal(s) "
-          f"{'(raw, LLM unavailable)' if err else ''}-> {path}")
+          f"{'(raw, LLM unavailable) ' if err else ''}-> {path}")
 
 
 if __name__ == "__main__":

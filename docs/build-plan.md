@@ -20,7 +20,7 @@ per-workspace soft isolation; two-file worklog (STATE.md + dated journal);
 | `consolidate-review` (apply proposals) | skill | new |
 | save-learning (promote/bitemporal aware) | skill | **extend** existing |
 | Reflector | cron (`claude -p`) | new |
-| Rules for the above | CLAUDE.md | **extend** `~/Desktop/project/CLAUDE.md` |
+| Rules for the above | CLAUDE.md | **extend** `~/code/acme/CLAUDE.md` |
 
 ## Cross-cutting rules (apply to every phase)
 
@@ -45,8 +45,8 @@ per-workspace soft isolation; two-file worklog (STATE.md + dated journal);
 - **Deliverables:** `~/.claude/memory/registry.json`; `~/.claude/memory/lib/`
   (resolve + slug + path helpers); `memory resolve <cwd>` CLI for inspection.
 - **Depends on:** nothing.
-- **Acceptance:** `memory resolve ~/Desktop/project/website-ai-sdr` →
-  workspace `mate`, slug `website-ai-sdr`, correct paths; a path under no match →
+- **Acceptance:** `memory resolve ~/code/acme/service-api` →
+  workspace `acme`, slug `service-api`, correct paths; a path under no match →
   "no workspace".
 
 ## Phase 1 — Working memory exists & loads on start  → closes gaps 3, 5
@@ -69,7 +69,7 @@ per-workspace soft isolation; two-file worklog (STATE.md + dated journal);
   auto line appended; start a session under the homeserver path → only homeserver
   KB index appears (isolation check).
 - **Risk:** generalizing the existing hook without regressing today's behavior —
-  keep the mate workspace producing an identical index to today's output.
+  keep the existing workspace producing an identical index to today's output.
 
 ## Phase 2 — Enforcement: capture is guaranteed  → closes gap 1
 

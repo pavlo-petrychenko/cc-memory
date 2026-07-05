@@ -176,6 +176,10 @@ def cmd_reflect(a):
         argv = [sys.executable, reflector, "--workspace", ws["id"]]
         if a.if_due:
             argv += ["--if-due", "--threshold-hours", str(a.threshold_hours)]
+        if a.headless:
+            argv.append("--headless")
+        if a.force:
+            argv.append("--force")
         subprocess.run(argv)
 
 
@@ -251,6 +255,8 @@ def main():
     rf = sub.add_parser("reflect"); rf.add_argument("--workspace")
     rf.add_argument("--all", action="store_true", help="all workspaces (default when --workspace omitted)")
     rf.add_argument("--if-due", action="store_true"); rf.add_argument("--threshold-hours", type=int, default=20)
+    rf.add_argument("--headless", action="store_true", help="headless claude -p + proposals file instead of tmux")
+    rf.add_argument("--force", action="store_true", help="replace an existing consolidation session")
     rf.set_defaults(func=cmd_reflect)
 
     d = sub.add_parser("doctor"); d.add_argument("--cwd"); d.add_argument("--prompt")

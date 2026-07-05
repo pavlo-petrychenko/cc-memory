@@ -22,10 +22,9 @@ the reusable fact about the feature, not "what I did in PF-12345".
 ## Locate the KB (workspace-aware)
 
 Run `memory resolve` to get the workspace `id` and its `kb` path. All notes go
-under that `kb`. (For the `mate` workspace the vault is also wired to the
-`obsidian` MCP, which you may use for reads/writes; for any other workspace, use
-plain Read/Write/Edit on files under `kb`.) After writing, run `memory reindex` so
-the note is immediately searchable.
+under that `kb`. (If the vault is wired to an `obsidian` MCP, you may use it for
+reads/writes; otherwise use plain Read/Write/Edit on files under `kb`.) After
+writing, run `memory reindex` so the note is immediately searchable.
 
 ## Workflow (in order)
 
@@ -40,8 +39,9 @@ Save only if ALL hold (else don't propose a write):
 already been pre-filtered; still apply this test.)
 
 ### 2. Find the right home (search before creating)
-Use `memory search "<terms>"` (and `list_directory`/`read_note` for `mate`) to find
-the feature folder and any note that already covers this. **Update an existing
+Use `memory search "<terms>"` (and the `obsidian` MCP's `list_directory`/`read_note`
+if the vault is wired to one) to find the feature folder and any note that already
+covers this. **Update an existing
 note** rather than create a near-duplicate. If no feature folder fits, or it's
 cross-cutting with no clear home, **ask the user where it should go**.
 

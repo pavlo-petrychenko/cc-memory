@@ -48,7 +48,7 @@ agent for the nightly reflector.
 Then add your workspaces (the installer seeds one example — edit or replace):
 
 ```sh
-memory workspace add mate --match ~/Desktop/project --kb "~/Documents/Mate Vault"
+memory workspace add acme --match ~/code/acme --kb "~/Documents/Acme Vault"
 ```
 
 ## Components
@@ -60,7 +60,7 @@ memory workspace add mate --match ~/Desktop/project --kb "~/Documents/Mate Vault
 | `wrap-gate.py` | Stop hook | remind/▢block to capture unsaved work via `remember` |
 | `compact-checkpoint.py` | PostCompact hook | save the compaction summary into the worklog |
 | `worklog-floor.py` | SessionEnd hook | deterministic git/command skeleton into the worklog (no commit) |
-| `reflector.py` | launchd (nightly) | worklog `#promote`/Learned/Decided → KB proposals (`claude -p`) |
+| `reflector.py` | launchd (nightly) | worklog `#promote`/Learned/Decided → **interactive tmux consolidation** session (`claude -p` + proposals file as `--headless` fallback) |
 | `remember` | skill | write short-term working memory |
 | `memory-search` | skill | fast BM25 search of the workspace KB |
 | `save-learning` | skill | write durable KB notes (approval-gated) |
@@ -93,6 +93,16 @@ memory doctor [--cwd ...]       # self-test hooks (read-only)
 KB vaults are local git repos. **Nothing auto-commits.** Snapshot when you want:
 `memory commit`. No remote/sync (a future, opt-in extension).
 
+## Consolidation session
+
+The reflector spawns a **detached tmux session** `cc-consolidate-<workspace>`
+running interactive `claude --dangerously-skip-permissions` (so it runs unattended
+without the trust/permission dialogs; its prompt still asks before KB writes).
+Attach to watch/assist: `tmux attach -t cc-consolidate-<id>` (detach: Ctrl-b d).
+Overrides: `CCMEM_CONSOLIDATE_CMD` (the command run in the pane; default
+`claude --dangerously-skip-permissions`). Use `memory reflect --headless` to skip
+tmux and produce a proposals file via `claude -p` instead.
+
 ## Tuning the wrap-gate
 
 The Stop hook starts as a non-blocking nudge and only hard-blocks after repeated
@@ -117,7 +127,7 @@ cc-memory/
   src/hooks/  session-start worklog-floor wrap-gate compact-checkpoint memory-inject
   src/skills/ remember memory-search save-learning consolidate-review manage-workspace
   runners/    dev.ccmemory.reflector.plist
-  docs/       design.md build-plan.md plan.md
+  docs/       design.md build-plan.md
 ```
 
 See `docs/design.md` for the research and rationale behind every decision.

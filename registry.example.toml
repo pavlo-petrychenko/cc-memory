@@ -3,12 +3,12 @@
 # Paths may use ~; they are expanded at load time. One block per workspace.
 
 [[workspace]]
-id = "mate"
-match = ["~/Desktop/project"]                  # cwd prefixes; longest match wins
-kb = "~/Documents/Mate Vault"                  # this workspace's KB (its own vault)
-worklogs = "~/Documents/Mate Vault/_Worklogs"  # short-term, inside the vault
+id = "acme"
+match = ["~/code/acme"]                        # cwd prefixes; longest match wins
+kb = "~/Documents/Acme Vault"                  # this workspace's KB (its own vault)
+worklogs = "~/Documents/Acme Vault/_Worklogs"  # short-term, inside the vault
 exclude = ["_Worklogs", "Archive", ".obsidian"]
-index_db = "~/.claude/memory/mate/index.db"    # derived index, OUTSIDE the vault
+index_db = "~/.claude/memory/acme/index.db"    # derived index, OUTSIDE the vault
 
 # [[workspace]]
 # id = "homeserver"

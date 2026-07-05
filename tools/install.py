@@ -6,7 +6,7 @@ Wires the repo into Claude Code:
   - symlink skills into ~/.claude/skills (backing up any pre-existing real dir)
   - register the 5 hooks in ~/.claude/settings.json (preserving buddy-reroll &
     plan-review; removing the legacy obsidian-kb-index SessionStart entry)
-  - seed ~/.claude/memory/registry.toml with `mate` if absent
+  - seed ~/.claude/memory/registry.toml with an example workspace if absent
   - install + load the launchd reflector agent
 
 Safe to run repeatedly. Only registers hooks whose script files exist, so it can
@@ -99,27 +99,42 @@ def _cmd_in_groups(groups, needle):
     return False
 
 
+def _is_ours(group):
+    """A hook group we manage: any cc-memory hook (at any path) or the legacy one."""
+    for h in group.get("hooks", []):
+        c = h.get("command", "")
+        if "cc-memory" in c or "obsidian-kb-index.py" in c:
+            return True
+    return False
+
+
 def install_hooks():
     settings = {}
     if os.path.isfile(SETTINGS):
         with open(SETTINGS) as fh:
             settings = json.load(fh)
     hooks = settings.setdefault("hooks", {})
+    # Purge any prior cc-memory/legacy entries first (self-heals moves/renames),
+    # preserving everything else (buddy-reroll, plan-review, …).
+    removed = 0
+    for event in list(hooks.keys()):
+        kept = [g for g in hooks[event] if not _is_ours(g)]
+        removed += len(hooks[event]) - len(kept)
+        if kept:
+            hooks[event] = kept
+        else:
+            del hooks[event]
+    if removed:
+        log(f"purged {removed} stale cc-memory/legacy hook entr"
+            f"{'y' if removed == 1 else 'ies'}")
+    # Re-register at the current location.
     for event, (fname, timeout) in HOOKS.items():
         script = os.path.join(SRC, "hooks", fname)
         if not os.path.isfile(script):
             continue
         _ensure_exec(script)
-        groups = hooks.setdefault(event, [])
-        # drop legacy obsidian-kb-index SessionStart entry (superseded)
-        if event == "SessionStart":
-            before = len(groups)
-            groups[:] = [g for g in groups if not _cmd_in_groups([g], "obsidian-kb-index.py")]
-            if len(groups) != before:
-                log("removed legacy obsidian-kb-index.py SessionStart hook")
-        if not _cmd_in_groups(groups, script):
-            groups.append(_group(script, timeout))
-            log(f"hook {event} -> {fname}")
+        hooks.setdefault(event, []).append(_group(script, timeout))
+        log(f"hook {event} -> {fname}")
     os.makedirs(CLAUDE, exist_ok=True)
     tmp = SETTINGS + ".tmp"
     with open(tmp, "w") as fh:
