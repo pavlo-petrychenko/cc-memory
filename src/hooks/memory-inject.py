@@ -69,8 +69,8 @@ def main():
         return
 
     try:
-        pool = index.rerank_by_links(ws, index.search(ws, prompt, limit=POOL, kind="notes"))
-        wl_pool = index.search(ws, prompt, limit=MAX_WORKLOG, kind="worklog")
+        pool = index.search_fused(ws, prompt, limit=POOL, kind="notes")
+        wl_pool = index.search_fused(ws, prompt, limit=MAX_WORKLOG, kind="worklog")
     except Exception:
         return
 

@@ -239,33 +239,101 @@ def fts_query(text):
     return " OR ".join(f'"{t}"' for t in sorted(salient_tokens(text))[:32])
 
 
-def search(ws, query, limit=5, kind="notes"):
-    """Return ranked hits [{path,title,snippet,score}]. `query` may be raw text."""
-    conn = connect(ws)
-    match = query if re.search(r'["*]| OR | AND ', query) else fts_query(query)
-    if not match.strip():
-        conn.close()
-        return []
-    try:
-        if kind == "worklog":
-            # column weights: slug, date, body
-            rows = conn.execute(
-                "SELECT path, slug AS title, snippet(worklog_fts,2,'','','…',12) AS snip, "
-                "bm25(worklog_fts, 3.0, 1.0, 1.0) AS score FROM worklog_fts WHERE worklog_fts MATCH ? "
-                "ORDER BY score LIMIT ?", (match, limit)).fetchall()
+RRF_K = 60                                                    # standard RRF constant
+LINK_RRF = float(os.environ.get("CCMEM_LINK_BOOST", "0.003"))  # per corroborating in-link, in RRF units
+PHRASE_WINDOW = 8                                             # NEAR proximity window (tokens)
+
+
+def _ordered_terms(text):
+    """Salient terms in prompt order (for building adjacency pairs). Unlike
+    salient_tokens (a set), this keeps sequence and per-chunk sub-word order."""
+    out = []
+    for chunk in _CHUNK.findall(text):
+        parts = [p.lower() for p in _CAMEL.findall(chunk) if _keep(p.lower())]
+        if parts:
+            out.extend(parts)
         else:
-            # column weights: title, body, tags (title/tags hits outrank body)
-            rows = conn.execute(
-                "SELECT path, title, snippet(notes_fts,1,'','','…',12) AS snip, "
-                "bm25(notes_fts, 10.0, 1.0, 5.0) AS score FROM notes_fts WHERE notes_fts MATCH ? "
-                "ORDER BY score LIMIT ?", (match, limit)).fetchall()
-    except sqlite3.OperationalError:
-        conn.close()
-        return []
-    out = [{"path": r["path"], "title": r["title"],
-            "snippet": " ".join(r["snip"].split()), "score": r["score"]} for r in rows]
-    conn.close()
+            glued = chunk.replace("_", "").lower()
+            if _keep(glued):
+                out.append(glued)
     return out
+
+
+def phrase_query(text, window=PHRASE_WINDOW):
+    """FTS5 NEAR clauses over adjacent salient-term pairs, OR'd together. Rewards
+    proximity ("salient tokens" as a phrase, not just both words somewhere).
+    Empty string when there are fewer than two ordered terms."""
+    terms = _ordered_terms(text)
+    seen, clauses = set(), []
+    for a, b in zip(terms, terms[1:]):
+        if a == b:
+            continue
+        clause = f'NEAR("{a}" "{b}", {window})'
+        if clause not in seen:
+            seen.add(clause)
+            clauses.append(clause)
+    return " OR ".join(clauses[:24])
+
+
+# One SQL per kind. Column weights: notes = title 10 / body 1 / tags 5;
+# worklog = slug 3 / date 1 / body 1. snippet() draws from the body column.
+_SQL = {
+    "notes": ("SELECT path, title, snippet(notes_fts,1,'','','…',12) AS snip, "
+              "bm25(notes_fts, 10.0, 1.0, 5.0) AS score FROM notes_fts "
+              "WHERE notes_fts MATCH ? ORDER BY score LIMIT ?"),
+    "worklog": ("SELECT path, slug AS title, snippet(worklog_fts,2,'','','…',12) AS snip, "
+                "bm25(worklog_fts, 3.0, 1.0, 1.0) AS score FROM worklog_fts "
+                "WHERE worklog_fts MATCH ? ORDER BY score LIMIT ?"),
+}
+
+
+def _run(ws, match, limit, kind):
+    """Execute one prebuilt FTS5 MATCH. Returns [{path,title,snippet,score}]."""
+    if not match or not match.strip():
+        return []
+    conn = connect(ws)
+    try:
+        rows = conn.execute(_SQL[kind], (match, limit)).fetchall()
+    except sqlite3.OperationalError:
+        return []
+    finally:
+        conn.close()
+    return [{"path": r["path"], "title": r["title"],
+             "snippet": " ".join(r["snip"].split()), "score": r["score"]} for r in rows]
+
+
+def search(ws, query, limit=5, kind="notes"):
+    """Single BM25 query over one workspace. `query` is natural text: it is always
+    tokenized/sanitized via fts_query and never interpreted as raw FTS5 syntax, so
+    any prompt (incl. one containing OR/AND/NEAR/quotes) is safe and never errors."""
+    return _run(ws, fts_query(query), limit, kind)
+
+
+def search_fused(ws, query, limit=5, kind="notes", links=True):
+    """Proximity-aware retrieval: fuse a token-OR ranking with a phrase/NEAR
+    ranking via Reciprocal Rank Fusion (k=60), plus a small wikilink-corroboration
+    bonus. Returns hits ordered by the fused `rank_score`; each still carries the
+    token-query bm25 `score` (the injection floor keys off that). Degrades to pure
+    BM25 when the prompt yields no adjacent-token pair. The RRF core here is the
+    same machinery a future BM25×embeddings fusion would reuse."""
+    pool = max(limit * 3, 10)
+    tok = search(ws, query, limit=pool, kind=kind)
+    if not tok:
+        return []
+    # Phrase matches are a subset of token matches (NEAR requires both terms), so
+    # the token list is the complete candidate set; phrase only adds rank weight.
+    phr = _run(ws, phrase_query(query), pool, kind)
+    rank_p = {h["path"]: i for i, h in enumerate(phr)}
+    inl = _inlink_counts(ws, [h["path"] for h in tok]) if links else {}
+    fused = []
+    for i, h in enumerate(tok):
+        s = 1.0 / (RRF_K + i + 1)
+        if h["path"] in rank_p:
+            s += 1.0 / (RRF_K + rank_p[h["path"]] + 1)
+        s += LINK_RRF * inl.get(h["path"], 0)
+        fused.append({**h, "rank_score": s})
+    fused.sort(key=lambda x: -x["rank_score"])
+    return fused[:limit]
 
 
 def neighbors(ws, path, limit=8):
@@ -281,28 +349,23 @@ def _relkey(path, kb):
     return rel[:-3] if rel.endswith(".md") else rel
 
 
-def rerank_by_links(ws, hits, boost=None):
-    """Reorder BM25 hits using the wikilink graph: a hit that is linked-to by
-    ANOTHER hit in the same result set is corroborated, so it gets a small
-    strength boost. Pure reordering — never introduces new notes (keeps the
-    precision the score-floor is after). `hits` carry bm25 `score` (lower=better).
-    """
-    if len(hits) < 2:
-        return hits
-    if boost is None:
-        boost = float(os.environ.get("CCMEM_LINK_BOOST", "0.5"))
+def _inlink_counts(ws, paths):
+    """For a candidate set, count how many OTHER candidates link to each one (via
+    a wikilink dst resolved to a candidate path). Feeds the RRF corroboration
+    bonus in search_fused. Returns {path: in-degree-within-set}."""
+    if len(paths) < 2:
+        return {}
     kb = ws["kb"]
-    # resolve a wikilink dst name -> a candidate hit path (try full relpath, then basename)
     by_rel, by_base = {}, {}
-    for h in hits:
-        rk = _relkey(h["path"], kb)
-        by_rel[rk] = h["path"]
-        by_base[os.path.basename(rk)] = h["path"]
-    cand = {h["path"] for h in hits}
-    indeg = {h["path"]: 0 for h in hits}
+    for p in paths:
+        rk = _relkey(p, kb)
+        by_rel[rk] = p
+        by_base[os.path.basename(rk)] = p
+    cand = set(paths)
+    indeg = {p: 0 for p in paths}
     conn = connect(ws)
-    qmarks = ",".join("?" * len(cand))
     try:
+        qmarks = ",".join("?" * len(cand))
         for row in conn.execute(
                 f"SELECT src_path, dst FROM links WHERE src_path IN ({qmarks})", list(cand)):
             dst = row["dst"].split("|")[0].strip()
@@ -311,6 +374,4 @@ def rerank_by_links(ws, hits, boost=None):
                 indeg[tgt] += 1
     finally:
         conn.close()
-    # bm25 score is negative (lower=better); subtracting the boost makes a
-    # corroborated hit "better". Stable sort preserves BM25 order among ties.
-    return sorted(hits, key=lambda h: h["score"] - boost * indeg[h["path"]])
+    return indeg

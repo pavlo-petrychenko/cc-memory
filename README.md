@@ -114,19 +114,30 @@ stops with large drift. Env vars: `CCMEM_BLOCK_AFTER` (default 2),
 The index uses FTS5 **BM25 with Porter stemming** (so `inject` ↔ `injecting`) and
 **column weights** (title/tags outrank body). Query tokens are compound-split
 (`wrap-gate` → `wrap`, `gate`; `overallScore` → `overall`, `score`) so identifiers
-match prose and vice-versa. Auto-injection then link-reranks the BM25 candidates
-(a hit corroborated by another hit's `[[wikilink]]` gets a small boost) and applies
-a relevance floor. Env vars:
+match prose and vice-versa. Retrieval then **fuses** a token-OR ranking with a
+phrase/`NEAR` proximity ranking via **Reciprocal Rank Fusion** (k=60), adds a small
+**wikilink-corroboration** bonus (a hit linked-to by another hit rises), and the
+auto-injection path applies a relevance floor. Env vars:
 
 - `CCMEM_INJECT_MIN_SCORE` (default `0.2`) — minimum BM25 strength to inject a hit;
   raise it if chit-chat pulls in weak notes, lower it if relevant notes get dropped.
-- `CCMEM_LINK_BOOST` (default `0.5`) — strength added per corroborating in-link.
+- `CCMEM_LINK_BOOST` (default `0.003`) — RRF-score bonus added per corroborating in-link.
 - `CCMEM_INJECT_LOG` — every prompt appends a row to
   `~/.claude/memory/<id>/inject.jsonl` (tokens, candidates + scores, what was
   injected) for calibrating the above. Set `CCMEM_INJECT_LOG=0` to disable.
 
 A schema/tokenizer change bumps `index.SCHEMA_VERSION`; the next `build()` (every
 SessionStart) does a one-time full rebuild automatically.
+
+## Tests
+
+Retrieval has integration tests that build a throwaway vault + index in a temp dir
+and exercise the real tokenizer / indexer / search / fusion / resolution paths — no
+Claude session or live workspace needed:
+
+```sh
+python3 -m unittest discover -s tests -v
+```
 
 ## Uninstall / disable
 
@@ -146,6 +157,7 @@ cc-memory/
   src/hooks/  session-start worklog-floor wrap-gate compact-checkpoint memory-inject
   src/skills/ remember memory-search save-learning consolidate-review manage-workspace
   runners/    dev.ccmemory.reflector.plist
+  tests/      test_retrieval.py       # integration tests (no Claude session)
   docs/       design.md build-plan.md
 ```
 
