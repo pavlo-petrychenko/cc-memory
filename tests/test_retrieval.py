@@ -196,6 +196,18 @@ class RetrievalTest(unittest.TestCase):
         self.assertEqual(indeg[paths[0]], 1)   # Injection Hook linked-to by Search Ranking
         self.assertEqual(indeg[paths[1]], 0)
 
+    # --- note enumeration (for auditing) ---------------------------------
+    def test_list_notes_all_and_folder(self):
+        alln = index.list_notes(self.ws)
+        self.assertEqual({n["path"] for n in alln}, set(NOTES))       # exhaustive
+        alpha = index.list_notes(self.ws, folder="Alpha")
+        self.assertTrue(alpha and all(n["path"].startswith("Alpha/") for n in alpha))
+        self.assertNotIn("Beta/Body Kryptonite.md", {n["path"] for n in alpha})
+        idx = next(n for n in alpha if n["path"] == "Alpha/Alpha.md")
+        self.assertEqual(idx["type"], "index")
+        hook = next(n for n in alpha if n["path"] == "Alpha/Injection Hook.md")
+        self.assertEqual(hook["importance"], 6)
+
     # --- worklog index ----------------------------------------------------
     def test_worklog_search(self):
         hits = self._paths(index.search(self.ws, "rollback incident gateway", kind="worklog"))

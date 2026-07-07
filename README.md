@@ -65,6 +65,7 @@ memory workspace add acme --match ~/code/acme --kb "~/Documents/Acme Vault"
 | `memory-search` | skill | fast BM25 search of the workspace KB |
 | `save-learning` | skill | write durable KB notes (approval-gated) |
 | `consolidate-review` | skill | apply approved reflector proposals |
+| `actualize-kb` | skill | audit KB notes vs this session's changes (subagent fan-out) → propose updates |
 | `manage-workspace` | skill | add/list/remove workspaces |
 
 ## CLI
@@ -74,6 +75,7 @@ memory resolve [cwd]            # which workspace + worktree a path maps to
 memory workspace add|ls|rm      # manage workspaces
 memory reindex [id] [--full]    # rebuild the search index
 memory search "<query>" [-k N] [--worklog] [--workspace id]
+memory notes [--folder F] [--json] [--workspace id]   # enumerate KB notes (auditing)
 memory reflect [--all] [--if-due]   # run consolidation (launchd uses --all --if-due)
 memory commit [id] [-m msg]     # MANUAL git snapshot of a KB (local; no push)
 memory doctor [--cwd ...]       # self-test hooks (read-only)
@@ -155,7 +157,7 @@ cc-memory/
   src/lib/    resolve registry worklog index    # shared, stdlib-only
   src/bin/    memory  reflector.py
   src/hooks/  session-start worklog-floor wrap-gate compact-checkpoint memory-inject
-  src/skills/ remember memory-search save-learning consolidate-review manage-workspace
+  src/skills/ remember memory-search save-learning consolidate-review actualize-kb manage-workspace
   runners/    dev.ccmemory.reflector.plist
   tests/      test_retrieval.py       # integration tests (no Claude session)
   docs/       design.md build-plan.md

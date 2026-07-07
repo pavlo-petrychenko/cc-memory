@@ -336,6 +336,28 @@ def search_fused(ws, query, limit=5, kind="notes", links=True):
     return fused[:limit]
 
 
+def list_notes(ws, folder=None):
+    """Enumerate every indexed note (optionally under a folder prefix), sorted by
+    path. Returns [{path(rel), title, type, importance}]. Exhaustive (not
+    recall-limited like search) — the basis for auditing a whole feature folder."""
+    conn = connect(ws)
+    try:
+        rows = conn.execute(
+            "SELECT path, title, type, importance FROM notes ORDER BY path").fetchall()
+    finally:
+        conn.close()
+    kb = ws["kb"]
+    pref = folder.strip("/") if folder else None
+    out = []
+    for r in rows:
+        rel = os.path.relpath(r["path"], kb) if r["path"].startswith(kb) else r["path"]
+        if pref and not (rel == pref or rel.startswith(pref + os.sep)):
+            continue
+        out.append({"path": rel, "title": r["title"], "type": r["type"],
+                    "importance": r["importance"]})
+    return out
+
+
 def neighbors(ws, path, limit=8):
     """1-hop wikilink neighbors of a note (by link target name)."""
     conn = connect(ws)

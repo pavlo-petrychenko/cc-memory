@@ -152,6 +152,30 @@ def cmd_search(a):
         print(f"• {h['title']}  ({rel})\n  {h['snippet']}")
 
 
+def _resolve_ws(a):
+    if getattr(a, "workspace", None):
+        w = registry.find(a.workspace) or sys.exit(f"no such workspace: {a.workspace}")
+        return registry.expand_ws(w)
+    ws = resolve.resolve(registry.expand(getattr(a, "cwd", None) or os.getcwd()))
+    if not ws:
+        sys.exit("no workspace for cwd; pass --workspace")
+    return ws
+
+
+def cmd_notes(a):
+    ws = _resolve_ws(a)
+    rows = index.list_notes(ws, folder=a.folder)
+    if a.json:
+        print(json.dumps(rows, ensure_ascii=False, indent=2))
+        return
+    if not rows:
+        print("(no notes)" + (f" under {a.folder}" if a.folder else ""))
+        return
+    for r in rows:
+        imp = str(r["importance"]) if r["importance"] is not None else "-"
+        print(f"[{imp:>2}] {(r['type'] or 'note'):5}  {r['path']}  — {r['title']}")
+
+
 # ---- commit (manual snapshot, local only) ---------------------------------
 
 def cmd_commit(a):
@@ -248,6 +272,11 @@ def main():
     s = sub.add_parser("search"); s.add_argument("query")
     s.add_argument("--workspace"); s.add_argument("--cwd"); s.add_argument("-k", type=int, default=5)
     s.add_argument("--worklog", action="store_true"); s.set_defaults(func=cmd_search)
+
+    n = sub.add_parser("notes", help="list indexed KB notes (for auditing)")
+    n.add_argument("--workspace"); n.add_argument("--cwd")
+    n.add_argument("--folder", help="restrict to a folder prefix (e.g. CC-memory)")
+    n.add_argument("--json", action="store_true"); n.set_defaults(func=cmd_notes)
 
     c = sub.add_parser("commit"); c.add_argument("workspace", nargs="?")
     c.add_argument("-m", "--message"); c.set_defaults(func=cmd_commit)
