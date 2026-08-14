@@ -8,12 +8,10 @@ import {
 import type { AbsPath } from "../core/AbsPath.ts";
 import type { Container } from "../platform/container.ts";
 
-/** `bin/memory:188` — `a.message or "memory snapshot"`. */
 const DEFAULT_COMMIT_MESSAGE = "memory snapshot";
 
-// Python's `subprocess.run` here carries no explicit timeout; this project's
-// other git write calls (`add`/`commit` in `gitCli.adapter.ts`) all use 10s —
-// reused here for the same two git subcommands rather than left unbounded.
+// Reuses the 10s timeout the other git write calls (`add`/`commit` in
+// `gitCli.adapter.ts`) use, rather than leaving these two subcommands unbounded.
 const GIT_TIMEOUT_MS = 10_000;
 
 async function isGitRepoDir(container: Container, path: AbsPath): Promise<boolean> {
@@ -24,9 +22,8 @@ async function isGitRepoDir(container: Container, path: AbsPath): Promise<boolea
   }
 }
 
-/** One workspace's commit step (`bin/memory:183-190`), run to completion
- * before the next — `git add`/`git commit` in the SAME repo must be
- * sequential, and Python's own loop runs one `subprocess.run` at a time too. */
+/** One workspace's commit step, run to completion before the next — `git add`
+ * and `git commit` in the same repo must run sequentially. */
 async function commitOne(
   container: Container,
   workspace: { readonly id: string; readonly kb: AbsPath },
@@ -49,11 +46,10 @@ async function commitOne(
   return formatCommitResult(workspace.id, commitResult.exitCode === 0);
 }
 
-/** `cmd_commit` (`bin/memory:181-190`) — manual, local-only snapshot; never
- * pushes, never touches worklogs specifically (unlike
- * `services/worklog.service.ts`'s `commitWorklogs`, this stages the WHOLE kb
- * repo via `git add -A`, so it goes straight through `Proc` rather than the
- * narrower `Git.add`/`Git.commit` port methods). */
+/** Manual, local-only snapshot; never pushes. Unlike `worklog.service.ts`'s
+ * `commitWorklogs`, this stages the whole kb repo via `git add -A`, so it goes
+ * straight through `Proc` rather than the narrower `Git.add`/`Git.commit` port
+ * methods. */
 export async function commit(
   container: Container,
   args: CommitArgs,
@@ -68,8 +64,7 @@ export async function commit(
   const message = args.message ?? DEFAULT_COMMIT_MESSAGE;
   for (const workspace of targets.value) {
     // Deliberately sequential (not `Promise.all`): two commits landing in the
-    // SAME kb repo at once would race `git add -A`/`git commit`; Python's loop
-    // runs one `subprocess.run` at a time for the same reason.
+    // same kb repo at once would race `git add -A`/`git commit`.
     // eslint-disable-next-line no-await-in-loop
     const line = await commitOne(container, workspace, message);
     container.stdio.write(line);

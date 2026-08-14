@@ -7,11 +7,10 @@ import type { Container } from "../platform/container.ts";
 import { resolveWorkspace, worktreeSlug } from "./resolver.service.ts";
 
 /**
- * `cmd_resolve` (`bin/memory:110-120`). No match is NOT a `sys.exit` — Python
- * prints a message and returns normally (exit 0), unlike `search`/`notes`,
- * whose `--workspace`-less cwd miss DOES exit 1 (`resolveWorkspaceForCwd`'s
- * `NO_WORKSPACE_FOR_CWD_MESSAGE`). Two different Python behaviors for
- * "no workspace", preserved as two different code paths here.
+ * No match here returns success (exit 0) with a message, unlike
+ * `search`/`notes`, whose `--workspace`-less cwd miss exits 1
+ * (`resolveWorkspaceForCwd`'s `NO_WORKSPACE_FOR_CWD_MESSAGE`) — two different
+ * exit behaviors for "no workspace", kept as two different code paths.
  */
 export async function resolve(
   container: Container,

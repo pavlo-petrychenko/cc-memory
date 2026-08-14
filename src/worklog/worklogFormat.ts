@@ -2,9 +2,8 @@ import { stripChars } from "../core/paths.ts";
 import type { Candidate } from "./Candidate.ts";
 
 /**
- * Worklog templates (C4) and reflector candidate-gathering (`lib/worklog.py:10-36`,
- * `bin/reflector.py:25-27,71-88`). Templates are agent-visible text — copied
- * verbatim, character for character.
+ * Worklog templates and reflector candidate-gathering. Templates are
+ * agent-visible text and must stay exact, character for character.
  */
 
 export type StateTemplateInput = {
@@ -13,7 +12,7 @@ export type StateTemplateInput = {
   readonly date: string;
 };
 
-/** `STATE_TEMPLATE` (`lib/worklog.py:10-27`) — the living per-worktree state file. */
+/** The living per-worktree state file. */
 export function stateTemplate(input: StateTemplateInput): string {
   return `---
 type: worktree-state
@@ -44,7 +43,7 @@ export type EntryTemplateInput = {
   readonly refs: string;
 };
 
-/** `ENTRY_TEMPLATE` (`lib/worklog.py:29-36`) — one append-only journal entry. */
+/** One append-only journal entry. */
 export function entryTemplate(input: EntryTemplateInput): string {
   return `## ${input.time} — ${input.topic}
 **Changes:** ${input.changes}
@@ -55,25 +54,24 @@ export function entryTemplate(input: EntryTemplateInput): string {
 `;
 }
 
-// Not anchored (Python's `.search`, not `.match`) — a `#promote` tag can appear
-// anywhere on the line.
+// Not anchored — a `#promote` tag can appear anywhere on the line.
 const PROMOTE_TAG = /#promote\b/;
-// A fresh `g`-flagged literal for `.replace()`/`.replaceAll()` only: Python's
-// `re.sub` replaces every match by default, unlike JS `String.replace` with a
-// non-global pattern (which stops after the first) — `bin/reflector.py:74`.
+// A fresh `g`-flagged literal for `.replace()`/`.replaceAll()` only:
+// `String.replace` with a non-global pattern stops after the first match, so
+// replacing every occurrence needs `g`.
 const PROMOTE_TAG_ALL = /#promote\b/g;
-// Drops a leading `**Field:**` prefix a `#promote` line might carry
-// (`bin/reflector.py:75`). Anchored, so a single non-global replace is enough.
+// Drops a leading `**Field:**` prefix a `#promote` line might carry.
+// Anchored, so a single non-global replace is enough.
 const LEADING_FIELD_PREFIX = /^\s*[-*]*\s*\*\*[A-Za-z]+:\*\*\s*/;
-// `**Learned:**`/`**Decided:**` lines (`bin/reflector.py:26`), case-insensitive.
+// `**Learned:**`/`**Decided:**` lines, case-insensitive.
 const FIELD_LINE = /^\s*\*\*(Learned|Decided):\*\*\s*(.+)$/i;
 const LEARNED_DECIDED_MIN_LENGTH = 12;
 
 /**
- * One worklog file's promotion candidates (`bin/reflector.py:71-80`): every line
- * either tagged `#promote` (tag and any leading `**Field:**` prefix stripped, then
- * trimmed of `" -*"`), or a `**Learned:**`/`**Decided:**` line whose captured text
- * is longer than 12 characters. `src` labels every candidate with its origin
+ * One worklog file's promotion candidates: every line either tagged
+ * `#promote` (tag and any leading `**Field:**` prefix stripped, then trimmed
+ * of `" -*"`), or a `**Learned:**`/`**Decided:**` line whose captured text is
+ * longer than 12 characters. `src` labels every candidate with its origin
  * (`<slug>/<file>.md`) for the proposals file and consolidation brief.
  */
 export function extractCandidates(text: string, src: string): readonly Candidate[] {
@@ -97,7 +95,7 @@ export function extractCandidates(text: string, src: string): readonly Candidate
 
 /**
  * De-duplicate candidates by text, case-insensitively, keeping the first
- * occurrence (`bin/reflector.py:82-88`).
+ * occurrence.
  */
 export function dedupeCandidates(candidates: readonly Candidate[]): readonly Candidate[] {
   const seen = new Set<string>();

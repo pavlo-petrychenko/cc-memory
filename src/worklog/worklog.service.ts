@@ -4,18 +4,16 @@ import type { FileSystem } from "../platform/fileSystem.port.ts";
 import type { Git } from "../platform/git.port.ts";
 
 /**
- * Worklog (short-term/episodic memory) paths and I/O (`lib/worklog.py`, whole
- * file). Two files per worktree under `<kb>/_Worklogs/<slug>/`: `STATE.md`
- * (living) and `<date>.md` (append-only journal). The templates themselves
- * (`STATE_TEMPLATE`/`ENTRY_TEMPLATE`) already ported to
- * `domain/worklogFormat.ts`'s `stateTemplate`/`entryTemplate` — this file only
- * owns the filesystem side.
+ * Worklog (short-term/episodic memory) paths and I/O. Two files per worktree
+ * under `<kb>/_Worklogs/<slug>/`: `STATE.md` (living) and `<date>.md`
+ * (append-only journal). The templates themselves live in `worklogFormat.ts`'s
+ * `stateTemplate`/`entryTemplate` — this file only owns the filesystem side.
  */
 
 const STATE_FILENAME = "STATE.md";
 const MARKDOWN_EXTENSION = ".md";
 const PROPOSALS_DIR_NAME = "_proposals";
-const DEFAULT_RECENT_ENTRIES_LIMIT = 2; // worklog.py:72
+const DEFAULT_RECENT_ENTRIES_LIMIT = 2;
 
 /**
  * Join path segments onto an `AbsPath` base. Every segment used by this file is
@@ -31,27 +29,23 @@ function joinAbsPath(base: AbsPath, ...segments: readonly string[]): AbsPath {
   return joined as AbsPath;
 }
 
-/** `worklog.worktree_dir` (`worklog.py:39-40`). */
 export function worktreeDir(ws: Workspace, slug: WorktreeSlug): AbsPath {
   return joinAbsPath(ws.worklogs, slug);
 }
 
-/** `worklog.state_path` (`worklog.py:43-44`). */
 export function statePath(ws: Workspace, slug: WorktreeSlug): AbsPath {
   return joinAbsPath(worktreeDir(ws, slug), STATE_FILENAME);
 }
 
-/** `worklog.dated_path` (`worklog.py:47-48`). */
 export function datedPath(ws: Workspace, slug: WorktreeSlug, date: string): AbsPath {
   return joinAbsPath(worktreeDir(ws, slug), `${date}${MARKDOWN_EXTENSION}`);
 }
 
-/** `worklog.proposals_dir` (`worklog.py:51-52`). */
 export function proposalsDir(ws: Workspace): AbsPath {
   return joinAbsPath(ws.worklogs, PROPOSALS_DIR_NAME);
 }
 
-/** `worklog.ensure_dir` (`worklog.py:55-58`) — creates (idempotently) and returns it. */
+/** Creates the directory (idempotently) and returns it. */
 export async function ensureDir(
   fs: FileSystem,
   ws: Workspace,
@@ -63,9 +57,8 @@ export async function ensureDir(
 }
 
 /**
- * `worklog.read_state` (`worklog.py:61-69`): `null` when `STATE.md` doesn't
- * exist, isn't a regular file, or fails to read — the PoC's bare
- * `except Exception: return None` swallows any read failure the same way.
+ * `null` when `STATE.md` doesn't exist, isn't a regular file, or fails to
+ * read for any reason.
  */
 export async function readState(
   fs: FileSystem,
@@ -85,10 +78,9 @@ export async function readState(
 export type WorklogEntry = { readonly date: string; readonly text: string };
 
 /**
- * `worklog.recent_entries` (`worklog.py:72-88`): the most recent `limit` dated
- * journal files (`STATE.md` excluded), newest first. A worktree directory that
- * doesn't exist (or isn't a directory) yields `[]`; a file that fails to read is
- * silently skipped, same as the Python's bare `except Exception: pass`.
+ * The most recent `limit` dated journal files (`STATE.md` excluded), newest
+ * first. A worktree directory that doesn't exist (or isn't a directory)
+ * yields `[]`; a file that fails to read is silently skipped.
  */
 export async function recentEntries(
   fs: FileSystem,
@@ -116,8 +108,8 @@ export async function recentEntries(
         const text = await fs.readFile(joinAbsPath(dir, fileName));
         return { date: fileName.slice(0, -MARKDOWN_EXTENSION.length), text };
       } catch {
-        // worklog.py:86-87 — a file that vanishes or fails to decode between
-        // the directory listing and the read is skipped, not fatal.
+        // A file that vanishes or fails to decode between the directory
+        // listing and the read is skipped, not fatal.
         return null;
       }
     }),
@@ -126,15 +118,11 @@ export async function recentEntries(
 }
 
 /**
- * Append raw text to `<date>.md`, used by deterministic hooks (`worklog.py:91-99`).
- * Returns the path written to.
+ * Append raw text to `<date>.md`, used by deterministic hooks. Returns the
+ * path written to.
  *
- * Python's separator check — `if os.path.getsize(p) if os.path.exists(p) else 0`
- * — runs AFTER `open(p, "a")` has already created the file, but opening in append
- * mode never truncates, so the size it observes is identical to checking before
- * opening: a file that doesn't exist yet, or exists empty, gets no leading blank
- * line; a file with existing content gets one. Checking first (as below) produces
- * the exact same byte layout, straightforwardly.
+ * A file that doesn't exist yet, or exists empty, gets no leading blank line
+ * before the appended text; a file with existing content gets one.
  */
 export async function appendToDated(
   fs: FileSystem,
@@ -152,10 +140,10 @@ export async function appendToDated(
 }
 
 /**
- * POSIX relative path from `from` to `to` (`os.path.relpath`), used only to stage
- * the worklogs directory relative to the kb git root (`worklog.py:108`). Both
- * inputs are already absolute and normalized `AbsPath`s, so this only needs to
- * diff path segments — no `.`/`..` resolution required on the inputs themselves.
+ * POSIX relative path from `from` to `to`, used only to stage the worklogs
+ * directory relative to the kb git root. Both inputs are already absolute and
+ * normalized `AbsPath`s, so this only needs to diff path segments — no
+ * `.`/`..` resolution required on the inputs themselves.
  */
 function relativePath(from: AbsPath, to: AbsPath): string {
   const fromParts = from.split("/").filter((part) => part !== "");
@@ -176,7 +164,7 @@ function relativePath(from: AbsPath, to: AbsPath): string {
   return segments.length === 0 ? "." : segments.join("/");
 }
 
-/** `worklog.py:104-105` — `<kb>/.git` must exist and be a directory. */
+/** `<kb>/.git` must exist and be a directory. */
 async function isGitRepoDir(fs: FileSystem, path: AbsPath): Promise<boolean> {
   if (!(await fs.exists(path))) return false;
   const stat = await fs.stat(path);
@@ -184,14 +172,11 @@ async function isGitRepoDir(fs: FileSystem, path: AbsPath): Promise<boolean> {
 }
 
 /**
- * Commit worklog changes in the kb git repo, local only, best-effort
- * (`worklog.git_commit_worklogs`, `worklog.py:102-116`). No-ops (returns `false`)
- * outside a git repo. `Git.add`/`Git.commit` already absorb "ran vs. failed to
- * run" as their boolean result (their port doc), so this mirrors Python's
- * short-circuiting `try` block directly: if `add` didn't run, `commit` is never
- * attempted, matching a `subprocess.run` exception skipping the rest of the
- * `try` body. Neither call's own exit code matters — a no-op commit (nothing
- * staged) exits non-zero and is still success here (`worklog.py:111`'s comment).
+ * Commit worklog changes in the kb git repo, local only, best-effort. No-ops
+ * (returns `false`) outside a git repo. `Git.add`/`Git.commit` already report
+ * whether they ran as their boolean result, so if `add` didn't run, `commit`
+ * is never attempted. Neither call's own exit code matters — a no-op commit
+ * (nothing staged) still counts as success here.
  */
 export async function commitWorklogs(
   fs: FileSystem,

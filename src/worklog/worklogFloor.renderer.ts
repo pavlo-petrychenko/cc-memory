@@ -1,7 +1,7 @@
 /**
- * Renders the `SessionEnd` deterministic worklog-floor skeleton —
- * `hooks/worklog-floor.py:47-58`. Agent-visible/C4: the exact HTML-comment
- * skeleton a killed session still leaves behind.
+ * Renders the `SessionEnd` deterministic worklog-floor skeleton: the exact
+ * HTML-comment skeleton a killed session still leaves behind. This text is
+ * agent-visible and must stay exact.
  */
 
 export type FloorBlockInput = {
