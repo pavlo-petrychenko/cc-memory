@@ -5,7 +5,7 @@ import {
   renderNudge,
 } from "../../../src/session/wrapGate.renderer.ts";
 
-describe("renderNudge (C4)", () => {
+describe("renderNudge", () => {
   test("golden: plural file count", () => {
     expect(renderNudge({ slug: "cc-memory", dirtyCount: 3 })).toBe(
       "📝 Unsaved work in `cc-memory` (3 uncommitted files). Consider running the " +
@@ -21,7 +21,7 @@ describe("renderNudge (C4)", () => {
   });
 });
 
-describe("renderBlockReason (C4)", () => {
+describe("renderBlockReason", () => {
   test("golden", () => {
     expect(renderBlockReason({ slug: "cc-memory", dirtyCount: 6 })).toBe(
       "Before you finish: capture this session in working memory for `cc-memory` " +

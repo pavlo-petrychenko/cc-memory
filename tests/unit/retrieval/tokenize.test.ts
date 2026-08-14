@@ -8,16 +8,16 @@ import {
 } from "../../../src/retrieval/tokenize.ts";
 
 describe("STOPWORDS", () => {
-  test("has exactly the 28 words from the porting reference", () => {
+  test("has exactly the 28 known stopwords", () => {
     expect(STOPWORDS.size).toBe(28);
     expect(STOPWORDS.has("the")).toBe(true);
     expect(STOPWORDS.has("lets")).toBe(true);
   });
 });
 
-// C7 (frozen): a chunk must emit BOTH the glued lowercase form AND every
-// camel/underscore-split part, so `overallScore` and `overall score` retrieve
-// each other regardless of which form the note was written in.
+// A chunk must emit BOTH the glued lowercase form AND every camel/underscore-split
+// part, so `overallScore` and `overall score` retrieve each other regardless of
+// which form the note was written in.
 describe("subtokens", () => {
   const cases: ReadonlyArray<{
     readonly name: string;
@@ -63,7 +63,6 @@ describe("subtokens", () => {
 });
 
 describe("salientTokens", () => {
-  // Ported from tests/test_retrieval.py:122-131 (test_salient_tokens_filters).
   test("camel split, glued form, 2-char identifier kept, stopwords dropped", () => {
     const tokens = salientTokens("How do the wrap-gate and overallScore work with db?");
     expect(tokens.has("wrap")).toBe(true);
@@ -76,7 +75,6 @@ describe("salientTokens", () => {
     expect(tokens.has("the")).toBe(false);
   });
 
-  // Ported from tests/test_retrieval.py:133-134 (test_no_pure_digits).
   test("pure digits are never a salient token", () => {
     expect(salientTokens("the 2026 plan").has("2026")).toBe(false);
   });

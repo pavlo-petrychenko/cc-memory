@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { renderCompactBlock } from "../../../src/session/compact.renderer.ts";
 
-describe("renderCompactBlock (C4)", () => {
+describe("renderCompactBlock", () => {
   test("golden with an explicit trigger", () => {
     expect(
       renderCompactBlock({ trigger: "manual", summary: "distilled context here" }),

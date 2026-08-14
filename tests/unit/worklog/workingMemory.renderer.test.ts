@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { renderWorkingMemory } from "../../../src/worklog/workingMemory.renderer.ts";
 
-describe("renderWorkingMemory (C4)", () => {
+describe("renderWorkingMemory", () => {
   test("with state: trims it and appends the wrap reminder", () => {
     const rendered = renderWorkingMemory({
       workspaceId: "homeserver",

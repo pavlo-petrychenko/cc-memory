@@ -7,7 +7,7 @@ import {
 } from "../../../src/reflect/proposals.renderer.ts";
 import { ReflectorAction } from "../../../src/reflect/Reflector.ts";
 
-describe("decisionPrompt (bin/reflector.py:99-125,128-131)", () => {
+describe("decisionPrompt", () => {
   test("substitutes candidates then related notes, in that order", () => {
     const prompt = decisionPrompt(
       [{ text: "RRF is symmetric", src: "cc-memory/2026-08-14.md" }],
@@ -30,7 +30,7 @@ describe("decisionPrompt (bin/reflector.py:99-125,128-131)", () => {
   });
 });
 
-describe("renderProposals (bin/reflector.py:147-176)", () => {
+describe("renderProposals", () => {
   test("error path: raw candidates listed for manual triage, count is the candidate count", () => {
     const { content, count } = renderProposals({
       workspaceId: "homeserver",
@@ -124,7 +124,7 @@ describe("renderProposals (bin/reflector.py:147-176)", () => {
   });
 });
 
-describe("renderBrief (bin/reflector.py:184-198)", () => {
+describe("renderBrief", () => {
   test("golden: candidates then related notes", () => {
     const content = renderBrief({
       workspaceId: "homeserver",

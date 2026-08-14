@@ -4,7 +4,7 @@ import { parse } from "smol-toml";
 
 import { serializeRegistry } from "../../../src/workspace/registryToml.renderer.ts";
 
-describe("serializeRegistry (C1)", () => {
+describe("serializeRegistry", () => {
   test("an empty registry is just the header comment", () => {
     expect(serializeRegistry([])).toBe(
       "# cc-memory workspace registry (managed by `memory workspace …`).\n" +
@@ -12,12 +12,11 @@ describe("serializeRegistry (C1)", () => {
     );
   });
 
-  // A semantic round-trip is NOT enough for C1: this file is user-owned and every
-  // `memory workspace add|rm` rewrites it, so the BYTES have to match what
-  // registry.py:68-85 produced or the user gets spurious churn in their registry.
-  // This golden is the exact output of `registry.dumps()` for the same input —
-  // it is what caught smol-toml's `[ "a", "b" ]` inner-space array formatting.
-  test("emits bytes identical to registry.dumps() (no spaces inside arrays)", () => {
+  // This file is user-owned and rewritten by every `memory workspace add|rm`, so its
+  // formatting must stay byte-stable or the user gets spurious diffs in their
+  // registry. This golden asserts arrays are emitted without inner spaces
+  // (smol-toml's default `[ "a", "b" ]` would produce a diff on every write).
+  test("emits stable bytes (no spaces inside arrays)", () => {
     const output = serializeRegistry([
       {
         id: "acme",
@@ -43,8 +42,8 @@ describe("serializeRegistry (C1)", () => {
     );
   });
 
-  // registry.py:60-61 escapes backslashes then double quotes, and nothing else.
-  test("quoting escapes backslashes and double quotes exactly as _q does", () => {
+  // Quoting escapes backslashes then double quotes, and nothing else.
+  test("quoting escapes backslashes and double quotes", () => {
     const output = serializeRegistry([
       {
         id: 'we"ird\\path',
@@ -73,7 +72,6 @@ describe("serializeRegistry (C1)", () => {
 
     expect(output.startsWith("# cc-memory workspace registry")).toBe(true);
 
-    // Field order matches registry.py:71-85 exactly.
     const block = output.slice(output.indexOf("[[workspace]]"));
     const fieldNames = [...block.matchAll(/^(\w+) = /gm)].map((match) => match[1]);
     expect(fieldNames).toEqual(["id", "match", "kb", "worklogs", "exclude", "index_db"]);
