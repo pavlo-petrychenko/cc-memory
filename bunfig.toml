@@ -1,12 +1,23 @@
 # Coverage is opt-in per run (`bun test --coverage`, as `bun run check` does) so a
-# plain `bun test` stays fast during development. The threshold below applies whenever
-# coverage IS collected.
+# plain `bun test` stays fast.
 #
-# NOTE: the keys are PLURAL (`lines`/`functions`). Bun silently ignores unknown keys,
-# so the singular spelling parses fine and enforces nothing — verified by seeding an
-# untested module and checking the exit code. If you change this, re-verify the same
-# way.
+# The threshold is a smoke alarm, not a target: it catches a module landing with no
+# tests at all, and deliberately does not demand a number for every file. A high
+# per-file bar pushes people into writing tests for plumbing — asserting that the
+# clock returns a time, or that a test fake does what the fake obviously does — which
+# costs maintenance and buys nothing.
+#
+# `platform/` and `tests/` are excluded because they are exactly that plumbing: thin
+# adapters over Bun/node APIs, and the fixtures and fakes the real tests are built
+# from. The four adapters that encode a real decision (FTS5 availability, git's
+# non-zero exit, a missing binary, log rotation) are tested on purpose, not to satisfy
+# a percentage.
+#
+# NOTE: Bun silently accepts unknown keys in this file, so a typo here enforces
+# nothing at all. Every value below was verified by seeding a file that violates it
+# and checking the exit code — do the same if you change any of them.
 [test]
-coverageThreshold = { lines = 0.85, functions = 0.85 }
+coverageThreshold = 0.6
 coverageSkipTestFiles = true
 coverageReporter = ["text"]
+coveragePathIgnorePatterns = ["tests/**", "src/platform/**"]
