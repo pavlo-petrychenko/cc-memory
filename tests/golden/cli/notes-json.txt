@@ -1,0 +1,50 @@
+[
+  {
+    "path": "Alpha/Alpha.md",
+    "title": "Alpha",
+    "type": "index",
+    "importance": null
+  },
+  {
+    "path": "Alpha/Injection Hook.md",
+    "title": "Injection Hook",
+    "type": "note",
+    "importance": 6
+  },
+  {
+    "path": "Alpha/Scoring Camel.md",
+    "title": "Scoring Camel",
+    "type": "note",
+    "importance": null
+  },
+  {
+    "path": "Alpha/Search Ranking.md",
+    "title": "Search Ranking",
+    "type": "note",
+    "importance": null
+  },
+  {
+    "path": "Beta/Body Kryptonite.md",
+    "title": "Mineral Notes",
+    "type": "note",
+    "importance": null
+  },
+  {
+    "path": "Beta/Title Kryptonite.md",
+    "title": "Kryptonite Handbook",
+    "type": "note",
+    "importance": null
+  },
+  {
+    "path": "Gamma/Adjacent.md",
+    "title": "Fast Vehicle",
+    "type": "note",
+    "importance": null
+  },
+  {
+    "path": "Gamma/Apart.md",
+    "title": "Orchard Trip",
+    "type": "note",
+    "importance": null
+  }
+]

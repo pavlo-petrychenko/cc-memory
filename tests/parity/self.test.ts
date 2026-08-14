@@ -6,7 +6,7 @@
  * doc's "packet-1-parity" and "testing" sections.
  */
 import { describe, expect, test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -116,6 +116,19 @@ describe("parity harness self-test: retrieval replay (Python vs Python)", () => 
 
 describe("runTs before dist/memory.js exists", () => {
   test("fails cleanly with a clear 'not built yet' message instead of a raw spawn error", async () => {
+    // P6 landed `bun run build`, so a real dist/memory.js now legitimately
+    // exists whenever tests/parity/ts.test.ts's beforeAll has already run in
+    // this same `bun test` process — remove it here (and rebuild afterwards,
+    // so ts.test.ts and a plain `memory` invocation aren't left broken) to
+    // exercise the pre-P6 "not built yet" fail-closed path in isolation.
+    const distPath = join(
+      new URL("../../", import.meta.url).pathname,
+      "dist",
+      "memory.js",
+    );
+    const existedBefore = existsSync(distPath);
+    if (existedBefore) rmSync(distPath);
+
     const pair = buildFixturePair("parity-runts");
     try {
       const result = await runTs(["workspace", "ls"], {
@@ -128,6 +141,19 @@ describe("runTs before dist/memory.js exists", () => {
       expect(result.stderr).toContain("dist/memory.js");
     } finally {
       removeFixturePair(pair);
+      if (existedBefore) {
+        Bun.spawnSync(
+          [
+            "bun",
+            "build",
+            "src/cli/main.ts",
+            "--target=bun",
+            "--outfile",
+            "dist/memory.js",
+          ],
+          { cwd: new URL("../../", import.meta.url).pathname },
+        );
+      }
     }
   });
 });

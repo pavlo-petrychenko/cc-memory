@@ -1,0 +1,5 @@
+✓ workspace 'tertiary' added
+  kb       <TMP>/Documents/Tertiary Vault
+  worklogs <TMP>/Documents/Tertiary Vault/_Worklogs
+  index_db <TMP>/.claude/memory/tertiary/index.db  (1 notes)
+  match    <TMP>/projects/tertiary
