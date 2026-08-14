@@ -262,24 +262,18 @@ const CASES: readonly CliCase[] = [
       step(["reflect", "--workspace", "no-such-workspace", "--headless"], primaryCwd),
     ],
   },
-  {
-    name: "cli/doctor-basic",
-    orderInsensitiveStdout: false,
-    prepare: noopPrepare,
-    steps: [step(["doctor"], primaryCwd)],
-  },
-  {
-    name: "cli/doctor-with-prompt",
-    orderInsensitiveStdout: false,
-    prepare: noopPrepare,
-    steps: [step(["doctor", "--prompt", "how does wrap-gate work"], primaryCwd)],
-  },
-  {
-    name: "cli/doctor-outside-workspace",
-    orderInsensitiveStdout: false,
-    prepare: noopPrepare,
-    steps: [step(["doctor"], outsideCwd)],
-  },
+  // `doctor` has NO whole-output parity case, deliberately. Python's `cmd_doctor`
+  // (bin/memory:212-250) spawns the five hook scripts and reports their exit codes;
+  // the TypeScript one is an intentional REDESIGN into real diagnostics (workspace
+  // health, index staleness, settings.json-vs-dist staleness, bun path, launchd
+  // status, log sizes) — the plan's packet-9 doc calls for exactly that. Byte-
+  // comparing the two would either fail forever or force `doctor` back into being a
+  // hook smoke test.
+  //
+  // What IS still a contract is the first two lines, which the redesign keeps
+  // byte-identical. That is asserted directly against Python in
+  // tests/parity/doctorFrozenLines.test.ts, and the new diagnostics are covered by
+  // tests/integration/services/install/doctorService.test.ts.
 ];
 
 export const CLI_CASES: readonly CliCase[] = CASES;

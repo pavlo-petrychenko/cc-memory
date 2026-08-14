@@ -41,18 +41,15 @@ import {
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 
 /**
- * CLI cases whose PYTHON side genuinely does something this packet's TS
- * command deliberately does not (yet) — see the doc comment on
- * `doctor.command.ts` (P7: the 5 real hook scripts Python's doctor spawns
- * and reports on). Every one of these is a STUB producing an honest "not
- * implemented" message, never a silent/incorrect success. Revisit (delete
- * rows) as P7 lands.
+ * Cases whose TypeScript side is not implemented yet. EMPTY — every CLI case in
+ * `cases/cli.ts` now runs TypeScript against Python for real.
+ *
+ * The three `doctor` cases that used to live here were not 'made to pass': they were
+ * REMOVED from `cases/cli.ts`, because `doctor` is an intentional redesign rather
+ * than a port, so a whole-output byte-compare against Python would be wrong. The
+ * part of it that IS still frozen is asserted in `doctorFrozenLines.test.ts`.
  */
-const PENDING_PACKET_CASES: ReadonlySet<string> = new Set([
-  "cli/doctor-basic",
-  "cli/doctor-with-prompt",
-  "cli/doctor-outside-workspace",
-]);
+const PENDING_PACKET_CASES: ReadonlySet<string> = new Set([]);
 
 type FixtureSide = { readonly tempDir: TempDir; readonly fixture: FixtureVault };
 
