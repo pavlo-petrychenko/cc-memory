@@ -1,0 +1,12 @@
+# Coverage is opt-in per run (`bun test --coverage`, as `bun run check` does) so a
+# plain `bun test` stays fast during development. The threshold below applies whenever
+# coverage IS collected.
+#
+# NOTE: the keys are PLURAL (`lines`/`functions`). Bun silently ignores unknown keys,
+# so the singular spelling parses fine and enforces nothing — verified by seeding an
+# untested module and checking the exit code. If you change this, re-verify the same
+# way.
+[test]
+coverageThreshold = { lines = 0.85, functions = 0.85 }
+coverageSkipTestFiles = true
+coverageReporter = ["text"]
