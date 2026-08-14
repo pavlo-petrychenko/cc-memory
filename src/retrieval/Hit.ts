@@ -1,9 +1,8 @@
 import type { AbsPath } from "../core/AbsPath.ts";
 
 /**
- * One BM25 search result row, exactly as `index._run` shapes it
- * (`lib/index.py:301-302`). `score` is the raw negative bm25 value from SQLite —
- * lower is a stronger match; "strength" is `-score`.
+ * One BM25 search result row. `score` is the raw negative bm25 value from
+ * SQLite — lower is a stronger match; "strength" is `-score`.
  */
 export type Hit = {
   readonly path: AbsPath;

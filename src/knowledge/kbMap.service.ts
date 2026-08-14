@@ -7,32 +7,29 @@ import { parseIndexNote } from "./note.ts";
 
 /**
  * Scans a workspace's vault top level into a `KbMapInput` — the filesystem-
- * facing half of `session-start.build_kb_index` (`hooks/session-start.py:63-
- * 98`); the string-building half already lives in
- * `knowledge/kbMap.renderer.ts`, whose own doc comment names this file as
- * the caller that owns the "vault directory missing" short-circuit.
+ * facing half of building the KB map. The string-building half lives in
+ * `knowledge/kbMap.renderer.ts`; this file owns the "vault directory
+ * missing" short-circuit.
  */
 
-// `DAILY` (`session-start.py:17`) — a top-level `.md` file matching this is a
-// dated journal entry, excluded from "loose top-level notes".
+// A top-level `.md` file matching this is a dated journal entry, excluded
+// from "loose top-level notes".
 const DAILY_JOURNAL_FILENAME = /^\d{4}-\d{2}-\d{2}\.md$/;
 
 const MARKDOWN_EXTENSION = ".md";
 
 /** Join a directory-entry name (from `fs.readDir`, never `.`/`..`/`~`) or a
- * fixed `<name>.md` filename onto an already-validated `AbsPath` — the same
- * per-file join helper duplicated in `services/worklog.service.ts` and
- * `retrieval/build.ts`'s `joinUnderDir` rather than shared, per their own
- * precedent. */
+ * fixed `<name>.md` filename onto an already-validated `AbsPath`. */
 function joinAbsPath(base: AbsPath, ...segments: readonly string[]): AbsPath {
   const joined = [base, ...segments].join("/");
-  // SAFETY: see the doc comment above.
+  // SAFETY: `base` is an already-validated AbsPath and every segment is a
+  // plain filename (never `.`/`..`/`~`), so the joined path is itself an
+  // absolute path.
   return joined as AbsPath;
 }
 
-/** `sorted(entries, key=str.lower)` (`session-start.py:68`) — Python's stable
- * sort keyed on the lowercased string, compared by ordinary (code-point)
- * ordering rather than locale collation. */
+/** Stable sort keyed on the lowercased string, compared by ordinary
+ * (code-point) ordering rather than locale collation. */
 function compareCaseInsensitive(left: string, right: string): number {
   const lowerLeft = left.toLowerCase();
   const lowerRight = right.toLowerCase();
@@ -57,10 +54,8 @@ async function isFile(fs: FileSystem, path: AbsPath): Promise<boolean> {
   }
 }
 
-/** `parse_main_note(main) if os.path.isfile(main) else ("", "", "")`
- * (`session-start.py:82`) — a note that fails to read falls back to the same
- * empty triple as a missing one (`parse_main_note`'s own `except: return
- * title, desc, epic`, all three still `""`, `session-start.py:36-37`). */
+/** A note that fails to parse falls back to the same empty
+ * title/description/epic triple as a note that doesn't exist at all. */
 async function readFeature(
   fs: FileSystem,
   kb: AbsPath,
@@ -81,12 +76,11 @@ async function readFeature(
 }
 
 /**
- * `build_kb_index`'s filesystem half (`session-start.py:63-98`). Returns
- * `null` when the vault directory doesn't exist at all
- * (`if not os.path.isdir(kb): return ""`, `session-start.py:65-66`) — the
- * caller (`hooks/sessionStart.hook.ts`, P7) is what turns that into Python's
- * empty-string short-circuit, since an empty KB-map string and "no KB map at
- * all" both behave the same way once joined with the working-memory block.
+ * Builds the filesystem-derived input for the KB map. Returns `null` when
+ * the vault directory doesn't exist at all — the caller
+ * (`hooks/sessionStart.hook.ts`) turns that into an empty-string
+ * short-circuit, since an empty KB-map string and "no KB map at all" both
+ * behave the same way once joined with the working-memory block.
  */
 export async function buildKbMapInput(
   fs: FileSystem,
@@ -102,8 +96,7 @@ export async function buildKbMapInput(
 
   // `Promise.all` over the whole entry list (rather than an `await` per
   // iteration) keeps every directory-check/note-read in flight together
-  // while still building `features`/`looseNotes` in the same sorted order
-  // Python's two list comprehensions produce.
+  // while still building `features`/`looseNotes` in sorted order.
   const entryIsDirectory = await Promise.all(
     entryNames.map((name) => isDirectory(fs, joinAbsPath(workspace.kb, name))),
   );

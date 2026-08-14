@@ -1,12 +1,14 @@
 /**
- * Renders the KB map injected at SessionStart — `session-start.build_kb_index`
- * (`hooks/session-start.py:63-98`). Agent-visible text (C4): copied verbatim.
+ * Renders the KB map injected at SessionStart.
  *
- * The Python returns `""` outright when the vault directory doesn't exist —
- * that's a filesystem check, so it stays in the service (`kb-map.ts`, P4/P5),
- * which simply doesn't call this renderer in that case. Given a `features`/
- * `looseNotes` pair (even both empty, for an existing-but-empty vault), this
- * always renders the full header + `## Features` section.
+ * This text is agent-visible, so its exact wording and formatting matter:
+ * it is what every session sees injected at startup.
+ *
+ * Returning `""` for a missing vault directory is a filesystem check, so
+ * that case lives in `kbMap.service.ts`, which simply doesn't call this
+ * renderer then. Given a `features`/`looseNotes` pair (even both empty, for
+ * an existing-but-empty vault), this always renders the full header +
+ * `## Features` section.
  */
 
 export type KbMapFeature = {
@@ -19,7 +21,7 @@ export type KbMapFeature = {
 };
 
 export type KbMapInput = {
-  /** The vault path, already `tildify`'d for display (`registry.tildify(kb)`). */
+  /** The vault path, already tildified for display (e.g. `~/vault`). */
   readonly vaultLabel: string;
   readonly features: readonly KbMapFeature[];
   /** Top-level `.md` filenames minus their extension, excluding daily journal files. */
