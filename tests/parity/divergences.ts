@@ -54,6 +54,7 @@ export const DIVERGENCES: readonly Divergence[] = [
     expectedDiff:
       "Python writes `.claude/memory/<id>/.wrap-<session_id>`; TypeScript writes " +
       "`.claude/memory/<id>/wrap-state.json`",
+  },
   {
     case: "cli/reflect-no-candidates-headless",
     reason:

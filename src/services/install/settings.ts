@@ -1,4 +1,5 @@
 import type { AbsPath } from "../../domain/AbsPath.ts";
+import { HookName } from "../../domain/HookName.ts";
 import { HookEvent } from "../../domain/HookResult.ts";
 import { expandPath } from "../../domain/paths.ts";
 import type { Result } from "../../domain/Result.ts";
@@ -41,16 +42,16 @@ export function defaultSettingsBackupPath(home: AbsPath): AbsPath {
  * + timeouts": `SessionStart 10s`, the other four `15s`). Iteration order
  * matches the Python dict literal — it decides where a brand-new event key
  * lands in `settings.json`'s `hooks` object (see `registerOurHooks` below). */
-const HOOK_REGISTRATIONS: readonly {
+export const hookRegistrations: readonly {
   readonly event: HookEvent;
-  readonly name: string;
+  readonly name: HookName;
   readonly timeoutSeconds: number;
 }[] = [
-  { event: HookEvent.SessionStart, name: "session-start", timeoutSeconds: 10 },
-  { event: HookEvent.UserPromptSubmit, name: "memory-inject", timeoutSeconds: 15 },
-  { event: HookEvent.Stop, name: "wrap-gate", timeoutSeconds: 15 },
-  { event: HookEvent.PostCompact, name: "compact-checkpoint", timeoutSeconds: 15 },
-  { event: HookEvent.SessionEnd, name: "worklog-floor", timeoutSeconds: 15 },
+  { event: HookEvent.SessionStart, name: HookName.SessionStart, timeoutSeconds: 10 },
+  { event: HookEvent.UserPromptSubmit, name: HookName.MemoryInject, timeoutSeconds: 15 },
+  { event: HookEvent.Stop, name: HookName.WrapGate, timeoutSeconds: 15 },
+  { event: HookEvent.PostCompact, name: HookName.CompactCheckpoint, timeoutSeconds: 15 },
+  { event: HookEvent.SessionEnd, name: HookName.WorklogFloor, timeoutSeconds: 15 },
 ];
 
 /** `<abs-bun> <repo>/dist/memory.js hook <name>` ([[contracts]]'s C6
@@ -155,7 +156,7 @@ function purgeOurHooks(
  * Appends a fresh group to whichever array already survived the purge for
  * that event (preserving both the event key's position in `hooksByEvent` and
  * any foreign groups already in it); a brand-new event key is inserted in
- * `HOOK_REGISTRATIONS` order, at the end — the same place Python's
+ * `hookRegistrations` order, at the end — the same place Python's
  * `hooks.setdefault(event, [])` would put it during that loop.
  */
 function registerOurHooks(
@@ -169,7 +170,7 @@ function registerOurHooks(
   const hooks = new Map<string, JsonValue>(Object.entries(hooksByEvent));
   const hookCommands: Record<string, string> = {};
 
-  for (const registration of HOOK_REGISTRATIONS) {
+  for (const registration of hookRegistrations) {
     const command = hookCommand(bunPath, distPath, registration.name);
     hookCommands[registration.event] = command;
     const existing = hooks.get(registration.event);
@@ -236,7 +237,7 @@ export function hookRegisteredLine(event: HookEvent, hookName: string): string {
 export const HOOK_REGISTRATION_ORDER: readonly {
   readonly event: HookEvent;
   readonly name: string;
-}[] = HOOK_REGISTRATIONS.map(({ event, name }) => ({ event, name }));
+}[] = hookRegistrations.map(({ event, name }) => ({ event, name }));
 
 export async function loadSettings(
   fs: FileSystem,

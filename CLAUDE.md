@@ -149,6 +149,29 @@ Roles in use: `.port`, `.adapter`, `.service`, `.renderer`, `.hook`, `.command`,
   (hooks) · `tests/cli` (spawned e2e) · `tests/parity` (differential, temporary) ·
   `tests/golden` · `tests/fixtures` · `tests/helpers`.
 
+## Never let a test touch the real machine
+
+This project installs itself into `~/.claude/settings.json`, `~/.local/bin/memory` and
+a launchd job, on a machine where cc-memory is live and in use. A test that reaches the
+real HOME does not just fail — it can silently break the user's editor. This has
+happened once already; both root causes are non-obvious and worth knowing:
+
+- **`process.env.HOME` does NOT change what in-process code sees as home.** Bun's
+  `os.homedir()` reads the value captured at startup, so mutating `process.env.HOME`
+  mid-test isolates *nothing*. It works only for a genuinely separate **spawned**
+  process. To isolate in-process code, inject a fake `Env`/`FileSystem` through the
+  container — never by setting an environment variable.
+- **`dispatch()` in `cli/main.ts` calls `install(parsed)`/`uninstall()` with no
+  container**, so those two build a REAL one. Calling them in-process from a test hits
+  the real filesystem and the real `launchctl`. Pass an explicit fake container, or use
+  `--dry-run`, which by construction writes nothing.
+
+Related trap in the same family: `Stdio`'s real adapter calls `process.exit()`. Any
+command invoked in-process with a real container can therefore **terminate the whole
+`bun test` run mid-way, with exit code 0 and no output** — a green-looking suite that
+never ran its remaining files. If a test needs a real `process.exit`, spawn a
+subprocess. This is precisely why the `Stdio` port exists.
+
 ## Toolchain
 
 ```sh

@@ -2,6 +2,7 @@ import { makeRealContainer } from "../../container.ts";
 import type { Container } from "../../container.ts";
 import { parseConfig } from "../../domain/Config.ts";
 import type { Config } from "../../domain/Config.ts";
+import { HookName } from "../../domain/HookName.ts";
 import { handleCompactCheckpoint } from "../../hooks/compactCheckpoint.hook.ts";
 import { handleMemoryInject } from "../../hooks/memoryInject.hook.ts";
 import {
@@ -29,13 +30,10 @@ import { CLI_SUCCESS, type CliOutcome, cliOutcome } from "../CliOutcome.ts";
  * `.py` filenames, not CLI names), chosen to match those filenames minus the
  * extension.
  */
-export enum HookName {
-  SessionStart = "session-start",
-  MemoryInject = "memory-inject",
-  WrapGate = "wrap-gate",
-  WorklogFloor = "worklog-floor",
-  CompactCheckpoint = "compact-checkpoint",
-}
+
+/** Every name `parseHookName` accepts — exported so a test can pin it against the
+ * installer's registration table (see hookNameAgreement.test.ts). */
+export const dispatchableHookNames: readonly HookName[] = Object.values(HookName);
 
 function parseHookName(raw: string): HookName | null {
   switch (raw) {
@@ -131,3 +129,6 @@ export async function hook(args: HookArgs): Promise<CliOutcome> {
   const config = parseConfig(process.env);
   return dispatchHook(container, config, args);
 }
+
+// Re-exported so existing importers (and the hook tests) keep one import site.
+export { HookName };

@@ -7,7 +7,7 @@
  */
 import { describe, expect, test } from "bun:test";
 
-import { type Divergence, findDivergence } from "./divergences.ts";
+import { DIVERGENCES, type Divergence, findDivergence } from "./divergences.ts";
 
 describe("findDivergence", () => {
   const allowlist: readonly Divergence[] = [
