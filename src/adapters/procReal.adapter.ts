@@ -8,6 +8,9 @@ import type { Proc, ProcResult, ProcRunOptions } from "../ports/proc.port.ts";
  * has no meaningful exit code to report, so there is nothing useful to put in a
  * `ProcResult` — the rejection IS the signal.
  */
+/** The shell's conventional exit code for "command not found". */
+const COMMAND_NOT_FOUND_EXIT_CODE = 127;
+
 export function makeProcRealAdapter(): Proc {
   return {
     run: async (
@@ -28,7 +31,25 @@ export function makeProcRealAdapter(): Proc {
       if (options.env !== undefined)
         spawnOptions.env = { ...process.env, ...options.env };
 
-      const child = Bun.spawn([command, ...args], spawnOptions);
+      // `Bun.spawn` THROWS when the binary does not exist, rather than resolving
+      // with a failure. Every Python call site this replaces wrapped its
+      // `subprocess.run` in a try/except and carried on (`_git` returns ""), and a
+      // missing optional tool is normal: `launchctl` does not exist off macOS,
+      // `tmux` and `claude` may not be installed. Surfacing that as an exception
+      // made `memory doctor` crash on Linux instead of reporting "launchd: not
+      // loaded" — caught by CI. 127 is the shell's conventional
+      // "command not found" code, so callers that already check `exitCode !== 0`
+      // handle it without knowing anything new.
+      let child: Bun.Subprocess<"ignore" | "pipe", "pipe", "pipe">;
+      try {
+        child = Bun.spawn([command, ...args], spawnOptions);
+      } catch (spawnError) {
+        return {
+          stdout: "",
+          stderr: spawnError instanceof Error ? spawnError.message : String(spawnError),
+          exitCode: COMMAND_NOT_FOUND_EXIT_CODE,
+        };
+      }
 
       if (options.input !== undefined && child.stdin !== undefined) {
         child.stdin.write(options.input);
