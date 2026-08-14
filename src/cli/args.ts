@@ -1,20 +1,17 @@
 import type { Result } from "../core/Result.ts";
 
 /**
- * Hand-written CLI argument parser (`bin/memory:253-295`'s `argparse` setup) —
- * `node:util.parseArgs` cannot express `nargs="+"` (a required, space-separated
- * list: `--match ~/a ~/b`), which `manage-workspace/SKILL.md` documents as the
- * literal invocation shape, making it part of **C3**.
+ * Hand-written CLI argument parser: `node:util.parseArgs` cannot express
+ * `nargs="+"` (a required, space-separated list: `--match ~/a ~/b`), which is
+ * the invocation shape the CLI needs to support.
  *
- * Deliberately simpler than `argparse` in one way: every flag here is expected
- * AFTER its command's positional argument(s), matching every real invocation in
- * the C3 table and the 6 skills — this parser does not support a flag preceding
- * a positional (`argparse` does). Nothing in this codebase's contract needs that
+ * Deliberately simpler than a general parser in one way: every flag here is
+ * expected AFTER its command's positional argument(s) — this parser does not
+ * support a flag preceding a positional. Nothing this CLI does needs that
  * generality.
  */
 
-/** The closed set of subcommands — the 10 from the C3 table plus the two
- * additive ones ([[contracts]]: `hook`, `install`/`uninstall`). */
+/** The closed set of subcommands. */
 export enum CliCommand {
   WorkspaceAdd = "workspace_add",
   WorkspaceRm = "workspace_rm",
@@ -29,7 +26,7 @@ export enum CliCommand {
   Hook = "hook",
   Install = "install",
   Uninstall = "uninstall",
-  /** `-h`/`--help`, or no arguments at all. Python got this free from argparse. */
+  /** `-h`/`--help`, or no arguments at all. */
   Help = "help",
   Version = "version",
 }
@@ -141,10 +138,10 @@ function ok(value: ParsedArgs): Result<ParsedArgs, ArgsError> {
   return { ok: true, value };
 }
 
-/** True for anything this parser treats as a flag boundary — every flag in the
- * C3 table is a long (`--foo`) or short (`-k`/`-m`) option; nothing here is
- * ever mistaken for a positional because positionals are always consumed
- * BEFORE flag-scanning starts (see the module doc comment). */
+/** True for anything this parser treats as a flag boundary — every flag is a
+ * long (`--foo`) or short (`-k`/`-m`) option; nothing here is ever mistaken
+ * for a positional because positionals are always consumed BEFORE
+ * flag-scanning starts (see the module doc comment). */
 function isFlagToken(token: string): boolean {
   return token.startsWith("-");
 }
@@ -154,7 +151,7 @@ function hasFlag(tokens: readonly string[], flag: string): boolean {
 }
 
 /** The value immediately following `flag`, or `null` if `flag` is absent
- * (mirrors `argparse`'s single-value options: `--kb PATH`, `-k N`, ...). */
+ * (single-value options: `--kb PATH`, `-k N`, ...). */
 function findFlagValue(tokens: readonly string[], flag: string): string | null {
   const index = tokens.indexOf(flag);
   if (index === -1) return null;
@@ -163,12 +160,10 @@ function findFlagValue(tokens: readonly string[], flag: string): string | null {
 
 /**
  * Every token after `flag` up to the next flag or the end of `tokens` — the
- * space-separated `nargs="+"`/`nargs="*"` shape (`--match a b`, `--exclude`).
- * Returns `null` when `flag` is absent at all (distinct from present-but-empty,
- * which callers of `nargs="*"` flags need — `bin/memory:36`'s `a.exclude or
- * default` treats an explicit empty `--exclude` the same as omitting it
- * entirely, both falsy in Python; the command layer replicates that, not this
- * parser).
+ * space-separated, variadic-value shape (`--match a b`, `--exclude`). Returns
+ * `null` when `flag` is absent at all, distinct from present-but-empty: a
+ * caller that wants an explicit empty `--exclude` treated the same as an
+ * omitted one applies that fallback itself, not this parser.
  */
 function findVariadicValues(
   tokens: readonly string[],
@@ -332,9 +327,8 @@ function parseInstall(tokens: readonly string[]): Result<ParsedArgs, ArgsError> 
 
 /**
  * Parse a full `argv` (already stripped of the `node`/`bun`/script leader —
- * callers pass `process.argv.slice(2)`) into one `ParsedArgs`. Mirrors
- * `bin/memory:294-295`'s `p.parse_args(); a.func(a)` split: this only parses,
- * dispatch is `main.ts`'s job.
+ * callers pass `process.argv.slice(2)`) into one `ParsedArgs`. This only
+ * parses; dispatch is `main.ts`'s job.
  */
 export function parseArgs(argv: readonly string[]): Result<ParsedArgs, ArgsError> {
   const [command, ...rest] = argv;
@@ -361,9 +355,8 @@ export function parseArgs(argv: readonly string[]): Result<ParsedArgs, ArgsError
       return parseInstall(rest);
     case "uninstall":
       return ok({ command: CliCommand.Uninstall });
-    // argparse gave Python `-h`/`--help` (and a usage dump on no arguments) for
-    // free; hand-rolling the parser means handling them explicitly, or
-    // `memory --help` exits 2 with "unknown command: --help".
+    // A hand-rolled parser has to handle these explicitly, or `memory --help`
+    // would exit 2 with "unknown command: --help".
     case "-h":
     case "--help":
     case undefined:

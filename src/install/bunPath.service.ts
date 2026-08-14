@@ -5,13 +5,11 @@ import type { Proc } from "../platform/proc.port.ts";
 
 /**
  * Resolve the REAL `bun` binary at install time — never the ephemeral path a
- * version manager hands out. The live machine has 4,386 stale `fnm`
- * multishell directories on disk from Node version switching; the equivalent
- * failure mode for `bun` would be recording today's `which bun` answer
- * verbatim and having it rot the moment a shell/session that created it
- * exits. `readlink -f` walks every symlink hop (the shim `fnm`/`asdf`/a
- * version manager would install) down to the one real file, which is what
- * gets written into `settings.json` and the `~/.local/bin/memory` shim.
+ * version manager hands out. A naive `which bun` answer can rot the moment
+ * the shell/session that produced it exits, if a version manager (`fnm`,
+ * `asdf`, ...) put a per-session shim on `PATH`. `readlink -f` walks every
+ * symlink hop such a shim would install down to the one real file, which is
+ * what gets written into `settings.json` and the `~/.local/bin/memory` shim.
  */
 
 const WHICH_TIMEOUT_MS = 5_000;
@@ -30,8 +28,7 @@ export type BunPathError =
   | { readonly kind: BunPathErrorKind.Unresolvable; readonly attemptedPath: string };
 
 /** `readlink -f $(which bun)`, verified to exist — refuses rather than
- * guessing on any failure along the way (`[[reference]]`/packet-9-install's
- * "never record an ephemeral path"). */
+ * guessing on any failure along the way, never recording an ephemeral path. */
 export async function resolveBunPath(
   proc: Proc,
   fs: FileSystem,

@@ -11,23 +11,19 @@ import {
 } from "./run.service.ts";
 
 /**
- * `memory install [--dry-run]` / `memory uninstall` — C3's other additive
- * subcommand ([[contracts]]), replacing `tools/install.py` (whole file).
+ * `memory install [--dry-run]` / `memory uninstall`.
  *
- * `main.ts` (frozen — outside this packet) dispatches to `install(parsed)`
- * and `uninstall()` with no `Container` argument, unlike every other
- * command. Both functions take `container` as an OPTIONAL trailing
- * parameter instead, defaulting to a fresh real one — `main.ts`'s call sites
- * stay valid untouched, while a test supplies `makeTestContainer(...)`
- * explicitly (`proc: procFake`, `fs` seeded under a faked `$HOME`) and never
- * triggers the real default at all. This is the ONLY seam that makes these
- * two functions safe to exercise directly: `runInstall`/`runUninstall`
- * eventually call `launchctl bootout`/`bootstrap` through `container.proc`
- * (`install/launchd.ts`) — on the REAL container that is a REAL
- * mutation of this machine's launchd state, exactly what this packet must
- * never do outside a human-run cutover. Every test in this packet passes an
- * explicit fake container for precisely that reason; see
- * `tests/integration/install/*.test.ts`'s doc comments.
+ * `main.ts` dispatches to `install(parsed)` and `uninstall()` with no
+ * `Container` argument, unlike every other command. Both functions take
+ * `container` as an OPTIONAL trailing parameter instead, defaulting to a
+ * fresh real one — `main.ts`'s call sites stay valid untouched, while a test
+ * supplies `makeTestContainer(...)` explicitly (`proc: procFake`, `fs` seeded
+ * under a faked `$HOME`) and never triggers the real default at all. This is
+ * the seam that makes these two functions safe to exercise directly:
+ * `runInstall`/`runUninstall` eventually call `launchctl bootout`/`bootstrap`
+ * through `container.proc` (`install/launchd.ts`) — on the real container
+ * that is a real mutation of this machine's launchd state, so every test
+ * passes an explicit fake container instead.
  */
 
 const INSTALL_BANNER = "Installing cc-memory…";
@@ -44,15 +40,15 @@ const UNINSTALL_NOTHING_MESSAGE =
 /**
  * `<repoRoot>/dist/memory.js` is exactly two path segments below the repo
  * root, and `import.meta.url` resolves to the URL of the FINAL bundle at
- * runtime regardless of which original source file references it (verified
- * against `bun build`'s actual output). This assumption is safe because the
- * only blessed real invocation of `install`/`uninstall` is the built
- * artifact (`install.sh`'s `bun dist/memory.js install "$@"`, never the
- * unbundled `src/cli/main.ts`) — every test exercises `install/run.ts`
- * directly with an explicit `repoRoot` instead, so this function is never
- * under test itself. Duplicated in `doctor.command.ts` rather than shared,
- * matching this codebase's convention for a tiny path-only helper (see
- * `workspace.command.ts`'s `parentDirectory` doc comment).
+ * runtime regardless of which original source file references it. This
+ * assumption is safe because the only real invocation of `install`/
+ * `uninstall` is the built artifact (`bun dist/memory.js install "$@"`,
+ * never the unbundled `src/cli/main.ts`) — every test exercises
+ * `install/run.ts` directly with an explicit `repoRoot` instead, so this
+ * function is never under test itself. Duplicated in `doctor.command.ts`
+ * rather than shared, matching this codebase's convention for a tiny
+ * path-only helper (see `workspace.command.ts`'s `parentDirectory` doc
+ * comment).
  */
 function repoRootFromRunningFile(): AbsPath {
   const runningFilePath = new URL(import.meta.url).pathname;

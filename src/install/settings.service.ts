@@ -17,10 +17,10 @@ import {
 import { PRE_CCMEMORY_BACKUP_SUFFIX } from "./manifest.service.ts";
 
 /**
- * `~/.claude/settings.json` surgery (`tools/install.py:90-143`) — purge our
- * own hook groups (by manifest, [[bugfixes]] #4), re-register the 5 hooks at
- * their current location, and preserve every foreign entry (buddy-reroll,
- * plan-review, anything else a user has installed) byte-for-byte.
+ * `~/.claude/settings.json` surgery — purge our own hook groups (by
+ * manifest), re-register the 5 hooks at their current location, and preserve
+ * every foreign entry (any other tool's config a user has installed)
+ * byte-for-byte.
  */
 
 // A literal `~/`-prefix — matches every other `*_HOME_RELATIVE_PATH` constant
@@ -37,11 +37,10 @@ export function defaultSettingsBackupPath(home: AbsPath): AbsPath {
   return `${defaultSettingsPath(home)}${PRE_CCMEMORY_BACKUP_SUFFIX}` as AbsPath;
 }
 
-/** `event -> (hook name for "memory hook <name>", timeout seconds)`
- * (`tools/install.py:33-39`'s `HOOKS` dict, [[reference]]'s "Hook registration
- * + timeouts": `SessionStart 10s`, the other four `15s`). Iteration order
- * matches the Python dict literal — it decides where a brand-new event key
- * lands in `settings.json`'s `hooks` object (see `registerOurHooks` below). */
+/** `event -> (hook name for "memory hook <name>", timeout seconds)`:
+ * `SessionStart` gets 10s, the other four get 15s. The list's order decides
+ * where a brand-new event key lands in `settings.json`'s `hooks` object (see
+ * `registerOurHooks` below). */
 export const hookRegistrations: readonly {
   readonly event: HookEvent;
   readonly name: HookName;
@@ -54,15 +53,13 @@ export const hookRegistrations: readonly {
   { event: HookEvent.SessionEnd, name: HookName.WorklogFloor, timeoutSeconds: 15 },
 ];
 
-/** `<abs-bun> <repo>/dist/memory.js hook <name>` ([[contracts]]'s C6
- * deviation #2). */
+/** `<abs-bun> <repo>/dist/memory.js hook <name>`. */
 export function hookCommand(bunPath: string, distPath: string, hookName: string): string {
   return `${bunPath} ${distPath} hook ${hookName}`;
 }
 
-/** `tools/install.py:106`'s `_is_ours` substring test, kept as a one-time
- * fallback for entries the Python-era installer left behind (before this
- * manifest existed at all) — [[bugfixes]] #4. */
+/** A substring test, kept as a one-time fallback for entries an earlier
+ * installer left behind before this manifest existed at all. */
 const LEGACY_HOOK_SUBSTRINGS = ["cc-memory", "obsidian-kb-index.py"];
 
 /** The `command` string of every `{type,command,timeout}` entry inside one
@@ -103,13 +100,11 @@ type RegisterHooksResult = {
 };
 
 /**
- * Remove every hook GROUP this installer owns from `hooksByEvent`
- * (`tools/install.py:117-129`'s purge loop) — first by exact former command
- * string (`manifestCommands`, [[bugfixes]] #4: survives a moved/renamed
- * repo), then — only when `runLegacyPurge` — by the Python-era substring
- * test, so a settings.json that predates the manifest still gets cleaned up
- * exactly once. An event whose only groups were ours drops the key entirely
- * (`del hooks[event]`, `tools/install.py:126`), matching Python precisely.
+ * Remove every hook GROUP this installer owns from `hooksByEvent` — first by
+ * exact former command string (`manifestCommands`: survives a moved/renamed
+ * repo), then — only when `runLegacyPurge` — by the legacy substring test, so
+ * a settings.json that predates the manifest still gets cleaned up exactly
+ * once. An event whose only groups were ours drops the key entirely.
  */
 function purgeOurHooks(
   hooksByEvent: JsonObject,
@@ -152,12 +147,11 @@ function purgeOurHooks(
 }
 
 /**
- * Re-register the 5 hooks at their current location (`tools/install.py:130-137`).
- * Appends a fresh group to whichever array already survived the purge for
- * that event (preserving both the event key's position in `hooksByEvent` and
- * any foreign groups already in it); a brand-new event key is inserted in
- * `hookRegistrations` order, at the end — the same place Python's
- * `hooks.setdefault(event, [])` would put it during that loop.
+ * Re-register the 5 hooks at their current location. Appends a fresh group
+ * to whichever array already survived the purge for that event (preserving
+ * both the event key's position in `hooksByEvent` and any foreign groups
+ * already in it); a brand-new event key is inserted in `hookRegistrations`
+ * order, at the end.
  */
 function registerOurHooks(
   hooksByEvent: JsonObject,
@@ -220,8 +214,7 @@ export function surgerizeSettings(
   return { settings: { ...settings, hooks: finalHooks }, hookCommands, summary };
 }
 
-/** `tools/install.py:127-129`'s log line, verbatim pluralization
- * (`"y" if removed == 1 else "ies"`). */
+/** The purge summary log line, with correct singular/plural pluralization. */
 export function purgeSummaryLine(summary: HookPurgeSummary): string | null {
   const removed = summary.purgedByManifestCount + summary.purgedByLegacyCount;
   if (removed === 0) return null;
@@ -229,7 +222,7 @@ export function purgeSummaryLine(summary: HookPurgeSummary): string | null {
   return `purged ${removed} stale cc-memory/legacy hook entr${suffix}`;
 }
 
-/** `tools/install.py:137`'s log line, one per registered hook. */
+/** One log line per registered hook. */
 export function hookRegisteredLine(event: HookEvent, hookName: string): string {
   return `hook ${event} -> ${hookName}`;
 }
@@ -248,11 +241,11 @@ export async function loadSettings(
 
 /**
  * Back up the raw (unparsed) `settings.json` bytes ONCE — before this
- * installer's very first write (`tools/install.py` never did this at all).
- * `alreadyBackedUp` comes from the manifest's `settingsBackupPath`: once it is
- * non-null, every later install run skips this regardless of whether the file
- * on disk still exists, so a user deleting the backup by hand can't trigger a
- * second, now-already-mutated "pristine" copy.
+ * installer's very first write. `alreadyBackedUp` comes from the manifest's
+ * `settingsBackupPath`: once it is non-null, every later install run skips
+ * this regardless of whether the file on disk still exists, so a user
+ * deleting the backup by hand can't trigger a second, now-already-mutated
+ * "pristine" copy.
  */
 export async function backupSettingsIfNeeded(
   fs: FileSystem,

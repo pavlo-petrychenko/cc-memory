@@ -12,28 +12,22 @@ import { resolveWorkspace } from "../workspace/resolver.service.ts";
 import { type CliOutcome, cliFailure } from "./CliOutcome.ts";
 
 /**
- * Unifies `bin/memory`'s two near-duplicate resolvers — `_targets`
- * (`bin/memory:123-129`, used by `reindex`/`commit`/`reflect`) and `_resolve_ws`
- * (`bin/memory:155-162`, used by `search`/`notes`) — and drops their
- * `x or sys.exit(...)` idiom abuse: both become a `Result` a command can match
- * on and turn into a `CliOutcome` via `cliFailure`, instead of a call that
- * unconditionally terminates the process from inside a resolver.
+ * Two resolvers shared across commands, both returning a `Result` a command
+ * can match on and turn into a `CliOutcome` via `cliFailure`, rather than
+ * terminating the process from inside the resolver itself.
  */
 
-/** The exact `sys.exit(f"no such workspace: {id}")` text, shared by both
- * resolvers below (`bin/memory:74,127,141,157`). */
+/** The exact "no such workspace" text, shared by both resolvers below. */
 export function noSuchWorkspaceMessage(id: string): string {
   return `no such workspace: ${id}`;
 }
 
-/** `sys.exit("no workspace for cwd; pass --workspace")` (`bin/memory:145,161`). */
 export const NO_WORKSPACE_FOR_CWD_MESSAGE = "no workspace for cwd; pass --workspace";
 
 /**
- * `_targets` (`bin/memory:123-129`): a single workspace by id, or every
- * registered workspace, all expanded — `reindex`, `commit` and `reflect` all
- * loop over the result. `id === null` is Python's `if a.workspace` being falsy
- * (the positional `workspace` argument omitted).
+ * A single workspace by id, or every registered workspace, all expanded —
+ * `reindex`, `commit` and `reflect` all loop over the result. `id === null`
+ * means the positional `workspace` argument was omitted.
  */
 export function resolveTargetWorkspaces(
   raws: readonly RawWorkspace[],
@@ -49,10 +43,10 @@ export function resolveTargetWorkspaces(
 }
 
 /**
- * `_resolve_ws` (`bin/memory:155-162`): an explicit `--workspace` id wins
- * outright; otherwise fall back to resolving `cwd` by longest-prefix match
- * (`resolveWorkspace`) and fail if that comes up empty. `search` and `notes`
- * both need exactly one workspace, never a list.
+ * An explicit `--workspace` id wins outright; otherwise fall back to
+ * resolving `cwd` by longest-prefix match (`resolveWorkspace`) and fail if
+ * that comes up empty. `search` and `notes` both need exactly one workspace,
+ * never a list.
  */
 export function resolveWorkspaceForCwd(
   raws: readonly RawWorkspace[],
@@ -74,10 +68,8 @@ export function resolveWorkspaceForCwd(
  * Load the registry and map a `RegistryError` straight to a `CliOutcome`
  * failure — every command needs the raw workspace list first, so this is the
  * one place that decides how a broken (present but unparsable/malformed)
- * `registry.toml` is reported. Python has no equivalent: a broken registry
- * raises `tomllib.TOMLDecodeError` uncaught (an unhandled traceback exiting
- * 1) rather than a clean message — no parity case exercises that path, so
- * this is a deliberate improvement, not a byte-for-byte port.
+ * `registry.toml` is reported, as a clean message rather than an unhandled
+ * exception.
  */
 export async function loadRegistryForCli(
   fs: FileSystem,

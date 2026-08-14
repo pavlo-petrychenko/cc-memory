@@ -10,22 +10,14 @@ import { resolveWorkspace } from "../workspace/resolver.service.ts";
 import { gatherDoctorReport, renderDoctorReport } from "./doctor.service.ts";
 
 /**
- * `cmd_doctor` (`bin/memory:212-250`), REPLACED (not merely ported) per
- * [[services]]/packet-9-install: Python's version spawns the 5 real hook
- * scripts and reports their exit codes — a smoke test this repo can no
- * longer run as-is (P7's TypeScript hook handlers land in a parallel packet
- * and don't exist in this worktree), so `bin/memory:212-250` is not usable
- * as a line-by-line port target here. Rather than fabricate a fake spawn
- * against a script this packet never wrote, doctor now does what the plan's
- * `[[services]]` doc actually asks for: real diagnostics against the state
- * an install depends on (registry, every workspace's vault + index,
- * `settings.json`'s hook registrations, the recorded `bun` binary, the
- * launchd job, log sizes) — see `doctor.service.ts`'s doc comment.
+ * `memory doctor` runs real diagnostics against the state an install depends
+ * on: registry, every workspace's vault + index, `settings.json`'s hook
+ * registrations, the recorded `bun` binary, the launchd job, log sizes — see
+ * `doctor.service.ts`'s doc comment.
  *
- * The first two lines — registry status, cwd resolution — stay
- * BYTE-IDENTICAL to Python (and to this file's own former stub), because the
- * `cli/doctor-*` parity cases anchor on exactly those two lines even while
- * skipped ([[testing]]).
+ * The first two lines — registry status, cwd resolution — must stay
+ * byte-identical across changes, since tests anchor on exactly those two
+ * lines.
  */
 export async function doctor(
   container: Container,

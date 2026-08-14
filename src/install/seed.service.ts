@@ -4,8 +4,7 @@ import { defaultRegistryPath } from "../workspace/registry.service.ts";
 
 /**
  * Seed `~/.claude/memory/registry.toml` from `<repo>/registry.example.toml`
- * IF one doesn't already exist (`tools/install.py:146-153`) — never
- * overwrites a real registry, matching Python exactly.
+ * IF one doesn't already exist — never overwrites a real registry.
  */
 
 const EXAMPLE_REGISTRY_RELATIVE_PATH = "registry.example.toml";
@@ -28,7 +27,6 @@ function parentDirectory(path: AbsPath): AbsPath {
 
 export type SeedRegistryOutcome = {
   readonly seeded: boolean;
-  /** `tools/install.py:149,153`'s two log lines. */
   readonly actionLine: string;
 };
 
