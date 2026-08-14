@@ -1,20 +1,24 @@
-import type { Container } from "../container.ts";
-import { makeRealContainer } from "../container.ts";
-import type { Config } from "../domain/Config.ts";
-import { parseConfig } from "../domain/Config.ts";
+import type { Config } from "../core/Config.ts";
+import { parseConfig } from "../core/Config.ts";
+import { doctor } from "../install/doctor.command.ts";
+import { install, uninstall } from "../install/install.command.ts";
+import type { Container } from "../platform/container.ts";
+import { makeRealContainer } from "../platform/container.ts";
+import { reflect } from "../reflect/reflect.command.ts";
+import { notes } from "../retrieval/notes.command.ts";
+import { reindex } from "../retrieval/reindex.command.ts";
+import { search } from "../retrieval/search.command.ts";
+import { hook } from "../session/hook.command.ts";
+import { commit } from "../worklog/commit.command.ts";
+import { resolve } from "../workspace/resolve.command.ts";
+import {
+  workspaceAdd,
+  workspaceLs,
+  workspaceRm,
+} from "../workspace/workspace.command.ts";
 import { CliCommand, parseArgs, type ParsedArgs } from "./args.ts";
 import { type CliOutcome, cliFailure } from "./CliOutcome.ts";
-import { commit } from "./commands/commit.command.ts";
-import { doctor } from "./commands/doctor.command.ts";
-import { help, version } from "./commands/help.command.ts";
-import { hook } from "./commands/hook.command.ts";
-import { install, uninstall } from "./commands/install.command.ts";
-import { notes } from "./commands/notes.command.ts";
-import { reflect } from "./commands/reflect.command.ts";
-import { reindex } from "./commands/reindex.command.ts";
-import { resolve } from "./commands/resolve.command.ts";
-import { search } from "./commands/search.command.ts";
-import { workspaceAdd, workspaceLs, workspaceRm } from "./commands/workspace.command.ts";
+import { help, version } from "./help.command.ts";
 
 /**
  * `bin/memory:294-295`'s `a.func(a)` — dispatch a successfully-parsed

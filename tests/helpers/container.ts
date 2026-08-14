@@ -1,7 +1,7 @@
-import { makeDbBunSqliteAdapter } from "../../src/adapters/dbBunSqlite.adapter.ts";
-import type { Container } from "../../src/container.ts";
-import type { AbsPath } from "../../src/domain/AbsPath.ts";
-import type { Db } from "../../src/ports/db.port.ts";
+import type { AbsPath } from "../../src/core/AbsPath.ts";
+import type { Container } from "../../src/platform/container.ts";
+import type { Db } from "../../src/platform/db.port.ts";
+import { makeDbBunSqliteAdapter } from "../../src/platform/dbBunSqlite.adapter.ts";
 import { makeClockFake } from "./fakes/clockFixed.fake.ts";
 import { makeEnvFake } from "./fakes/envMap.fake.ts";
 import { makeFsMemoryFake } from "./fakes/fsMemory.fake.ts";

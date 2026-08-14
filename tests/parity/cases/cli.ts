@@ -273,7 +273,7 @@ const CASES: readonly CliCase[] = [
   // What IS still a contract is the first two lines, which the redesign keeps
   // byte-identical. That is asserted directly against Python in
   // tests/parity/doctorFrozenLines.test.ts, and the new diagnostics are covered by
-  // tests/integration/services/install/doctorService.test.ts.
+  // tests/integration/install/doctorService.test.ts.
 ];
 
 export const CLI_CASES: readonly CliCase[] = CASES;

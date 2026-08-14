@@ -13,7 +13,7 @@ import { join } from "node:path";
 
 import { spawnSync } from "bun";
 
-import { HookName } from "../../../src/cli/commands/hook.command.ts";
+import { HookName } from "../../../src/session/hook.command.ts";
 import type { FixtureVault, FixtureWorkspace } from "../../fixtures/vault.ts";
 import type { HookCase } from "../harness.ts";
 import { HookScript } from "../harness.ts";

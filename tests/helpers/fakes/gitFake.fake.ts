@@ -1,5 +1,5 @@
-import type { AbsPath } from "../../../src/domain/AbsPath.ts";
-import type { Git } from "../../../src/ports/git.port.ts";
+import type { AbsPath } from "../../../src/core/AbsPath.ts";
+import type { Git } from "../../../src/platform/git.port.ts";
 
 /** One recorded `Git` call, for assertions in services/hooks tests that don't
  * care about the underlying `Proc` invocation, only "did we call `git add`". */

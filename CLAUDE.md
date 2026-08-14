@@ -59,40 +59,66 @@ rebuilds itself.
   tooling. Adding a dependency needs a conversation.
 - **Never edit `*.py`.** Read-only until the cutover packet deletes them.
 
-## Architecture and layering
+## Architecture — modules, not layers
+
+The top level of `src/` is the list of things this project *is*. Everything one
+feature needs lives in one directory: its types, its pure logic, its services, its
+renderers, and its CLI command.
 
 ```
-entrypoints   src/cli/  src/hooks/      thin: parse, dispatch, render. no logic.
-services      src/services/             orchestration; all I/O through ports
-ports         src/ports/                interfaces only
-adapters      src/adapters/             thinnest possible real implementations
-domain        src/domain/               pure functions — the bulk of the code and tests
+src/
+  core/        the shared kernel every module may use — Result, AbsPath, paths,
+               Config, Workspace. Pure. Depends on nothing.
+  platform/    the ONLY place that touches the outside world: 8 *.port.ts
+               interfaces, 8 *.adapter.ts implementations, and container.ts.
+  workspace/   the registry, cwd→workspace resolution, worktree slugs
+  retrieval/   tokenizing, query building, ranking, the SQLite index, search
+  knowledge/   vault notes: frontmatter/wikilink parsing and the KB map
+  worklog/     STATE.md + the dated journal, and promotion candidates
+  reflect/     the nightly consolidation reflector
+  install/     wiring into Claude Code, and doctor (which diagnoses an install)
+  session/     the five Claude Code hooks and their shared fail-open runtime
+  cli/         the composition shell: arg parsing, dispatch, output formatting
 ```
 
-**Layering rule, enforced by a test:** nothing under `src/domain/` may import
-`node:*`, `bun:*`, `../ports` or `../adapters`. Dates, times, paths and file contents
-arrive as parameters. If a domain function needs I/O, it belongs in a service.
+**Dependency direction.** Every module may use `core/`; only role-suffixed files may
+use `platform/`; `cli/` may use every module; **no two modules may import each
+other**. A cycle means they are really one module wearing two names — enforced by
+`tests/unit/purity.test.ts`.
+
+**The purity rule, enforced by the same test.** Purity used to be guaranteed by
+`domain/` being a directory. Now it lives in the filename:
+
+> A file may reference `platform/` or a node/bun builtin **only** if it is a
+> `.service.ts`, `.command.ts`, `.hook.ts`, `.adapter.ts` or `.port.ts` — or lives in
+> `platform/`. Everything else is pure: dates, times, paths and file contents arrive
+> as parameters.
+
+`cli/main.ts` is the single allowed exception, as the composition root. Purity is why
+~90% of the suite needs no fakes, no temp dirs and no clock — protect it.
 
 Two consequences worth internalizing:
 
-- **Ranking is pure.** `domain/rank.ts` receives already-fetched hit arrays and
-  returns fused hits. No SQL. That's what makes retrieval testable.
-- **Every agent-visible byte comes from a pure renderer** in `src/domain/render/`, so
-  contract tests are exact string assertions rather than end-to-end guesswork.
+- **Ranking is pure.** `retrieval/rank.ts` takes already-fetched hit arrays and
+  returns fused hits. No SQL anywhere near it.
+- **Every agent-visible byte comes from a pure `*.renderer.ts`**, so contract tests
+  are exact string assertions rather than end-to-end guesswork.
 
 ## File naming
 
-Not Python style — no `kebab-case.ts`.
+Not Python style — no `kebab-case.ts`. The suffix carries meaning: it tells you
+whether a file can touch the outside world before you open it.
 
 | Kind | Convention | Examples |
 |---|---|---|
 | Types / enums / models | `PascalCase.ts` | `Workspace.ts`, `HookResult.ts`, `Config.ts`, `Result.ts` |
-| Role-bearing modules | `camelCase.<role>.ts` | `registry.service.ts`, `fileSystem.port.ts`, `fsReal.adapter.ts`, `kbMap.renderer.ts`, `sessionStart.hook.ts`, `search.command.ts` |
-| Pure utility modules | `camelCase.ts` | `tokenize.ts`, `paths.ts`, `query.ts`, `rank.ts` |
+| Pure logic / renderers | `camelCase.ts`, `camelCase.renderer.ts` | `tokenize.ts`, `paths.ts`, `rank.ts`, `kbMap.renderer.ts` |
+| May do I/O | `camelCase.<role>.ts` | `registry.service.ts`, `search.command.ts`, `wrapGate.hook.ts`, `fsReal.adapter.ts`, `fileSystem.port.ts` |
 | Tests | mirror the subject | `tokenize.test.ts`, `registry.service.test.ts` |
 
 Roles in use: `.port`, `.adapter`, `.service`, `.renderer`, `.hook`, `.command`,
-`.fake`.
+`.fake`. Adding I/O to a pure file means **renaming it** to `.service.ts`, which makes
+the change visible in every diff and import that references it.
 
 ## Code style
 
@@ -131,7 +157,7 @@ Roles in use: `.port`, `.adapter`, `.service`, `.renderer`, `.hook`, `.command`,
   `import.meta.main` guard. `tests/unit/coverageSurface.test.ts` imports every source
   module, so a top-level side effect would run during the test suite.
 - **No type assertions** except the single commented `AbsPath` brand in
-  `domain/paths.ts`.
+  `core/paths.ts`.
 - **No module mocking** (anti-slop `no-module-mocking`). Inject a fake from
   `tests/helpers/fakes/`.
 - Comment density matches the Python being replaced: explain *why* a quirk exists,
@@ -145,9 +171,14 @@ Roles in use: `.port`, `.adapter`, `.service`, `.renderer`, `.hook`, `.command`,
   *are* the behavior under test. Use a real `bun:sqlite` `:memory:` database.
 - Build containers via `tests/helpers/container.ts`.
 - A test that pins a Python quirk names the source line in a comment.
-- Layout: `tests/unit` (domain) · `tests/integration` (services) · `tests/contract`
-  (hooks) · `tests/cli` (spawned e2e) · `tests/parity` (differential, temporary) ·
-  `tests/golden` · `tests/fixtures` · `tests/helpers`.
+- Layout is **test level first, then module**, mirroring `src/`:
+  `tests/unit/<module>` (pure) · `tests/integration/<module>` (real temp dirs and a
+  real SQLite) · `tests/contract/session` (the hook protocol) · `tests/cli` (spawned
+  e2e) · `tests/parity` (differential vs Python, deleted at cutover) · `tests/golden`
+  · `tests/fixtures` · `tests/helpers`.
+- Anything that spawns the built CLI must call `ensureDistBuilt()` from
+  `tests/helpers/build.ts` in its own `beforeAll` — bun test gives no cross-file
+  ordering guarantee, and relying on a stale `dist/` passes locally and fails in CI.
 
 ## Never let a test touch the real machine
 

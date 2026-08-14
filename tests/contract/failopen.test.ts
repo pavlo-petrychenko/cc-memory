@@ -13,7 +13,7 @@
  */
 import { beforeAll, describe, expect, test } from "bun:test";
 
-import { HookName } from "../../src/cli/commands/hook.command.ts";
+import { HookName } from "../../src/session/hook.command.ts";
 import { ensureDistBuilt } from "../helpers/build.ts";
 import { createTempDir } from "../helpers/tempdir.ts";
 

@@ -3,10 +3,10 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-import { makeDbBunSqliteAdapter } from "../../src/adapters/dbBunSqlite.adapter.ts";
 import { runCli } from "../../src/cli/main.ts";
-import { LogLevel } from "../../src/domain/Config.ts";
-import type { Db } from "../../src/ports/db.port.ts";
+import { LogLevel } from "../../src/core/Config.ts";
+import type { Db } from "../../src/platform/db.port.ts";
+import { makeDbBunSqliteAdapter } from "../../src/platform/dbBunSqlite.adapter.ts";
 import { makeTestContainer } from "../helpers/container.ts";
 import { makeIoFake } from "../helpers/fakes/ioFake.fake.ts";
 

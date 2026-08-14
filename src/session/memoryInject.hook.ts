@@ -1,0 +1,239 @@
+import type { AbsPath } from "../core/AbsPath.ts";
+import type { FileSystem } from "../platform/fileSystem.port.ts";
+import type { FusedHit } from "../retrieval/Hit.ts";
+import { SearchKind, searchFused } from "../retrieval/search.service.ts";
+import { salientTokens } from "../retrieval/tokenize.ts";
+import { HookEvent, HookResultKind } from "./HookResult.ts";
+import type { HookContext } from "./hookRuntime.service.ts";
+import type { HookHandler } from "./hookRuntime.service.ts";
+import { type InjectedHit, renderInjectContext } from "./inject.renderer.ts";
+import type { MemoryInjectPayload } from "./payload.ts";
+
+/**
+ * `UserPromptSubmit` (`hooks/memory-inject.py:53-95`): auto-retrieve relevant
+ * memory for the prompt via a fused BM25 search, gated by prompt length,
+ * salient-token count and a score floor. `inject.jsonl` records the full
+ * candidate pool on EVERY call that reaches it — even one that ends up
+ * injecting nothing — which is why the log write happens before the
+ * emptiness check below (`memory-inject.py:80-82`).
+ */
+
+const MIN_PROMPT_LENGTH = 12; // memory-inject.py:61
+const MIN_SALIENT_TOKENS = 2; // MIN_TOKENS, memory-inject.py:20
+const NOTES_POOL_SIZE = 8; // POOL, memory-inject.py:21
+const MAX_INJECTED_NOTES = 4; // MAX_NOTES, memory-inject.py:18
+const MAX_INJECTED_WORKLOGS = 1; // MAX_WORKLOG, memory-inject.py:19
+const MAX_LOGGED_PROMPT_LENGTH = 500; // memory-inject.py:39
+const MAX_LOGGED_TOKENS = 40; // memory-inject.py:40
+
+// New, additive: size-capped rotation for `inject.jsonl` ([[bugfixes]] #2 —
+// the real file reached 1.6 MB / 1,137 rows with no rotation at all). Same
+// 1 MiB / keep-2 policy as `adapters/loggerFile.adapter.ts`'s
+// `appendWithRotation`, reimplemented over the `FileSystem` port instead of
+// reusing that function directly: `appendWithRotation` goes around the port
+// (real node:fs) specifically so `Logger` diagnostics can never be blocked by
+// the very seam they're meant to observe — but this hook's own I/O should
+// stay fake-testable like everything else in `tests/contract/hooks/**`, so
+// it goes through `FileSystem` like every other read/write here.
+const MAX_INJECT_LOG_BYTES = 1_048_576;
+const KEPT_LOG_GENERATIONS = 2;
+const INJECT_LOG_FILENAME = "inject.jsonl";
+
+function parentDir(path: AbsPath): AbsPath {
+  const lastSlashIndex = path.lastIndexOf("/");
+  const sliced = lastSlashIndex <= 0 ? "/" : path.slice(0, lastSlashIndex);
+  // SAFETY: slicing an absolute, normalized path at a `/` boundary yields
+  // another absolute, normalized path — same reasoning as
+  // `services/registry.service.ts`'s `parentDir`.
+  return sliced as AbsPath;
+}
+
+function joinAbsPath(base: AbsPath, name: string): AbsPath {
+  // `base` is exactly the filesystem root ("/") when `parentDir` had nothing
+  // to strip (e.g. a test's `indexDb: ":memory:"`, whose "directory" is the
+  // fixed fallback `"/"`) — appending a plain `/${name}` there would double
+  // the slash (`"//inject.jsonl"`), a distinct path from `"/inject.jsonl"`.
+  const separator = base.endsWith("/") ? "" : "/";
+  const joined = `${base}${separator}${name}`;
+  // SAFETY: `base` is an already-absolute, normalized `AbsPath`; `name` is
+  // the fixed literal `"inject.jsonl"`.
+  return joined as AbsPath;
+}
+
+/** `os.path.relpath(h["path"], base) if h["path"].startswith(base) else
+ * h["path"]` (`memory-inject.py:27-28`, `_relto`) — every indexed path is
+ * always under `ws.kb`/`ws.worklogs`, so this is prefix-stripping, not full
+ * relpath resolution, the same duplication `cli/commands/search.command.ts`'s
+ * `relativeToKb` documents. */
+function relativeOrAbsolute(path: AbsPath, base: AbsPath): string {
+  const prefix = `${base}/`;
+  return path.startsWith(prefix) ? path.slice(prefix.length) : path;
+}
+
+/** `round(h["score"], 4)` (`memory-inject.py:41-42`). */
+function round4(value: number): number {
+  return Number(value.toFixed(4));
+}
+
+type CandidateLogEntry = { readonly p: string; readonly s: number };
+
+function toCandidateLogEntries(
+  hits: readonly FusedHit[],
+  base: AbsPath,
+): readonly CandidateLogEntry[] {
+  return hits.map((hit) => ({
+    p: relativeOrAbsolute(hit.path, base),
+    s: round4(hit.score),
+  }));
+}
+
+async function currentLogSize(fs: FileSystem, path: AbsPath): Promise<number> {
+  try {
+    return (await fs.stat(path)).size;
+  } catch {
+    return 0;
+  }
+}
+
+// Rotation must happen in strict generation order (newest first): each rename
+// depends on the previous one having completed, so this cannot be a
+// `Promise.all` over independent iterations the way the lint rule expects.
+async function rotateInjectLog(fs: FileSystem, path: AbsPath): Promise<void> {
+  for (let generation = KEPT_LOG_GENERATIONS; generation >= 1; generation -= 1) {
+    // SAFETY: `path` is an already-absolute, normalized `AbsPath`; appending a
+    // fixed `.<generation>` numeric suffix keeps it absolute and normalized.
+    const from = generation === 1 ? path : (`${path}.${generation - 1}` as AbsPath);
+    // SAFETY: same reasoning as `from` above.
+    const to = `${path}.${generation}` as AbsPath;
+    // eslint-disable-next-line no-await-in-loop
+    const fromExists = await fs.exists(from);
+    if (!fromExists) continue;
+    if (generation === KEPT_LOG_GENERATIONS) {
+      // eslint-disable-next-line no-await-in-loop
+      await fs.remove(to);
+    }
+    // eslint-disable-next-line no-await-in-loop
+    await fs.rename(from, to);
+  }
+}
+
+async function appendInjectLogLine(
+  fs: FileSystem,
+  path: AbsPath,
+  line: string,
+): Promise<void> {
+  const encoded = `${line}\n`;
+  const projectedSize =
+    (await currentLogSize(fs, path)) + new TextEncoder().encode(encoded).length;
+  if (projectedSize > MAX_INJECT_LOG_BYTES) {
+    await rotateInjectLog(fs, path);
+  }
+  await fs.appendFile(path, encoded);
+}
+
+function toInjectedHit(hit: FusedHit, base: AbsPath): InjectedHit {
+  return {
+    title: hit.title,
+    snippet: hit.snippet,
+    relativePath: relativeOrAbsolute(hit.path, base),
+  };
+}
+
+async function logInjectCandidates(
+  context: HookContext,
+  prompt: string,
+  tokens: ReadonlySet<string>,
+  notePool: readonly FusedHit[],
+  worklogPool: readonly FusedHit[],
+  injectedNotes: readonly FusedHit[],
+  injectedWorklogs: readonly FusedHit[],
+): Promise<void> {
+  if (!context.config.injectLogEnabled) return; // CCMEM_INJECT_LOG=0
+  try {
+    const record = {
+      ts: new Date(context.container.clock.nowMs()).toISOString(),
+      ws: context.workspace.id,
+      cwd: context.cwd,
+      prompt: prompt.slice(0, MAX_LOGGED_PROMPT_LENGTH),
+      tokens: [...tokens].toSorted().slice(0, MAX_LOGGED_TOKENS),
+      candidates: toCandidateLogEntries(notePool, context.workspace.kb),
+      worklog: toCandidateLogEntries(worklogPool, context.workspace.worklogs),
+      injected: {
+        notes: injectedNotes.map((hit) =>
+          relativeOrAbsolute(hit.path, context.workspace.kb),
+        ),
+        worklog: injectedWorklogs.map((hit) =>
+          relativeOrAbsolute(hit.path, context.workspace.worklogs),
+        ),
+      },
+    };
+    const logPath = joinAbsPath(
+      parentDir(context.workspace.indexDb),
+      INJECT_LOG_FILENAME,
+    );
+    await appendInjectLogLine(context.container.fs, logPath, JSON.stringify(record));
+  } catch {
+    // memory-inject.py:49-50 — logging failures never propagate.
+  }
+}
+
+export const handleMemoryInject: HookHandler<MemoryInjectPayload> = async (
+  context,
+  payload,
+) => {
+  const prompt = payload.prompt.trim();
+  if (prompt.length < MIN_PROMPT_LENGTH) return { kind: HookResultKind.Silent };
+
+  const tokens = salientTokens(prompt);
+  if (tokens.size < MIN_SALIENT_TOKENS) return { kind: HookResultKind.Silent };
+
+  let notePool: readonly FusedHit[];
+  let worklogPool: readonly FusedHit[];
+  try {
+    notePool = await searchFused(context.container, context.workspace, prompt, {
+      limit: NOTES_POOL_SIZE,
+      kind: SearchKind.Notes,
+      linkBoost: context.config.linkBoost,
+    });
+    worklogPool = await searchFused(context.container, context.workspace, prompt, {
+      limit: MAX_INJECTED_WORKLOGS,
+      kind: SearchKind.Worklog,
+      linkBoost: context.config.linkBoost,
+    });
+  } catch {
+    // memory-inject.py:71-75 — a search failure returns silently, before any
+    // logging happens (the log call sits AFTER this try/except in Python).
+    return { kind: HookResultKind.Silent };
+  }
+
+  const injectedNotes = notePool
+    .filter((hit) => -hit.score >= context.config.injectMinScore)
+    .slice(0, MAX_INJECTED_NOTES);
+  const injectedWorklogs = worklogPool
+    .filter((hit) => -hit.score >= context.config.injectMinScore)
+    .slice(0, MAX_INJECTED_WORKLOGS);
+
+  // memory-inject.py:80-82 — logged even when nothing gets injected.
+  await logInjectCandidates(
+    context,
+    prompt,
+    tokens,
+    notePool,
+    worklogPool,
+    injectedNotes,
+    injectedWorklogs,
+  );
+
+  if (injectedNotes.length === 0 && injectedWorklogs.length === 0) {
+    return { kind: HookResultKind.Silent };
+  }
+
+  const text = renderInjectContext({
+    workspaceId: context.workspace.id,
+    notes: injectedNotes.map((hit) => toInjectedHit(hit, context.workspace.kb)),
+    worklogs: injectedWorklogs.map((hit) =>
+      toInjectedHit(hit, context.workspace.worklogs),
+    ),
+  });
+  return { kind: HookResultKind.Context, event: HookEvent.UserPromptSubmit, text };
+};

@@ -1,5 +1,5 @@
-import { LogLevel } from "../../../src/domain/Config.ts";
-import type { Logger } from "../../../src/ports/logger.port.ts";
+import { LogLevel } from "../../../src/core/Config.ts";
+import type { Logger } from "../../../src/platform/logger.port.ts";
 
 export type CollectedLogEntry = {
   readonly level: LogLevel;

@@ -1,6 +1,6 @@
 /**
  * A command's result, before `main.ts` maps it to a process exit. Every command
- * function in `src/cli/commands/**` returns one of these instead of calling
+ * command function returns one of these instead of calling
  * `process.exit`/throwing itself — `main.ts` is the single place that turns it
  * into `stdio.exit(...)` plus (optionally) one line on stderr.
  *

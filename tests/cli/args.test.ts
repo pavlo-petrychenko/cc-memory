@@ -3,7 +3,7 @@
  * hand-written parser. Table-driven, per CLAUDE.md's testing conventions.
  * Placed under `tests/unit/domain/` per this packet's own "Tests" section,
  * even though `args.ts` lives under `src/cli/` (it has no I/O, so it would fit
- * `src/domain/` just as well; the plan's file table puts it in `cli/`
+ * `core/` just as well; the plan's file table puts it in `cli/`
  * regardless — this test's location is transcribed as specified).
  */
 import { describe, expect, test } from "bun:test";

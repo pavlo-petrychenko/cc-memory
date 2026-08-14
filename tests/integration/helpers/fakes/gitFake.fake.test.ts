@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { AbsPath } from "../../../../src/domain/AbsPath.ts";
+import type { AbsPath } from "../../../../src/core/AbsPath.ts";
 import { makeGitFake } from "../../../helpers/fakes/gitFake.fake.ts";
 
 // SAFETY: fixed test fixture, never a real filesystem lookup.

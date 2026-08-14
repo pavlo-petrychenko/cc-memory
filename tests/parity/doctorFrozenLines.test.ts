@@ -19,7 +19,7 @@ import { runPython, runTs } from "./harness.ts";
  *
  * This test pins exactly that much against the real Python, so the redesign cannot
  * quietly drift on the part that was kept. Everything below those two lines is
- * covered by tests/integration/services/install/doctorService.test.ts.
+ * covered by tests/integration/install/doctorService.test.ts.
  */
 function firstTwoLines(stdout: string): readonly string[] {
   return stdout.split("\n").slice(0, 2);

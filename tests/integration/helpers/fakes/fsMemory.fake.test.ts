@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { AbsPath } from "../../../../src/domain/AbsPath.ts";
+import type { AbsPath } from "../../../../src/core/AbsPath.ts";
 import { makeFsMemoryFake } from "../../../helpers/fakes/fsMemory.fake.ts";
 
 /** Test-only path fixture builder: every literal below is already an absolute,

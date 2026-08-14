@@ -6,10 +6,10 @@ import {
   noSuchWorkspaceMessage,
   resolveTargetWorkspaces,
   resolveWorkspaceForCwd,
-} from "../../src/cli/resolveTarget.ts";
-import type { AbsPath } from "../../src/domain/AbsPath.ts";
-import { expandPath } from "../../src/domain/paths.ts";
-import type { RawWorkspace } from "../../src/domain/Workspace.ts";
+} from "../../src/cli/resolveTarget.service.ts";
+import type { AbsPath } from "../../src/core/AbsPath.ts";
+import { expandPath } from "../../src/core/paths.ts";
+import type { RawWorkspace } from "../../src/core/Workspace.ts";
 import { makeFsMemoryFake } from "../helpers/fakes/fsMemory.fake.ts";
 
 // SAFETY: a fixed test fixture, same pattern as tests/helpers/container.ts's DEFAULT_HOME.

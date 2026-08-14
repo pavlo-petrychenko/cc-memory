@@ -1,5 +1,5 @@
-import type { AbsPath } from "../../../src/domain/AbsPath.ts";
-import type { Env } from "../../../src/ports/env.port.ts";
+import type { AbsPath } from "../../../src/core/AbsPath.ts";
+import type { Env } from "../../../src/platform/env.port.ts";
 
 export type EnvFake = Env & {
   readonly set: (name: string, value: string) => void;

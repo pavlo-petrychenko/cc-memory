@@ -1,4 +1,8 @@
-import type { Proc, ProcResult, ProcRunOptions } from "../../../src/ports/proc.port.ts";
+import type {
+  Proc,
+  ProcResult,
+  ProcRunOptions,
+} from "../../../src/platform/proc.port.ts";
 
 /** One invocation of `Proc.run`, exactly as the fake recorded it, for
  * assertions like "git-cli passed the right argv/timeout". */

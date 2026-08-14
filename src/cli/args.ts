@@ -1,4 +1,4 @@
-import type { Result } from "../domain/Result.ts";
+import type { Result } from "../core/Result.ts";
 
 /**
  * Hand-written CLI argument parser (`bin/memory:253-295`'s `argparse` setup) —

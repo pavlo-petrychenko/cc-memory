@@ -267,7 +267,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
 
   /**
    * `install` (no `--dry-run`) is DELIBERATELY never spawned here, even
-   * against a faked `env.HOME`: `services/install/launchd.ts` calls
+   * against a faked `env.HOME`: `install/launchd.ts` calls
    * `launchctl bootout`/`bootstrap gui/<uid>/…`, and launchd's domain is
    * keyed by the REAL system user id, not by `$HOME` — a faked home only
    * protects file writes, not this one. Spawning the real built binary here
@@ -275,7 +275,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
    * `procFake`, as `tests/cli/commands/install.command.test.ts` does) would
    * genuinely register/replace a launchd job on whatever machine runs this
    * suite. `--dry-run` returns before any of `settings.json`/shim/skills/
-   * registry/launchd ever get touched (`services/install/run.ts`), which is
+   * registry/launchd ever get touched (`install/run.ts`), which is
    * what makes it the one `install` invocation this file may safely spawn.
    */
   test("install --dry-run reports success without writing anything", async () => {

@@ -61,7 +61,7 @@ export const DIVERGENCES: readonly Divergence[] = [
       "Bugfix #3 (see the plan's 'bugfixes' doc): the single `.last-reflect` " +
       "timestamp is replaced with two cursors, `.reflect-last-run` (drives " +
       "`--if-due`) and `.reflect-last-consolidated` (drives `gather`'s `since` " +
-      "window) — see `src/services/reflect/cursor.ts`. The old cursor stamped " +
+      "window) — see `src/reflect/cursor.ts`. The old cursor stamped " +
       "unconditionally whenever the reflector spawned a tmux session, which is " +
       "exactly what silently dropped candidates on an unattended night; the new " +
       "`lastConsolidated` only advances when candidates were durably recorded " +

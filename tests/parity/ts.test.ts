@@ -16,7 +16,7 @@
  */
 import { beforeAll, describe, expect, test } from "bun:test";
 
-import type { JsonValue } from "../../src/hooks/payload.ts";
+import type { JsonValue } from "../../src/session/payload.ts";
 import { buildFixtureVault, type FixtureVault } from "../fixtures/vault.ts";
 import { ensureDistBuilt } from "../helpers/build.ts";
 import {

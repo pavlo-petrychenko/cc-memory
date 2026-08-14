@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { LogLevel } from "../../../../src/domain/Config.ts";
+import { LogLevel } from "../../../../src/core/Config.ts";
 import { makeLoggerFake } from "../../../helpers/fakes/loggerCollect.fake.ts";
 
 describe("loggerFake", () => {

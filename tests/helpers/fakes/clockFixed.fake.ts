@@ -1,4 +1,4 @@
-import type { Clock } from "../../../src/ports/clock.port.ts";
+import type { Clock } from "../../../src/platform/clock.port.ts";
 
 export type ClockFake = Clock & {
   readonly setNowMs: (value: number) => void;

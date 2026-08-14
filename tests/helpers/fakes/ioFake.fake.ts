@@ -1,4 +1,4 @@
-import type { Stdio } from "../../../src/ports/stdio.port.ts";
+import type { Stdio } from "../../../src/platform/stdio.port.ts";
 
 export type IoFake = Stdio & {
   readonly written: readonly string[];
