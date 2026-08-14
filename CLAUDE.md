@@ -1,16 +1,13 @@
 # cc-memory — working agreement
 
 Persistent, layered, per-workspace memory for Claude Code: markdown vaults as the
-source of truth, a derived SQLite FTS5 index, five Claude Code hooks and six skills.
+source of truth, a derived SQLite FTS5 index, five Claude Code hooks and five skills.
 Entirely session-driven — there is no background process.
 
-**Right now this repo is mid-migration.** The original Python PoC is being rewritten in
-TypeScript on Bun with the whole surface under test. It lands in two branches:
-`ts-migration` adds the TypeScript implementation alongside the still-installed Python,
-and `ts-cutover` deletes the Python and switches the install over. Until that second
-branch merges, the Python in `src/lib/`, `src/bin/` and `src/hooks/` is the
-implementation actually running on this machine — it is read-only reference, never a
-place to make a change.
+It began as a Python proof of concept and was rewritten in TypeScript on Bun with the
+whole surface under test. The Python is gone; nothing in the tree is a reference
+implementation any more, so the tests are the only record of the behavior that
+existing vaults and skills depend on. Treat them that way.
 
 ## The five invariants (never violate)
 
@@ -28,14 +25,16 @@ place to make a change.
 
 ## Frozen contracts
 
-Changing any of these is a breaking change to a live install. Full detail + line
-references live in the plan's *Frozen Contracts* and *Porting Reference* docs.
+Changing any of these is a breaking change to a live install — someone's registry stops
+parsing, a skill stops finding what it greps for, or a vault full of worklogs stops
+matching the format that reads them. Each one has tests that pin it exactly; if a change
+here is genuinely wanted, it is a deliberate migration, not an edit.
 
 | | Contract |
 |---|---|
 | C1 | `~/.claude/memory/registry.toml` schema, `~` preserved on write |
 | C2 | Hook stdin/stdout JSON per event; **always exit 0** |
-| C3 | `memory` CLI surface and output shape — the six skills parse it |
+| C3 | `memory` CLI surface and output shape — the skills parse it |
 | C4 | Vault file formats: `STATE.md` and `<date>.md` journal entries |
 | C5 | `CCMEM_*` env var names and defaults |
 | C6 | Installed surface: `~/.local/bin/memory`, index location |
@@ -44,21 +43,19 @@ references live in the plan's *Frozen Contracts* and *Porting Reference* docs.
 `index.db`'s schema is explicitly **not** frozen — bump `SCHEMA_VERSION` and it
 rebuilds itself.
 
-## Porting discipline
+## Discipline
 
-- **Port, don't reinvent.** Translate the Python and keep its behavior, quirks included.
-  Reproduce an odd behavior and pin it with a test rather than quietly improving it —
-  the skills and every existing vault already depend on it.
-- **Never re-derive a constant.** Copy every number, regex, SQL string, bm25 weight,
-  threshold and template from the Python rather than reconstructing it from intent. A
-  re-derived value looks right and silently changes retrieval.
-- **Agent-visible text is a contract.** Injected context, nudges and CLI output are
-  copied character for character.
+- **Agent-visible text is a contract.** Injected context, hook nudges and CLI output are
+  parsed by the skills and read by the model. Changing a string changes behavior; the
+  golden files in `src/testing/golden/` exist so that change is never accidental.
+- **A tuning constant is not a free parameter.** Every threshold, bm25 weight, regex and
+  timeout was chosen against real retrieval results. Changing one changes what gets
+  injected into every session — measure before and after, don't reason about it.
 - **The dependency list is closed**: `smol-toml`, `yaml`, `bun:sqlite`, plus dev
   tooling. Adding a dependency needs a conversation.
-- **Never edit `*.py`**, and never touch `src/skills/` except in the cutover.
-- **The migration adds no features.** A missing capability is a backlog item, not
-  something to slip in while the file is open.
+- **`src/skills/` is installed content, not source.** Those markdown files are symlinked
+  into `~/.claude/skills`, so editing one changes the live install's behavior on the next
+  session — with no build step and no test to catch it.
 
 ## Architecture — modules, not layers
 
@@ -316,10 +313,12 @@ has happened once already, and both root causes are non-obvious:
   mid-test isolates *nothing*. It works only for a genuinely separate **spawned**
   process. To isolate in-process code, inject a fake `Env`/`FileSystem` through the
   container — never by setting an environment variable.
-- **`dispatch()` in `cli/main.ts` calls `install(parsed)`/`uninstall()` with no
-  container**, so those two build a REAL one. Calling them in-process from a test hits
-  the real filesystem. Pass an explicit fake container, or use
-  `--dry-run`, which by construction writes nothing.
+- **`dispatch()` in `cli/main.ts` ignores its `container` for three commands.**
+  `InstallCommand`, `UninstallCommand` and `HookDispatchCommand` build a REAL container
+  from the real `process.env`, because acting on this machine is the entire point of
+  them. Calling any of the three in-process from a test therefore hits the real
+  filesystem no matter what fake you passed to `runCli`. Construct the command yourself
+  with a fake container, or use `--dry-run`, which by construction writes nothing.
 
 Related trap in the same family: `Stdio`'s real adapter calls `process.exit()`. Any
 command invoked in-process with a real container can therefore **terminate the whole

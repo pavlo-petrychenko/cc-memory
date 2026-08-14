@@ -35,8 +35,8 @@ Save only if ALL hold (else don't propose a write):
 - **Non-obvious** — not derivable from the code, git history, or a repo's CLAUDE.md.
   Capture the gotcha, the "why", the cross-system glue.
 
-(Proposals from the reflector — derived from `#promote` worklog lines — have
-already been pre-filtered; still apply this test.)
+A `#promote`-tagged worklog line is a candidate someone already judged durable
+once; still apply this test before proposing a write.
 
 ### 2. Find the right home (search before creating)
 Use `memory search "<terms>"` (and the `obsidian` MCP's `list_directory`/`read_note`

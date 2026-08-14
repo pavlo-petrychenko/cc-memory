@@ -3,8 +3,4 @@ dist/
 coverage/
 *.tsbuildinfo
 
-# Python — removed at the migration cutover (see docs in the plan, phase P10)
-__pycache__/
-*.pyc
-
 .DS_Store

@@ -43,4 +43,4 @@ never sees workspace-B's knowledge. This skill manages that registry.
 - Adding a workspace does **not** commit anything. Versioning commits are manual
   via `memory commit` when the user approves.
 - The KB starts nearly empty; durable knowledge arrives via the `save-learning`
-  skill and the nightly reflector. Short-term notes arrive via `remember`.
+  and `actualize-kb` skills. Short-term notes arrive via `remember`.

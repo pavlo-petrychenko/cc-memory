@@ -91,11 +91,12 @@ function makeResolveCommand(container: Container): ResolveCommand {
  * subcommand without wiring it here is a compile error (the switch already
  * covers every member, so a missing case fails to type-check).
  *
- * `Install`/`Uninstall`/`Hook` construct their command with NO `container`
- * (or a freshly built real one), never the `container` this function
- * received — matching the previous thin-function dispatch exactly. Every
- * other command class is built from the container/config already threaded
- * through `runCli`.
+ * `Install`/`Uninstall`/`Hook` deliberately ignore the `container` argument and
+ * act on the real machine: the first two exist to modify this user's Claude Code
+ * setup, and a hook is spawned by Claude Code itself, so its environment is the
+ * real `process.env` and nothing else. Consequently these three cannot be
+ * called in-process from a test — see the root `CLAUDE.md`. Every other command
+ * is built from the container and config threaded through `runCli`.
  */
 async function dispatch(
   container: Container,
