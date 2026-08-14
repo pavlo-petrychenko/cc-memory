@@ -4,12 +4,13 @@ Persistent, layered, per-workspace memory for Claude Code: markdown vaults as th
 source of truth, a derived SQLite FTS5 index, five Claude Code hooks and six skills.
 Entirely session-driven — there is no background process.
 
-**Right now this repo is mid-migration**: a reviewed Python PoC is being rewritten in
-TypeScript on Bun with full test coverage. Branch `ts-migration`, one PR at the end.
-The approved plan (25 documents: contracts, architecture, conventions, a verbatim
-constants reference, and 11 work packets) lives at
-`~/.claude/plans/abstract-exploring-pixel.md`. **Read your packet and the reference
-doc before writing code.**
+**Right now this repo is mid-migration.** The original Python PoC is being rewritten in
+TypeScript on Bun with the whole surface under test. It lands in two branches:
+`ts-migration` adds the TypeScript implementation alongside the still-installed Python,
+and `ts-cutover` deletes the Python and switches the install over. Until that second
+branch merges, the Python in `src/lib/`, `src/bin/` and `src/hooks/` is the
+implementation actually running on this machine — it is read-only reference, never a
+place to make a change.
 
 ## The five invariants (never violate)
 
@@ -45,85 +46,167 @@ rebuilds itself.
 
 ## Porting discipline
 
-- **Port, don't reinvent.** The Python is still in the tree until the cutover packet.
-  Your packet names its source as `file:line`. Read it, translate it, keep its
-  behavior — including its quirks. Reproduce an odd behavior and pin it with a test
-  unless it is on the plan's bug-fix list.
-- **Never re-derive a constant.** Every number, regex, SQL string, bm25 weight,
-  threshold and template is transcribed in the plan's *Porting Reference*. Copy from
-  there. If something you need is missing, ask — do not guess.
-- **Agent-visible text is a contract.** Injected context, nudges, proposals files and
-  CLI output are copied verbatim, character for character.
-- **Stay inside your packet.** No drive-by refactors of files another packet owns.
+- **Port, don't reinvent.** Translate the Python and keep its behavior, quirks included.
+  Reproduce an odd behavior and pin it with a test rather than quietly improving it —
+  the skills and every existing vault already depend on it.
+- **Never re-derive a constant.** Copy every number, regex, SQL string, bm25 weight,
+  threshold and template from the Python rather than reconstructing it from intent. A
+  re-derived value looks right and silently changes retrieval.
+- **Agent-visible text is a contract.** Injected context, nudges and CLI output are
+  copied character for character.
 - **The dependency list is closed**: `smol-toml`, `yaml`, `bun:sqlite`, plus dev
   tooling. Adding a dependency needs a conversation.
-- **Never edit `*.py`.** Read-only until the cutover packet deletes them.
+- **Never edit `*.py`**, and never touch `src/skills/` except in the cutover.
+- **The migration adds no features.** A missing capability is a backlog item, not
+  something to slip in while the file is open.
 
 ## Architecture — modules, not layers
 
-The top level of `src/` is the list of things this project *is*. Everything one
-feature needs lives in one directory: its types, its pure logic, its services, its
-renderers, and its CLI command.
+The top level of `src/` is the list of things this project *is*. Everything one feature
+needs lives in one directory: its types, its constants, its logic, its formatters, its
+CLI command, and its tests.
 
 ```
 src/
-  core/        the shared kernel every module may use — Result, AbsPath, paths,
-               Config, Workspace. Pure. Depends on nothing.
-  platform/    the ONLY place that touches the outside world: 8 *.port.ts
-               interfaces, 8 *.adapter.ts implementations, and container.ts.
-  workspace/   the registry, cwd→workspace resolution, worktree slugs
+  core/        shared kernel: Result, AbsPath, Workspace, Config, the CLI outcome
+               vocabulary, and dependency-free path/slug utils. Depends on nothing.
+  platform/    the ONLY place that touches the outside world. One folder per port:
+               fileSystem, git, proc, db, logger, clock, env, stdio, container.
+  workspace/   the registry, cwd→workspace resolution, worktree slugs, target resolution
   retrieval/   tokenizing, query building, ranking, the SQLite index, search
-  knowledge/   vault notes: frontmatter/wikilink parsing and the KB map
+  knowledge/   vault notes: frontmatter/wikilink parsing, and the KB map
   worklog/     STATE.md + the dated journal
   install/     wiring into Claude Code, and doctor (which diagnoses an install)
   session/     the five Claude Code hooks and their shared fail-open runtime
-  cli/         the composition shell: arg parsing, dispatch, output formatting
+  cli/         the composition shell: arg parsing, dispatch, output
+  testing/     fakes, fixtures, goldens and helpers — imported only by tests
+  quality/     tests that assert on the repo's own shape, not on any one file
 ```
 
-**Dependency direction.** Every module may use `core/`; only role-suffixed files may
-use `platform/`; `cli/` may use every module; **no two modules may import each
-other**. A cycle means they are really one module wearing two names — enforced by
-`tests/unit/purity.test.ts`.
+### Module anatomy
 
-**The purity rule, enforced by the same test.** Purity used to be guaranteed by
-`domain/` being a directory. Now it lives in the filename:
+Every module **and submodule** has exactly this shape:
 
-> A file may reference `platform/` or a node/bun builtin **only** if it is a
-> `.service.ts`, `.command.ts`, `.hook.ts`, `.adapter.ts` or `.port.ts` — or lives in
-> `platform/`. Everything else is pure: dates, times, paths and file contents arrive
-> as parameters.
+```
+<name>/
+  index.ts               the public API — re-exports ONLY, no logic
+  CLAUDE.md              ≤20 lines: what this is for, what it owns
+  <name>.typedefs.ts     types and enums          (if it has any)
+  <name>.constants.ts    frozen values            (if it has any)
+  <name>.<role>.ts       AT MOST ONE implementation per role
+  <name>.<role>.test.ts  its test, beside it
+```
 
-`cli/main.ts` is the single allowed exception, as the composition root. Purity is why
-~90% of the suite needs no fakes, no temp dirs and no clock — protect it.
+A second implementation of the same role does not become a sibling — it becomes a
+folder: `services/<name>/`, `commands/<name>/`, `hooks/<name>/`, `formatters/<name>/`,
+each repeating this shape. **Folder name equals file prefix**: `worklogFormat/` contains
+`worklogFormat.*`, never `format/` containing `worklogFormat.*`.
 
-Two consequences worth internalizing:
+`index.ts` contains re-exports and nothing else. Reaching past a module's `index.ts`
+into its internals is a violation — that is what lets an implementation change behind
+its contract. Importing a `*.typedefs.ts` or `*.constants.ts` directly across modules is
+fine; they are declarations and cannot cycle.
+`src/quality/moduleBoundaries.test.ts` enforces both rules.
 
-- **Ranking is pure.** `retrieval/rank.ts` takes already-fetched hit arrays and
-  returns fused hits. No SQL anywhere near it.
-- **Every agent-visible byte comes from a pure `*.renderer.ts`**, so contract tests
-  are exact string assertions rather than end-to-end guesswork.
+`testing/` is the one directory with no barrel, because a test names the single fake or
+fixture it needs and a barrel there would pull every fake — and every adapter behind
+them — into any file touching one.
 
-## File naming
+### Dependency direction
 
-Not Python style — no `kebab-case.ts`. The suffix carries meaning: it tells you
-whether a file can touch the outside world before you open it.
+Every module may use `core/`. Only role-suffixed files may use `platform/`. `cli/` may
+use every module; **no module may import `cli` at runtime**, and no two modules may
+import each other. A cycle means they are really one module wearing two names.
 
-| Kind | Convention | Examples |
-|---|---|---|
-| Types / enums / models | `PascalCase.ts` | `Workspace.ts`, `HookResult.ts`, `Config.ts`, `Result.ts` |
-| Pure logic / renderers | `camelCase.ts`, `camelCase.renderer.ts` | `tokenize.ts`, `paths.ts`, `rank.ts`, `kbMap.renderer.ts` |
-| May do I/O | `camelCase.<role>.ts` | `registry.service.ts`, `search.command.ts`, `wrapGate.hook.ts`, `fsReal.adapter.ts`, `fileSystem.port.ts` |
-| Tests | mirror the subject | `tokenize.test.ts`, `registry.service.test.ts` |
+Two traps worth knowing, both of which have bitten this codebase:
 
-Roles in use: `.port`, `.adapter`, `.service`, `.renderer`, `.hook`, `.command`,
-`.fake`. Adding I/O to a pure file means **renaming it** to `.service.ts`, which makes
-the change visible in every diff and import that references it.
+- **Barrels create runtime cycles.** Importing an enum through an `index.ts` that also
+  re-exports implementation can leave it uninitialised at module-evaluation time.
+- **`import { type X }` is not `import type { X }`.** Under `verbatimModuleSyntax` the
+  first still emits a runtime import. Use the second for type-only dependencies.
+
+## Imports
+
+**Absolute, always** — `@/session/session.typedefs.ts`, never `../../../session/…`. A
+file's imports then read the same wherever it sits, and moving a file no longer rewrites
+its import block. (TypeScript 7 removed `baseUrl`; `paths` in tsconfig.json resolves
+relative to that file.)
+
+## File kinds
+
+The suffix tells you what is inside a file, and whether it can touch the outside world,
+before you open it. `src/quality/fileKinds.test.ts` enforces this.
+
+| Suffix | Contains | Class? | Pure? |
+|---|---|---|---|
+| `.typedefs.ts` | types, interfaces, enums | — | yes |
+| `.constants.ts` | frozen values | — | yes |
+| `.service.ts` | orchestration; may use ports | class | no |
+| `.adapter.ts` | a real implementation of a port | class | no |
+| `.command.ts` | one CLI subcommand | class | no |
+| `.hook.ts` | one Claude Code hook handler | class | no |
+| `.container.ts` | the composition root | class | no |
+| `.parser.ts` | untrusted input → a typed value | class | yes |
+| `.serializer.ts` | data → output a **program** re-parses | class | yes |
+| `.formatter.ts` | data → text a **human or the agent** reads | class | yes |
+| `.builder.ts` | data → a query/expression string | class | yes |
+| `.ranker.ts` | scoring and ordering | class | yes |
+| `.utils.ts` | small stateless helpers, no domain knowledge | functions | yes |
+| `.fake.ts`, `.fixture.ts` | test doubles and builders (`testing/` only) | either | — |
+
+Enums live in `.typedefs.ts`: an enum *is* the type it constrains.
+
+**No magic values.** Every module-scope constant goes in `*.constants.ts`, including
+values used exactly once — thresholds, filenames, timeouts, regexes, SQL, messages,
+defaults. Only trivially obvious indices (`0`, `1`, `-1`) and the empty string stay
+inline.
+
+## Purity
+
+A file is **pure** when: it imports nothing from `platform/` and no `node:`/`bun:`
+builtin; it reads no ambient state (no `process.env`, `Date.now()`, `Math.random()`,
+`cwd`, filesystem, network); every input arrives as a parameter and the only effect is
+the return value; and the same arguments always produce the same result.
+
+Impure suffixes are exactly `.service`, `.adapter`, `.command`, `.hook`, `.container`;
+`cli/main.ts` is the single exception, as the composition root. Purity is why most of
+the suite needs no fakes, no temp dirs and no clock — protect it.
+`src/quality/purity.test.ts` enforces it.
+
+## Classes
+
+Every role except `.utils.ts` is a class with **constructor-injected** dependencies.
+
+```ts
+export class RegistryService {
+  constructor(private readonly fs: FileSystem) {}
+  async load(path: AbsPath): Promise<Result<readonly RawWorkspace[], RegistryError>> { … }
+}
+```
+
+- Class name matches the file: `registry.service.ts` exports `RegistryService`.
+- Methods drop the redundant prefix: `RegistryService.load`, not `loadRegistry`.
+- Dependencies are **port interfaces**, never concrete adapters, so a test passes a fake
+  without touching the module.
+- No service reaches for the container, no singletons, no static state, no top-level
+  instances. `implements` an interface; never `extends` another service — shared
+  behavior goes in an injected collaborator.
+
+## Utilities
+
+- `core/utils/` — cross-module helpers with **no domain knowledge** (paths, slugs). If it
+  mentions a workspace, a note or a hook, it does not belong here.
+- `<module>/utils/<name>/` — helpers used by 2+ files inside one module. Used by exactly
+  one file? Keep it private to that file.
+
+A `.utils.ts` may not import another module.
 
 ## Code style
 
 - **No magic strings — use enums.** Any string that is really a closed set of cases
-  gets a TypeScript `enum` (or, for wire formats, an enum whose values are the exact
-  protocol strings). Never compare against a bare literal.
+  gets a TypeScript `enum` (for wire formats, an enum whose values are the exact
+  protocol strings). Never compare against a bare literal. Other constants go in a
+  `*.constants.ts` — see **§ File kinds**.
 
   ```ts
   export enum HookResultKind { Silent = "silent", Context = "context", Block = "block" }
@@ -153,12 +236,13 @@ the change visible in every diff and import that references it.
 - `readonly` on type fields and arrays; `type` over `interface`; named exports only;
   one concern per file.
 - **No work at import time.** Modules define things; entrypoints do things, behind an
-  `import.meta.main` guard. `tests/unit/coverageSurface.test.ts` imports every source
-  module, so a top-level side effect would run during the test suite.
-- **No type assertions** except the single commented `AbsPath` brand in
-  `core/paths.ts`.
+  `import.meta.main` guard. A top-level side effect runs the moment any test imports
+  the module.
+- **No type assertions** except the commented `AbsPath` brand in `core/utils/paths`.
+  Every assertion elsewhere needs a `// SAFETY:` comment stating the invariant that
+  makes it sound (the linter requires one).
 - **No module mocking** (anti-slop `no-module-mocking`). Inject a fake from
-  `tests/helpers/fakes/`.
+  `src/testing/fakes/`.
 - Comments follow the rules in **§ Comments** below.
 
 ## Comments
@@ -205,23 +289,27 @@ runtime or dependency traps, which save the next person hours.
   `{ name, input, expected }`.
 - **Never fake the `Db` port** — FTS5's stemmer, bm25 weighting and `NEAR` semantics
   *are* the behavior under test. Use a real `bun:sqlite` `:memory:` database.
-- Build containers via `tests/helpers/container.ts`.
-- A test that pins a Python quirk names the source line in a comment.
-- Layout is **test level first, then module**, mirroring `src/`:
-  `tests/unit/<module>` (pure) · `tests/integration/<module>` (real temp dirs and a
-  real SQLite) · `tests/contract/session` (the hook protocol) · `tests/cli` (spawned
-  e2e) · `tests/parity` (differential vs Python, deleted at cutover) · `tests/golden`
-  · `tests/fixtures` · `tests/helpers`.
-- Anything that spawns the built CLI must call `ensureDistBuilt()` from
-  `tests/helpers/build.ts` in its own `beforeAll` — bun test gives no cross-file
-  ordering guarantee, and relying on a stale `dist/` passes locally and fails in CI.
+- **Tests live beside the code they cover**, one per implementation file:
+  `retrieval/query/tokenizer/tokenizer.parser.test.ts` sits next to
+  `tokenizer.parser.ts`. `src/quality/testPresence.test.ts` enforces this, with a short
+  list of named exceptions for files genuinely covered through their only caller.
+- Shared machinery lives in `src/testing/`: the port `fakes/`, the vault/container
+  `fixtures/`, `utils/` (temp dirs, building `dist`, spawning the CLI) and the
+  committed CLI `golden/` files. Build containers via `testing/fixtures`.
+- Anything that spawns the built CLI must call `ensureDistBuilt()` in its own
+  `beforeAll` — bun test gives no cross-file ordering guarantee, and relying on a
+  stale `dist/` passes locally and fails in CI.
+- **Coverage is a report, not the guarantee.** The threshold is a low line-coverage
+  floor; it cannot catch a module with no tests at all, because Bun only instruments
+  files that some test imports. That is what `testPresence` is for. Never add code to
+  move a coverage number — that is how empty constructors and tests-for-mocks get in.
 
 ## Never let a test touch the real machine
 
 This project installs itself into `~/.claude/settings.json`, `~/.local/bin/memory` and
-on a machine where cc-memory is live and in use. A test that reaches the
-real HOME does not just fail — it can silently break the user's editor. This has
-happened once already; both root causes are non-obvious and worth knowing:
+`~/.claude/memory/`, on a machine where cc-memory is live and in daily use. A test that
+reaches the real HOME does not just fail — it can silently break the user's editor. That
+has happened once already, and both root causes are non-obvious:
 
 - **`process.env.HOME` does NOT change what in-process code sees as home.** Bun's
   `os.homedir()` reads the value captured at startup, so mutating `process.env.HOME`
@@ -248,7 +336,7 @@ bun run fmt          # oxfmt, write
 bun run lint         # oxlint + the vendored anti-slop plugin (15 rules)
 bun run typecheck    # tsc --noEmit — oxlint is syntactic, this is the type gate
 bun test             # fast, no coverage
-bun run test:parity  # differential harness vs the Python implementation
+bun run build        # bundle to dist/memory.js
 ```
 
 `oxlint` and `oxfmt` are always invoked **through `bun`**
@@ -260,13 +348,22 @@ the runtime for this project.
 A `PostToolUse` hook (`tools/dev/checkFile.sh`) formats and lints every `.ts` file on
 write and feeds lint findings straight back. Fix them immediately.
 
-## Definition of done (every packet)
+## Definition of done
 
 ```sh
-bun run check          # green
-bun run test:parity    # green, or a registered divergence
+bun run check    # format, lint, typecheck, the full suite, coverage
 ```
 
-A behavior change from the Python needs an entry in `tests/parity/divergences.ts`
-with `{ case, reason, bugfix }` referencing the plan's bug-fix row. Never silently
-loosen an assertion.
+Run it from a clean `dist/` (`rm -rf dist`) — a stale build masks failures that CI
+will hit.
+
+Never loosen an assertion or lower a gate to go green. If a rule is wrong, change the
+rule deliberately and say why; if a test is wrong, fix the code it is testing. The
+structural tests in `src/quality/` exist to make that discipline mechanical:
+
+| Test | Guarantees |
+|---|---|
+| `purity.test.ts` | pure files never reach `platform/`, node or bun |
+| `moduleBoundaries.test.ts` | cross-module imports name an `index.ts`; only tests use `testing/`; no cycles between modules |
+| `fileKinds.test.ts` | typedefs/constants hold no behavior; every file has a role suffix; every module has an `index.ts` |
+| `testPresence.test.ts` | every implementation file has a test beside it |
