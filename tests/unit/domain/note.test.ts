@@ -96,6 +96,16 @@ describe("extractWikilinks / extractTypedRelations / extractInlineTags", () => {
   test("a tag at the very start of the text (no preceding whitespace) is still found", () => {
     expect(extractInlineTags("#leading tag then text")).toEqual(["leading"]);
   });
+
+  // Python's `\w` on `str` is Unicode-aware, so index.py:14 captures the whole of
+  // "café"; a plain JS `\w` would truncate it to "caf". Verified against the Python
+  // regex directly. The first character stays ASCII-only in both, so a fully
+  // non-Latin tag matches in neither.
+  test("a tag with non-ASCII letters after the first character is captured whole", () => {
+    expect(extractInlineTags("fix #café soon")).toEqual(["café"]);
+    expect(extractInlineTags("see #tag_ok/sub here")).toEqual(["tag_ok/sub"]);
+    expect(extractInlineTags("ru #привет x")).toEqual([]);
+  });
 });
 
 describe("cleanInline", () => {

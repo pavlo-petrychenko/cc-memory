@@ -23,6 +23,44 @@ export type Divergence = {
 // replacing per-session `.wrap-<id>` marker files).
 export const DIVERGENCES: readonly Divergence[] = [];
 
+/**
+ * Behavior changes already SHIPPED in the domain layer that no parity case can
+ * exercise yet, because they only become observable once the TypeScript CLI (P6)
+ * and hooks (P7) exist. They are NOT consulted by the differ — putting them in
+ * `DIVERGENCES` now would fail as stale entries.
+ *
+ * P6/P7/P8: when your parity case makes one of these produce a real diff, MOVE the
+ * entry into `DIVERGENCES` with the case name filled in. Do not silently absorb the
+ * diff into an assertion.
+ */
+export const PENDING_DIVERGENCES: readonly Omit<Divergence, "case">[] = [
+  {
+    reason:
+      "Frontmatter is parsed with a real YAML parser instead of the PoC's two " +
+      "hand-rolled line-splitters, so list and multiline frontmatter (`tags:` as a " +
+      "YAML sequence) now parse correctly instead of being read as a raw string. " +
+      "A malformed block still falls back to the old line-splitting behavior, so " +
+      "invalid vault files degrade identically. Affects note tags -> the `tags` FTS " +
+      "column -> retrieval for notes using list-form tags.",
+    bugfix: 5,
+    expectedDiff:
+      "search/notes output may differ for notes whose frontmatter uses list-form " +
+      "or multiline `tags:`",
+  },
+  {
+    reason:
+      "A malformed numeric CCMEM_* env var (e.g. CCMEM_BLOCK_AFTER=nonsense) falls " +
+      "back to its documented default instead of crashing. The Python reads these " +
+      "as import-time module constants via bare int()/float(), so a bad value kills " +
+      "the hook process BEFORE main()'s try/except — a latent violation of the " +
+      "fail-open invariant (#3). Only reachable with already-broken input.",
+    bugfix: 9,
+    expectedDiff:
+      "with a malformed CCMEM_* value, Python exits non-zero with a traceback; " +
+      "TypeScript runs normally using the default",
+  },
+];
+
 export function findDivergence(
   caseName: string,
   allowlist: readonly Divergence[] = DIVERGENCES,

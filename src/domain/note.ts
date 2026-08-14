@@ -68,9 +68,13 @@ type YamlMapping = { readonly [key: string]: YamlValue };
 const FRONTMATTER = /^---\s*\n([\s\S]*?)\n---\s*\n/;
 const WIKILINK = /\[\[([^\]]+)\]\]/g;
 const TYPED_RELATION = /^\s*-\s+([a-z_]+)\s+\[\[([^\]]+)\]\]/gm;
-// `\w` matches [A-Za-z0-9_] the same in both languages here; classes kept explicit
-// per the porting reference's JS note.
-const INLINE_TAG = /(?:^|\s)#([A-Za-z][\w/-]*)/gu;
+// Python's `\w` on `str` is UNICODE-aware, so `index.py:14`'s `[\w/-]` accepts
+// non-ASCII letters after the first character: `#café` captures "café" there. JS's
+// `\w` is always ASCII, which would truncate it to "caf" — so the continuation class
+// is spelled out with Unicode property escapes to match Python exactly. (The FIRST
+// character is `[A-Za-z]` in both, so `#привет` matches in neither.) Verified against
+// the Python regex on `#café`, `#tag_ok/sub`, `#привет` and `#promote`.
+const INLINE_TAG = /(?:^|\s)#([A-Za-z][\p{L}\p{N}_/-]*)/gu;
 const TITLE = /^#\s+(.+?)\s*$/m;
 const KB_INDEX_TITLE_SUFFIX = /\s*[—-]\s*Knowledge Base Index\s*$/;
 
