@@ -243,15 +243,42 @@ describe("CLI e2e against the built dist/memory.js", () => {
     }
   });
 
-  test("install stub fails loudly rather than pretending to succeed", async () => {
+  /**
+   * `install` (no `--dry-run`) is DELIBERATELY never spawned here, even
+   * against a faked `env.HOME`: `services/install/launchd.ts` calls
+   * `launchctl bootout`/`bootstrap gui/<uid>/…`, and launchd's domain is
+   * keyed by the REAL system user id, not by `$HOME` — a faked home only
+   * protects file writes, not this one. Spawning the real built binary here
+   * (rather than calling `install()` in-process with an injected
+   * `procFake`, as `tests/cli/commands/install.command.test.ts` does) would
+   * genuinely register/replace a launchd job on whatever machine runs this
+   * suite. `--dry-run` returns before any of `settings.json`/shim/skills/
+   * registry/launchd ever get touched (`services/install/run.ts`), which is
+   * what makes it the one `install` invocation this file may safely spawn.
+   */
+  test("install --dry-run reports success without writing anything", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
-      const result = await runTs(["install"], {
+      const result = await runTs(["install", "--dry-run"], {
         env: fixture.env,
         cwd: primaryCwd(fixture),
       });
-      expect(result.exitCode).not.toBe(0);
-      expect(result.stderr).toContain("not implemented yet (P9)");
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("dry run");
+    } finally {
+      tempDir.remove();
+    }
+  });
+
+  test("uninstall with nothing installed under the fixture's $HOME reports nothing to do", async () => {
+    const { tempDir, fixture } = setUpFixture();
+    try {
+      const result = await runTs(["uninstall"], {
+        env: fixture.env,
+        cwd: primaryCwd(fixture),
+      });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("nothing to uninstall");
     } finally {
       tempDir.remove();
     }
