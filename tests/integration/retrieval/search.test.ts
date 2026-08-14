@@ -14,7 +14,7 @@ import {
   type IndexFixture,
 } from "./testFixture.ts";
 
-// The C5 default for CCMEM_LINK_BOOST (`core/Config.ts`'s LINK_BOOST_DEFAULT) —
+// The default for CCMEM_LINK_BOOST (`core/Config.ts`'s LINK_BOOST_DEFAULT) —
 // searchFused requires it explicitly rather than re-deriving its own copy.
 const LINK_BOOST = 0.003;
 
@@ -29,14 +29,12 @@ afterEach(() => {
   teardownIndexFixture(fixture);
 });
 
-/** relKey each hit's path against the primary workspace's kb, matching
- * tests/test_retrieval.py's `_paths` helper. */
+/** relKey each hit's path against the primary workspace's kb. */
 function relPaths(hits: readonly { readonly path: AbsPath }[]): readonly string[] {
   return hits.map((hit) => relKey(hit.path, fixture.primary.kb));
 }
 
-describe("index/search — notes retrieval (tests/test_retrieval.py)", () => {
-  // Porter stemming (test_retrieval.py:137-140).
+describe("index/search — notes retrieval", () => {
   test.each(["inject", "injection", "blocking", "block"])(
     "%s matches 'Injection Hook' via Porter stemming",
     async (query) => {
@@ -45,7 +43,6 @@ describe("index/search — notes retrieval (tests/test_retrieval.py)", () => {
     },
   );
 
-  // Compound/camel symmetry (test_retrieval.py:143-146).
   test("'overall score' and 'overallScore' both match 'Scoring Camel'", async () => {
     const spaced = await search(fixture.container, fixture.primary, "overall score");
     const glued = await search(fixture.container, fixture.primary, "overallScore");
@@ -53,7 +50,6 @@ describe("index/search — notes retrieval (tests/test_retrieval.py)", () => {
     expect(relPaths(glued)).toContain("Alpha/Scoring Camel");
   });
 
-  // Title outranks body (test_retrieval.py:149-153).
   test("a title hit outranks a body hit", async () => {
     const hits = await search(fixture.container, fixture.primary, "kryptonite", {
       limit: 5,
@@ -63,7 +59,6 @@ describe("index/search — notes retrieval (tests/test_retrieval.py)", () => {
     expect(paths).toContain("Beta/Body Kryptonite");
   });
 
-  // Off-topic returns nothing (test_retrieval.py:156-157).
   test("an off-topic query returns nothing", async () => {
     const hits = await search(
       fixture.container,
@@ -73,8 +68,7 @@ describe("index/search — notes retrieval (tests/test_retrieval.py)", () => {
     expect(hits).toEqual([]);
   });
 
-  // Raw-query safety (test_retrieval.py:160-162): an FTS5 syntax error is
-  // swallowed to [] rather than thrown (lib/index.py:297-298).
+  // An FTS5 syntax error in the raw query is swallowed to [] rather than thrown.
   test.each(['"unterminated', "star*", "a OR b", "NEAR broken"])(
     "%s never throws",
     async (query) => {
@@ -83,7 +77,6 @@ describe("index/search — notes retrieval (tests/test_retrieval.py)", () => {
     },
   );
 
-  // Operator words tokenized, not passed through (test_retrieval.py:164-168).
   test("a prompt containing NEAR/OR/AND still retrieves", async () => {
     const hits = await search(
       fixture.container,
@@ -93,7 +86,6 @@ describe("index/search — notes retrieval (tests/test_retrieval.py)", () => {
     expect(relPaths(hits)).toContain("Alpha/Injection Hook");
   });
 
-  // Fusion rewards proximity (test_retrieval.py:175-182).
   test("searchFused ranks the adjacent 'red car' note above the far-apart one", async () => {
     const hits = await searchFused(fixture.container, fixture.primary, "red car", {
       limit: 5,
@@ -106,7 +98,6 @@ describe("index/search — notes retrieval (tests/test_retrieval.py)", () => {
     expect(hits[0]?.rankScore).toBeGreaterThan(0);
   });
 
-  // Fused hit still carries the bm25 score (test_retrieval.py:184-188).
   test("a fused hit carries both `score` and `rankScore`", async () => {
     const hits = await searchFused(
       fixture.container,
@@ -131,8 +122,6 @@ describe("index/search — notes retrieval (tests/test_retrieval.py)", () => {
     expect(relPaths(hits)[0]).toBe("Beta/Title Kryptonite");
   });
 
-  // searchFused returns [] early when the token query itself is empty
-  // (lib/index.py:321-322 — the complete-candidate-set short circuit).
   test("searchFused returns [] when the token search itself finds nothing", async () => {
     const hits = await searchFused(
       fixture.container,
@@ -146,7 +135,7 @@ describe("index/search — notes retrieval (tests/test_retrieval.py)", () => {
   });
 });
 
-describe("index/search — worklog retrieval (test_retrieval.py:212-216)", () => {
+describe("index/search — worklog retrieval", () => {
   test("kind: worklog finds the incident entry", async () => {
     const hits = await search(
       fixture.container,

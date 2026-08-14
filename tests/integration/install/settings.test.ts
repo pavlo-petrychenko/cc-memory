@@ -43,7 +43,7 @@ describe("install/settings.ts — hookCommand / hookRegisteredLine / purgeSummar
     );
   });
 
-  test("hookRegisteredLine matches tools/install.py:137's log line", () => {
+  test("hookRegisteredLine formats the registration log line", () => {
     expect(hookRegisteredLine(HookEvent.SessionStart, "session-start")).toBe(
       "hook SessionStart -> session-start",
     );

@@ -16,10 +16,9 @@ import { type GitFake, makeGitFake } from "../../helpers/fakes/gitFake.fake.ts";
 import { type IoFake, makeIoFake } from "../../helpers/fakes/ioFake.fake.ts";
 
 /**
- * `Stop` (`hooks/wrap-gate.py:46-108`): the dirty-tree signature, the
- * nudge->block escalation, and [[bugfixes]] #1 — one `wrap-state.json` per
- * workspace keyed by session id, replacing the 142 leaked `.wrap-<id>` marker
- * files.
+ * `Stop`: the dirty-tree signature, the nudge->block escalation, and one
+ * `wrap-state.json` per workspace keyed by session id — not one marker file
+ * per session, which would otherwise leak a file per session forever.
  */
 
 // SAFETY: fixed test fixtures, matching `tests/helpers/container.ts`'s
@@ -84,7 +83,7 @@ async function runWrapGate(fixture: Fixture, stdin: string): Promise<void> {
   );
 }
 
-/** The raw C2 stdin fields this hook reads (`cwd`, `session_id`,
+/** The raw stdin fields this hook reads (`cwd`, `session_id`,
  * `stop_hook_active`), all optional so a test can override just one. */
 type StopPayloadOverrides = {
   readonly cwd?: string;
@@ -97,7 +96,7 @@ function payload(overrides: StopPayloadOverrides = {}): string {
 }
 
 /** One `wrap-state.json` entry (`sig`/`ts`/`nudges`), keyed by session id —
- * [[bugfixes]] #1's shared marker file, read back for assertions. */
+ * the shared marker file's shape, read back for assertions. */
 type WrapStateFileContents = Readonly<
   Record<string, { readonly sig: string; readonly ts: number; readonly nudges: number }>
 >;
@@ -125,7 +124,7 @@ describe("Stop (wrap-gate) hook", () => {
     );
     expect(fixture.io.exitCode).toBe(0);
 
-    // [[bugfixes]] #1: one shared `wrap-state.json`, not a `.wrap-s1` file.
+    // One shared `wrap-state.json`, not a `.wrap-s1` file.
     const stateFileContents: WrapStateFileContents = JSON.parse(
       await fixture.fs.readFile(MARKER_PATH),
     );
@@ -200,7 +199,7 @@ describe("Stop (wrap-gate) hook", () => {
     expect(fixture.io.written).toHaveLength(1); // still just the first write
   });
 
-  test("[[bugfixes]] #1: escalates to block after repeated nudges with sustained drift", async () => {
+  test("escalates to block after repeated nudges with sustained drift", async () => {
     const fixture = await makeFixture();
     fixture.git.setStatusPorcelain(statusPorcelainWithLines(5)); // >= BLOCK_DRIFT (5)
 

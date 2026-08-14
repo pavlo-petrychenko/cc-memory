@@ -27,12 +27,11 @@ function doctorArgs(overrides: Partial<DoctorArgs> = {}): DoctorArgs {
 }
 
 /**
- * `doctor` (`src/install/doctor.command.ts`), REPLACING `cmd_doctor`
- * (`bin/memory:212-250`) with real diagnostics — see `doctor.service.ts`'s
- * doc comment for why this is a redesign rather than a line-by-line port
- * (P7's TypeScript hooks, which Python's version spawns, don't exist in this
- * worktree). The first two lines are the one thing kept BYTE-IDENTICAL
- * (the `cli/doctor-*` parity cases anchor on them even while skipped).
+ * `doctor` (`src/install/doctor.command.ts`) runs real diagnostics — see
+ * `doctor.service.ts`'s doc comment for why this is a redesign rather than
+ * spawning hooks to smoke-test them. The first two lines are the one thing
+ * kept BYTE-IDENTICAL (the `cli/doctor-*` parity cases anchor on them even
+ * while skipped).
  */
 describe("doctor (real diagnostics, replacing the exit-0 hook smoke test)", () => {
   test("an empty registry reports '(empty)' and 'no workspace'", async () => {

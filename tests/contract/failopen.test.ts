@@ -1,10 +1,8 @@
 /**
- * The fail-open invariant (CLAUDE.md #3), proven for real: SPAWN each of the
- * 5 hooks through the actual built artifact (`bun dist/memory.js hook
+ * The fail-open invariant: a hook must never break a session. SPAWN each of
+ * the 5 hooks through the actual built artifact (`bun dist/memory.js hook
  * <name>`) with the literal input `"not json"` on stdin, and assert exit
- * code 0 with nothing resembling a crash on stderr. The Python side only
- * ever smoke-checked this (`bin/memory:246-250`); this makes it a real,
- * per-hook test for all five TypeScript handlers.
+ * code 0 with nothing resembling a crash on stderr.
  *
  * Spawned with an isolated, empty `$HOME` (a fresh temp dir, no
  * `registry.toml`) so this never touches the real machine's vault —

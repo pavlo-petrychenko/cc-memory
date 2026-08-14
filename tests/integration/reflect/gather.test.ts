@@ -31,7 +31,7 @@ function underWorklogs(relativePath: string): AbsPath {
   return expandPath(`/home/test/kb/_Worklogs/${relativePath}`, HOME);
 }
 
-describe("reflect/gather gatherCandidates (bin/reflector.py:52-88)", () => {
+describe("reflect/gather gatherCandidates", () => {
   test("a #promote line without a leading **Field:** prefix", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(underWorklogs("wt1/2026-08-01.md"), "#promote this fact\n", 100);
@@ -39,9 +39,9 @@ describe("reflect/gather gatherCandidates (bin/reflector.py:52-88)", () => {
     const candidates = await gatherCandidates(fs, makeWorkspace(), 0);
 
     // The tag itself is removed and the result trimmed of " -*" at both
-    // ends (`stripChars`, `bin/reflector.py:76`) — text BEFORE the tag on
-    // the same line is preserved verbatim, so the tag is placed at the
-    // start here to keep this test's expectation simple and exact.
+    // ends (`stripChars`) — text BEFORE the tag on the same line is
+    // preserved verbatim, so the tag is placed at the start here to keep
+    // this test's expectation simple and exact.
     expect(candidates).toEqual([{ text: "this fact", src: "wt1/2026-08-01.md" }]);
   });
 

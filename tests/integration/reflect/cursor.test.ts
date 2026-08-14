@@ -20,10 +20,11 @@ import { makeFsMemoryFake } from "../../helpers/fakes/fsMemory.fake.ts";
 import { makeProcFake } from "../../helpers/fakes/procFake.fake.ts";
 
 /**
- * `bin/reflector.py:30-49`'s `is_due`/`stamp`, reworked into two cursors
- * (bugfix #3). The final `describe` block is THE regression test: it proves
- * an unattended tmux spawn no longer drops candidates the way the old single
- * `.last-reflect` stamp did.
+ * Two cursors, not one: `lastRun` gates how often reflection is attempted,
+ * while `lastConsolidated` only advances once a spawned tmux session has
+ * actually consumed a brief. The final `describe` block is THE regression
+ * test: it proves an unattended tmux spawn does not drop candidates by
+ * advancing `lastConsolidated` before the brief was processed.
  */
 
 // SAFETY: fixed test fixture, mirrors tests/helpers/container.ts's DEFAULT_HOME.
@@ -62,7 +63,7 @@ function underWorklogs(relativePath: string): AbsPath {
 
 const HOUR_MS = 3_600_000;
 
-describe("reflect/cursor isDue (bin/reflector.py:34-43)", () => {
+describe("reflect/cursor isDue", () => {
   test("due when there is no lastRun cursor yet", async () => {
     const fs = makeFsMemoryFake();
     expect(await isDue(fs, makeWorkspace(), 1_000_000, 20)).toBe(true);
@@ -89,8 +90,8 @@ describe("reflect/cursor isDue (bin/reflector.py:34-43)", () => {
   test("a cursor that exists but can't be read counts as absent -> due", async () => {
     const fs = makeFsMemoryFake();
     // A directory sitting where the cursor FILE should be: `exists()` is
-    // true, but `readFile()` throws — the same "unreadable" shape
-    // `is_due`'s `try/except: return True` (`bin/reflector.py:38-41`) covers.
+    // true, but `readFile()` throws — an unreadable cursor must count as
+    // absent rather than propagate the error.
     fs.seedDir(LAST_RUN_CURSOR_PATH);
     expect(await isDue(fs, makeWorkspace(), 1_000_000, 20)).toBe(true);
   });
@@ -214,7 +215,7 @@ describe("reflect/cursor isPreviousBriefProcessed", () => {
   });
 });
 
-describe("reflect/cursor — the unattended-session regression (bugfix #3)", () => {
+describe("reflect/cursor — the unattended-session regression", () => {
   test("run twice: the same candidates are offered again after an unattended tmux spawn", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(

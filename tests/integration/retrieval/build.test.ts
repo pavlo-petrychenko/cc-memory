@@ -83,7 +83,6 @@ describe("index/build buildIndex — notes", () => {
     expect(renamed?.title).toBe("Alpha Renamed");
   });
 
-  // test_retrieval.py:219-223.
   test("prune: a note deleted from disk is removed from the index on reindex", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(under("A.md"), NOTE_A, 100);
@@ -162,8 +161,8 @@ describe("index/build buildIndex — notes", () => {
 
     const stats = await buildIndex(container, makeWorkspace(), { incremental: false });
 
-    // lib/index.py:146-148 — a parse failure skips the file silently; the
-    // reindex still succeeds for everything else.
+    // A parse failure skips the file silently; the reindex still succeeds
+    // for everything else.
     expect(stats).toEqual({ added: 1, updated: 0, removed: 0, total: 1 });
     const notes = await listNotes(container, makeWorkspace());
     expect(notes.map((note) => note.path)).toEqual(["A.md"]);
@@ -179,7 +178,7 @@ describe("index/build buildIndex — notes", () => {
   });
 });
 
-describe("index/build buildIndex — worklogs ([[bugfixes]] #7: incremental by mtime)", () => {
+describe("index/build buildIndex — worklogs (incremental by mtime)", () => {
   test("indexes worklog files under each non-dot worktree slug", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(underWorklogs("wt1/STATE.md"), "# wt1\n## Current focus\nnothing\n", 100);

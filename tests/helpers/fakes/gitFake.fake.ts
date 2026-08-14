@@ -21,8 +21,8 @@ export type GitFake = Git & {
 
 /**
  * A `Git` with a fixed, settable return value per method — for services/hooks
- * tests (P4/P7/P8) that want to script "the tree is dirty" or "there is no
- * git repo here" without going through `procFake.fake.ts`'s argv-level detail.
+ * tests that want to script "the tree is dirty" or "there is no git repo
+ * here" without going through `procFake.fake.ts`'s argv-level detail.
  * `gitCli.adapter.test.ts` itself tests the real adapter over `procFake`, not
  * this fake.
  */

@@ -1,10 +1,6 @@
 /**
- * The full C3 invocation table ([[contracts]]) against `src/cli/args.ts`'s
- * hand-written parser. Table-driven, per CLAUDE.md's testing conventions.
- * Placed under `tests/unit/domain/` per this packet's own "Tests" section,
- * even though `args.ts` lives under `src/cli/` (it has no I/O, so it would fit
- * `core/` just as well; the plan's file table puts it in `cli/`
- * regardless — this test's location is transcribed as specified).
+ * The full CLI invocation table against `src/cli/args.ts`'s hand-written
+ * parser, table-driven.
  */
 import { describe, expect, test } from "bun:test";
 
@@ -255,7 +251,7 @@ const CASES: readonly Case[] = [
   },
 ];
 
-describe("parseArgs — the full C3 invocation table", () => {
+describe("parseArgs — the full invocation table", () => {
   for (const { name, argv, expected } of CASES) {
     test(name, () => {
       const result = parseArgs(argv);

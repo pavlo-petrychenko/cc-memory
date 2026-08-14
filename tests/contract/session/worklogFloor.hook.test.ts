@@ -15,8 +15,8 @@ import { type GitFake, makeGitFake } from "../../helpers/fakes/gitFake.fake.ts";
 import { type IoFake, makeIoFake } from "../../helpers/fakes/ioFake.fake.ts";
 
 /**
- * `SessionEnd` (`hooks/worklog-floor.py:28-62`): a deterministic, write-only
- * git/command skeleton appended to today's dated journal — never any stdout.
+ * `SessionEnd`: a deterministic, write-only git/command skeleton appended to
+ * today's dated journal — never any stdout.
  */
 
 // SAFETY: fixed test fixtures, matching `tests/helpers/container.ts`'s

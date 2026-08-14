@@ -68,7 +68,7 @@ async function addMate(container: Container) {
   });
 }
 
-describe("workspaceAdd (cmd_workspace_add, bin/memory:26-68)", () => {
+describe("workspaceAdd", () => {
   test("scaffolds the vault, registers the workspace, and prints the added summary", async () => {
     const { container, written, procCalls } = makeCliTestFixture();
     const outcome = await addMate(container);
@@ -78,7 +78,8 @@ describe("workspaceAdd (cmd_workspace_add, bin/memory:26-68)", () => {
     expect(written.some((line) => line.startsWith("  kb       "))).toBe(true);
     expect(procCalls.some((call) => call.args.includes("init"))).toBe(true);
 
-    // Registered with `~`-relative paths (C1).
+    // Registered with `~`-relative paths, so the registry stays portable
+    // across machines with a different home directory.
     const registryContents = await container.fs.readFile(REGISTRY_PATH);
     expect(registryContents).toContain('id = "mate"');
     expect(registryContents).toContain("~/Documents/Mate Vault");
@@ -117,7 +118,7 @@ describe("workspaceAdd (cmd_workspace_add, bin/memory:26-68)", () => {
   });
 });
 
-describe("workspaceRm (cmd_workspace_rm, bin/memory:71-86)", () => {
+describe("workspaceRm", () => {
   test("unregisters without touching the index (no --purge)", async () => {
     const { container } = makeCliTestFixture();
     await addMate(container);
@@ -145,7 +146,7 @@ describe("workspaceRm (cmd_workspace_rm, bin/memory:71-86)", () => {
     expect(await container.fs.exists(indexDb)).toBe(false);
   });
 
-  test("an unknown id fails with bin/memory:74's exact message", async () => {
+  test("an unknown id fails with the exact 'no such workspace' message", async () => {
     const { container } = makeCliTestFixture();
     const outcome = await workspaceRm(container, {
       command: CliCommand.WorkspaceRm,
@@ -156,7 +157,7 @@ describe("workspaceRm (cmd_workspace_rm, bin/memory:71-86)", () => {
   });
 });
 
-describe("workspaceLs (cmd_workspace_ls, bin/memory:89-105)", () => {
+describe("workspaceLs", () => {
   test("an empty registry prints '(no workspaces)'", async () => {
     const { container, written } = makeCliTestFixture();
     const outcome = await workspaceLs(container);

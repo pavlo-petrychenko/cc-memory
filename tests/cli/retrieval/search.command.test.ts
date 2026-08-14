@@ -68,7 +68,7 @@ async function seedIndexedWorkspace(): Promise<SeededFixture> {
   return { container, io };
 }
 
-describe("search (cmd_search, bin/memory:139-152)", () => {
+describe("search", () => {
   test("prints a hit's title, relative path and snippet", async () => {
     const { container, io } = await seedIndexedWorkspace();
 
@@ -90,14 +90,14 @@ describe("search (cmd_search, bin/memory:139-152)", () => {
     expect(io.written).toEqual(["(no hits)"]);
   });
 
-  test("an unknown --workspace fails with bin/memory:141's exact message", async () => {
+  test("an unknown --workspace fails with the exact 'no such workspace' message", async () => {
     const { container } = await seedIndexedWorkspace();
 
     const outcome = await search(container, CONFIG, searchArgs({ workspace: "ghost" }));
     expect(outcome).toEqual({ exitCode: 1, stderrMessage: "no such workspace: ghost" });
   });
 
-  test("no --workspace and a cwd under no workspace fails with bin/memory:145's exact message", async () => {
+  test("no --workspace and a cwd under no workspace fails with the exact message", async () => {
     const { container } = await seedIndexedWorkspace();
 
     const outcome = await search(

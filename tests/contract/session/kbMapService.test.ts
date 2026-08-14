@@ -6,11 +6,11 @@ import { buildKbMapInput } from "../../../src/knowledge/kbMap.service.ts";
 import { makeFsMemoryFake } from "../../helpers/fakes/fsMemory.fake.ts";
 
 /**
- * `buildKbMapInput` — the filesystem-facing half of `session-start.py`'s
- * `build_kb_index` (`session-start.py:63-98`). Not itself a hook (it has no
- * event/payload), but P7-owned (see this packet's report) and exercised only
- * through `sessionStart.hook.ts`, so its own edge cases live alongside the
- * hook contract tests rather than duplicating a fixture per case there.
+ * `buildKbMapInput` — the filesystem-facing half of building the KB map
+ * that gets injected on session start. Not itself a hook (it has no
+ * event/payload), but exercised only through `sessionStart.hook.ts`, so its
+ * own edge cases live alongside the hook contract tests rather than
+ * duplicating a fixture per case there.
  */
 
 // SAFETY: fixed test fixtures.

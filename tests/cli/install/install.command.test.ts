@@ -13,13 +13,11 @@ import { makeProcFake } from "../../helpers/fakes/procFake.fake.ts";
  * `install`/`uninstall` (`src/install/install.command.ts`) ALWAYS take
  * an explicit fake `Container` here — never the real default `main.ts` uses
  * in production. `runInstall`/`runUninstall` call `launchctl bootout`/
- * `bootstrap` through `container.proc` (`install/launchd.ts`); on
- * the real container that is a REAL mutation of this machine's launchd
- * state, which this packet must never trigger from a test (see this file's
- * and `install.command.ts`'s doc comments, and the packet's safety
- * directive). `procFake` records every call instead of spawning anything, so
- * every assertion below is about what THIS command decided to do, not about
- * the real OS.
+ * `bootstrap` through `container.proc` (`install/launchd.ts`); on the real
+ * container that is a REAL mutation of this machine's launchd state, which
+ * a test must never trigger. `procFake` records every call instead of
+ * spawning anything, so every assertion below is about what THIS command
+ * decided to do, not about the real OS.
  */
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — same

@@ -23,11 +23,10 @@ function absPath(raw: string): AbsPath {
 const HOME = absPath("/home/test");
 
 /**
- * Ports `ResolutionTest` (`tests/test_retrieval.py:226-256`): two workspaces,
- * `outer` matching `<tmp>/code` and `inner` (nested) matching
- * `<tmp>/code/acme` — the longest matching prefix must win.
+ * Two workspaces, `outer` matching `<tmp>/code` and `inner` (nested)
+ * matching `<tmp>/code/acme` — the longest matching prefix must win.
  */
-describe("resolveWorkspace — ResolutionTest (tests/test_retrieval.py:226-256)", () => {
+describe("resolveWorkspace — longest-prefix match", () => {
   const outer: RawWorkspace = {
     id: "outer",
     match: ["/tmp/code"],

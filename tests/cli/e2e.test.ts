@@ -2,12 +2,8 @@
  * True end-to-end coverage of the BUILT artifact: spawn `dist/memory.js`
  * itself (not an in-process function call) against the fixture vault, and
  * assert stdout against a committed golden file under `tests/golden/cli/`,
- * plus the side effects the packet's "Tests" section calls out by name
- * (registry.toml contents, index note count via `notes --json`, a git commit
- * actually created). `tests/parity/ts.test.ts` already proves TS === Python
- * for every one of these cases; this file exists to pin the TS side's own
- * contract independently of Python ever running again (this is what survives
- * into `tests/golden/` for real at cutover, per the plan's "testing" doc).
+ * plus real side effects (registry.toml contents, index note count via
+ * `notes --json`, a git commit actually created).
  */
 import { beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -53,7 +49,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
       expect(result.exitCode).toBe(0);
       const normalized = normalizeText(result.stdout, fixture.root)
         .split("\n")
-        .toSorted() // row order is not part of the C3 contract
+        .toSorted() // row order is not part of the workspace ls output contract
         .join("\n");
       expect(normalized).toBe(readGolden("workspace-ls"));
     } finally {
@@ -275,8 +271,8 @@ describe("CLI e2e against the built dist/memory.js", () => {
    * `procFake`, as `tests/cli/commands/install.command.test.ts` does) would
    * genuinely register/replace a launchd job on whatever machine runs this
    * suite. `--dry-run` returns before any of `settings.json`/shim/skills/
-   * registry/launchd ever get touched (`install/run.ts`), which is
-   * what makes it the one `install` invocation this file may safely spawn.
+   * registry/launchd ever get touched, which is what makes it the one
+   * `install` invocation this file may safely spawn.
    */
   test("install --dry-run reports success without writing anything", async () => {
     const { tempDir, fixture } = setUpFixture();

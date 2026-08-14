@@ -10,7 +10,7 @@ import { makeProcFake } from "../../helpers/fakes/procFake.fake.ts";
 const CANDIDATES: readonly Candidate[] = [{ text: "some durable fact", src: "wt1/a.md" }];
 const RELATED: readonly RelatedNote[] = [];
 
-describe("reflect/decide decideWithLlm (bin/reflector.py:128-144)", () => {
+describe("reflect/decide decideWithLlm", () => {
   test("sends the decision prompt on stdin, not argv, with the 240s timeout", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "[]", stderr: "", exitCode: 0 } });

@@ -62,7 +62,7 @@ describe("index/db openIndexDb — schema-version / shared-handle behavior", () 
       ["a.md", "A", "note", null, 1],
     );
     // Simulate a schema/tokenizer bump: the stored version is now behind
-    // SCHEMA_VERSION again (lib/index.py:131-135).
+    // SCHEMA_VERSION again.
     first.db.setUserVersion(SCHEMA_VERSION - 1);
 
     const second = await openIndexDb(container, workspace);
@@ -72,7 +72,7 @@ describe("index/db openIndexDb — schema-version / shared-handle behavior", () 
     expect(second.db.query("SELECT * FROM notes", [])).toEqual([]);
   });
 
-  test("repeated opens of the same path share one Db handle ([[bugfixes]] #6)", async () => {
+  test("repeated opens of the same path share one Db handle", async () => {
     const container = makeTestContainer({ fs: makeFsMemoryFake() });
     const workspace = makeWorkspace(IN_MEMORY_DB);
 
@@ -95,7 +95,7 @@ describe("index/db openIndexDb — real filesystem", () => {
     tempDir = null;
   });
 
-  test("creates the index_db's parent directory before opening it (lib/index.py:46-52)", async () => {
+  test("creates the index_db's parent directory before opening it", async () => {
     tempDir = createTempDir("ccmem-index-db");
     // SAFETY: `createTempDir` always returns an absolute, resolved path.
     const root = tempDir.path as AbsPath;

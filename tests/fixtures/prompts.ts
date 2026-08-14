@@ -1,10 +1,10 @@
 /**
- * Prompt corpus for the C7 retrieval-replay parity cases (tests/parity/cases/retrieval.ts).
+ * Prompt corpus for the retrieval-replay parity cases (tests/parity/cases/retrieval.ts).
  *
  * A small committed synthetic corpus is used by default, sized to the fixture
  * vault (tests/fixtures/vault.ts) so every prompt below is expected to hit
  * something specific in it. Set PARITY_REAL_VAULT=1 to additionally sample
- * real prompts recorded by `memory-inject.py`'s own logging, under
+ * real prompts recorded by the memory-inject hook's own logging, under
  * ~/.claude/memory/<workspace>/inject.jsonl on this machine — read-only, and
  * never against the real vault itself: callers run the sampled prompt text
  * through the SAME synthetic fixture, not the machine's real workspaces.

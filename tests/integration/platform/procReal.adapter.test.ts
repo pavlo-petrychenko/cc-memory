@@ -64,9 +64,9 @@ describe("procReal adapter", () => {
 
 /**
  * A missing binary must be a RESULT, not an exception. `launchctl` does not exist
- * off macOS and `tmux`/`claude` may not be installed, and every Python call site
- * this replaces caught its own subprocess failures. Before this, `memory doctor`
- * crashed on Linux instead of reporting "launchd: not loaded" — CI caught it.
+ * off macOS and `tmux`/`claude` may not be installed, so a spawn failure must
+ * surface as an exit code rather than crash the caller — `memory doctor` needs to
+ * be able to report "launchd: not loaded" instead of crashing on Linux.
  */
 describe("a missing binary", () => {
   test("resolves with exit code 127 instead of throwing", async () => {

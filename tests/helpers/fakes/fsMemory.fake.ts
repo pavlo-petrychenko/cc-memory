@@ -11,9 +11,9 @@ export type FsMemoryFake = FileSystem & {
    * behavior. */
   readonly seedFile: (path: AbsPath, contents: string, mtimeMs?: number) => void;
   readonly seedDir: (path: AbsPath) => void;
-  /** Move every file's mtime forward by `deltaMs` — what P5's incremental-index
-   * tests use to make a note "newer" than what's already indexed, without
-   * touching its content. */
+  /** Move every file's mtime forward by `deltaMs` — for incremental-index
+   * tests that need to make a note "newer" than what's already indexed,
+   * without touching its content. */
   readonly advanceAllMtimes: (deltaMs: number) => void;
   /** Read a file's current mtime without going through the async `stat`
    * method — convenient for assertions. */
@@ -161,7 +161,7 @@ export function makeFsMemoryFake(): FsMemoryFake {
     },
     symlink: (target: AbsPath, linkPath: AbsPath) => {
       // Symlinks are represented as a file whose contents are the target —
-      // good enough for the one caller that cares (`install/skills.ts`, P9),
+      // good enough for the one caller that cares (`install/skills.ts`),
       // which only ever checks existence/identity, never dereferences.
       ensureDirsUpTo(linkPath);
       entries.set(linkPath, { kind: "file", contents: target, mtimeMs: syntheticNowMs });

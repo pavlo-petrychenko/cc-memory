@@ -28,7 +28,7 @@ function commitArgs(overrides: Partial<CommitArgs> = {}): CommitArgs {
   return { command: CliCommand.Commit, workspace: null, message: null, ...overrides };
 }
 
-describe("commit (cmd_commit, bin/memory:181-190)", () => {
+describe("commit", () => {
   test("a kb with no .git directory is skipped", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
@@ -59,7 +59,7 @@ describe("commit (cmd_commit, bin/memory:181-190)", () => {
     expect(proc.calls[1]?.args).toEqual(["-C", "/vault-primary", "commit", "-m", "wip"]);
   });
 
-  test("defaults the commit message to 'memory snapshot' (bin/memory:188)", async () => {
+  test("defaults the commit message to 'memory snapshot'", async () => {
     const io = makeIoFake();
     const proc = makeProcFake();
     const fs = makeFsMemoryFake();
@@ -94,7 +94,7 @@ describe("commit (cmd_commit, bin/memory:181-190)", () => {
     expect(io.written).toEqual(["primary: nothing to commit"]);
   });
 
-  test("an unknown workspace fails with the exact bin/memory:127 message", async () => {
+  test("an unknown workspace fails with the exact 'no such workspace' message", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
     await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);

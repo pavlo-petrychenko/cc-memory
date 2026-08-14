@@ -57,7 +57,7 @@ async function seedIndexedWorkspace(): Promise<SeededFixture> {
   return { container, io };
 }
 
-describe("notes (cmd_notes, bin/memory:165-176)", () => {
+describe("notes", () => {
   test("--json prints JSON.stringify(rows, null, 2), path/title/type/importance in order", async () => {
     const { container, io } = await seedIndexedWorkspace();
 
@@ -75,7 +75,7 @@ describe("notes (cmd_notes, bin/memory:165-176)", () => {
     ]);
   });
 
-  test("plain listing pads importance and type per bin/memory:176", async () => {
+  test("plain listing pads importance and type", async () => {
     const { container, io } = await seedIndexedWorkspace();
 
     const outcome = await notes(container, notesArgs());
@@ -102,7 +102,7 @@ describe("notes (cmd_notes, bin/memory:165-176)", () => {
     expect(io.written).toEqual(["(no notes) under Ghost"]);
   });
 
-  test("an unknown --workspace fails with the exact bin/memory message", async () => {
+  test("an unknown --workspace fails with the exact 'no such workspace' message", async () => {
     const { container } = await seedIndexedWorkspace();
 
     const outcome = await notes(container, notesArgs({ workspace: "ghost" }));

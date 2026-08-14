@@ -18,10 +18,9 @@ import { makeTestContainer } from "../../helpers/container.ts";
 import { makeProcFake } from "../../helpers/fakes/procFake.fake.ts";
 
 /**
- * `doctor.service.ts` — real diagnostics, replacing Python's hook-spawning
- * smoke test (this file's own doc comment explains why). Every failure
- * class the packet's "Tests" section names gets its own case: unparseable
- * registry, missing kb, stale hook paths, missing bun, oversized log.
+ * `doctor.service.ts` — real diagnostics. Every failure class gets its own
+ * case: unparseable registry, missing kb, stale hook paths, missing bun,
+ * oversized log.
  */
 
 /** Cast a fixed test literal to `AbsPath` — every call site below is a

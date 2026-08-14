@@ -1,8 +1,6 @@
 /**
- * Golden-string tests for every `format.ts` function — C3's exact output
- * shapes, transcribed character-for-character from `bin/memory`'s `print()`
- * calls (see the doc comments in `src/cli/format.ts` for the exact source
- * lines each one ports).
+ * Golden-string tests for every `format.ts` function — the exact output
+ * shapes, character-for-character.
  */
 import { describe, expect, test } from "bun:test";
 
@@ -29,7 +27,7 @@ import {
 } from "../../src/cli/format.ts";
 
 describe("format.ts", () => {
-  test("formatWorkspaceAdded — bin/memory:64-68", () => {
+  test("formatWorkspaceAdded", () => {
     expect(
       formatWorkspaceAdded("mate", "/vault", "/vault/_Worklogs", "/idx/index.db", 12, [
         "/repo/a",
@@ -44,23 +42,23 @@ describe("format.ts", () => {
     ]);
   });
 
-  test("formatWorkspaceRemovedPurged — bin/memory:84", () => {
+  test("formatWorkspaceRemovedPurged", () => {
     expect(formatWorkspaceRemovedPurged("mate")).toBe(
       "✓ workspace 'mate' removed (index purged; vault left intact)",
     );
   });
 
-  test("formatWorkspaceUnregistered — bin/memory:86", () => {
+  test("formatWorkspaceUnregistered", () => {
     expect(formatWorkspaceUnregistered("mate")).toBe(
       "✓ workspace 'mate' unregistered (data left intact)",
     );
   });
 
-  test("NO_WORKSPACES_MESSAGE — bin/memory:92", () => {
+  test("NO_WORKSPACES_MESSAGE", () => {
     expect(NO_WORKSPACES_MESSAGE).toBe("(no workspaces)");
   });
 
-  test("formatWorkspaceLsRow pads the id to width 12 — bin/memory:104", () => {
+  test("formatWorkspaceLsRow pads the id to width 12", () => {
     expect(formatWorkspaceLsRow("mate", "/vault", "7")).toBe(
       "• mate         /vault  [7 notes]",
     );
@@ -69,15 +67,15 @@ describe("format.ts", () => {
     );
   });
 
-  test("formatWorkspaceLsMatch — bin/memory:105", () => {
+  test("formatWorkspaceLsMatch", () => {
     expect(formatWorkspaceLsMatch(["/a", "/b"])).toBe("  match: /a, /b");
   });
 
-  test("formatNoWorkspaceForCwd — bin/memory:114", () => {
+  test("formatNoWorkspaceForCwd", () => {
     expect(formatNoWorkspaceForCwd("/outside")).toBe("no workspace for /outside");
   });
 
-  test("formatResolveLines — bin/memory:116-120", () => {
+  test("formatResolveLines", () => {
     expect(
       formatResolveLines("primary", "wt1", "/kb", "/kb/_Worklogs", "/idx/index.db"),
     ).toEqual([
@@ -89,26 +87,26 @@ describe("format.ts", () => {
     ]);
   });
 
-  test("formatReindexLine — bin/memory:135-136", () => {
+  test("formatReindexLine", () => {
     expect(formatReindexLine("primary", 2, 1, 0, 8)).toBe("primary: +2 ~1 -0 = 8 notes");
   });
 
-  test("NO_HITS_MESSAGE — bin/memory:148", () => {
+  test("NO_HITS_MESSAGE", () => {
     expect(NO_HITS_MESSAGE).toBe("(no hits)");
   });
 
-  test("formatSearchHit — bin/memory:152", () => {
+  test("formatSearchHit", () => {
     expect(
       formatSearchHit("Kryptonite Handbook", "Beta/Title Kryptonite.md", "…snippet…"),
     ).toEqual(["• Kryptonite Handbook  (Beta/Title Kryptonite.md)", "  …snippet…"]);
   });
 
-  test("formatNoNotes — bin/memory:172", () => {
+  test("formatNoNotes", () => {
     expect(formatNoNotes(null)).toBe("(no notes)");
     expect(formatNoNotes("Alpha")).toBe("(no notes) under Alpha");
   });
 
-  test("formatNoteLine — bin/memory:176 (importance present, right-justified width 2)", () => {
+  test("formatNoteLine — importance present, right-justified width 2", () => {
     expect(formatNoteLine(6, "note", "Alpha/Injection Hook.md", "Injection Hook")).toBe(
       "[ 6] note   Alpha/Injection Hook.md  — Injection Hook",
     );
@@ -126,26 +124,26 @@ describe("format.ts", () => {
     );
   });
 
-  test("formatNoteLine — an empty type string falls back to 'note' (`r['type'] or 'note'`)", () => {
+  test("formatNoteLine — an empty type string falls back to 'note'", () => {
     expect(formatNoteLine(5, "", "Alpha/Alpha.md", "Alpha")).toBe(
       "[ 5] note   Alpha/Alpha.md  — Alpha",
     );
   });
 
-  test("formatCommitSkipped — bin/memory:185", () => {
+  test("formatCommitSkipped", () => {
     expect(formatCommitSkipped("primary")).toBe("primary: not a git repo, skipping");
   });
 
-  test("formatCommitResult — bin/memory:190", () => {
+  test("formatCommitResult", () => {
     expect(formatCommitResult("primary", true)).toBe("primary: committed");
     expect(formatCommitResult("primary", false)).toBe("primary: nothing to commit");
   });
 
-  test("formatRegistryStatus — bin/memory:214", () => {
+  test("formatRegistryStatus", () => {
     expect(formatRegistryStatus("/reg.toml", "(ok)")).toBe("registry: /reg.toml (ok)");
   });
 
-  test("formatCwdResolution — bin/memory:217", () => {
+  test("formatCwdResolution", () => {
     expect(formatCwdResolution("/proj", "primary")).toBe("cwd /proj -> primary");
     expect(formatCwdResolution("/proj", "no workspace")).toBe(
       "cwd /proj -> no workspace",
