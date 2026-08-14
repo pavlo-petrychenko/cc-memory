@@ -14,6 +14,7 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 
 import { HookName } from "../../src/cli/commands/hook.command.ts";
+import { ensureDistBuilt } from "../helpers/build.ts";
 import { createTempDir } from "../helpers/tempdir.ts";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
@@ -21,13 +22,7 @@ const DIST_ENTRYPOINT = `${REPO_ROOT}dist/memory.js`;
 
 describe("fail-open: garbage stdin never crashes a hook", () => {
   beforeAll(() => {
-    const build = Bun.spawnSync(
-      ["bun", "build", "src/cli/main.ts", "--target=bun", "--outfile", "dist/memory.js"],
-      { cwd: REPO_ROOT, stdout: "pipe", stderr: "pipe" },
-    );
-    if (build.exitCode !== 0) {
-      throw new Error(`bun run build failed:\n${build.stderr.toString()}`);
-    }
+    ensureDistBuilt();
   });
 
   for (const name of Object.values(HookName)) {

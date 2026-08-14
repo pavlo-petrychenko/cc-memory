@@ -14,6 +14,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { buildFixtureVault, type FixtureVault } from "../fixtures/vault.ts";
+import { ensureDistBuilt } from "../helpers/build.ts";
 import { createTempDir, type TempDir } from "../helpers/tempdir.ts";
 import { normalizeText, runTs } from "../parity/harness.ts";
 
@@ -39,13 +40,7 @@ function setUpFixture(): Fixture {
 
 describe("CLI e2e against the built dist/memory.js", () => {
   beforeAll(() => {
-    const build = Bun.spawnSync(
-      ["bun", "build", "src/cli/main.ts", "--target=bun", "--outfile", "dist/memory.js"],
-      { cwd: REPO_ROOT, stdout: "pipe", stderr: "pipe" },
-    );
-    if (build.exitCode !== 0) {
-      throw new Error(`bun run build failed:\n${build.stderr.toString()}`);
-    }
+    ensureDistBuilt();
   });
 
   test("workspace ls, before any index exists", async () => {

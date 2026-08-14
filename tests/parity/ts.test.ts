@@ -18,6 +18,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 
 import type { JsonValue } from "../../src/hooks/payload.ts";
 import { buildFixtureVault, type FixtureVault } from "../fixtures/vault.ts";
+import { ensureDistBuilt } from "../helpers/build.ts";
 import {
   createTempDir,
   snapshotTree,
@@ -37,8 +38,6 @@ import {
   type RunOptions,
   runTs,
 } from "./harness.ts";
-
-const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 
 /**
  * Cases whose TypeScript side is not implemented yet. EMPTY — every CLI case in
@@ -60,13 +59,7 @@ function buildFixture(prefix: string): FixtureSide {
 
 describe("TS vs Python: CLI cases", () => {
   beforeAll(async () => {
-    const build = Bun.spawnSync(
-      ["bun", "build", "src/cli/main.ts", "--target=bun", "--outfile", "dist/memory.js"],
-      { cwd: REPO_ROOT, stdout: "pipe", stderr: "pipe" },
-    );
-    if (build.exitCode !== 0) {
-      throw new Error(`bun run build failed:\n${build.stderr.toString()}`);
-    }
+    ensureDistBuilt();
   });
 
   for (const cliCase of CLI_CASES) {
@@ -216,13 +209,7 @@ function hookDivergenceCaseName(hookCaseName: string): string {
 
 describe("TS vs Python: Hook cases", () => {
   beforeAll(() => {
-    const build = Bun.spawnSync(
-      ["bun", "build", "src/cli/main.ts", "--target=bun", "--outfile", "dist/memory.js"],
-      { cwd: REPO_ROOT, stdout: "pipe", stderr: "pipe" },
-    );
-    if (build.exitCode !== 0) {
-      throw new Error(`bun run build failed:\n${build.stderr.toString()}`);
-    }
+    ensureDistBuilt();
   });
 
   for (const hookCase of HOOK_CASES) {

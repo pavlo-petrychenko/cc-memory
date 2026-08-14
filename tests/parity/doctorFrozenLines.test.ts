@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { buildFixtureVault, type FixtureVault } from "../fixtures/vault.ts";
+import { ensureDistBuilt } from "../helpers/build.ts";
 import { createTempDir, type TempDir } from "../helpers/tempdir.ts";
 import { runPython, runTs } from "./harness.ts";
 
@@ -29,6 +30,10 @@ describe("doctor — the two frozen lines match Python byte-for-byte", () => {
   let fixture: FixtureVault;
 
   beforeAll(() => {
+    // Must build here rather than relying on another test file having done it —
+    // bun test gives no cross-file ordering guarantee, and this test passed locally
+    // off a stale dist/ while failing in CI's clean checkout.
+    ensureDistBuilt();
     tempDir = createTempDir("parity-doctor");
     fixture = buildFixtureVault(tempDir.path);
   });
