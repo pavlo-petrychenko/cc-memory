@@ -1,14 +1,14 @@
-import type { AbsPath } from "../../core/AbsPath.ts";
-import type { Container } from "../../platform/container.ts";
-import { makeDatabaseAdapter } from "../../platform/database.adapter.ts";
-import type { SqlDatabase } from "../../platform/database.typedefs.ts";
-import { makeClockFake } from "../fakes/clockFixed.fake.ts";
-import { makeEnvFake } from "../fakes/envMap.fake.ts";
-import { makeFsMemoryFake } from "../fakes/fsMemory.fake.ts";
-import { makeGitFake } from "../fakes/gitFake.fake.ts";
-import { makeIoFake } from "../fakes/ioFake.fake.ts";
-import { makeLoggerFake } from "../fakes/loggerCollect.fake.ts";
-import { makeProcFake } from "../fakes/procFake.fake.ts";
+import type { AbsPath } from "@/core/index.ts";
+import type { Container } from "@/platform/index.ts";
+import { makeDatabaseAdapter } from "@/platform/index.ts";
+import type { SqlDatabase } from "@/platform/index.ts";
+import { makeClockFake } from "@/testing/fakes/clockFixed.fake.ts";
+import { makeEnvFake } from "@/testing/fakes/envMap.fake.ts";
+import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
+import { makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
+import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
+import { makeLoggerFake } from "@/testing/fakes/loggerCollect.fake.ts";
+import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — the same
 // pattern `tests/unit/domain/paths.test.ts` uses for its `HOME` constant.

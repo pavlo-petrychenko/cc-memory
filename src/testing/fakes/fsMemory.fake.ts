@@ -1,5 +1,5 @@
-import type { AbsPath } from "../../core/AbsPath.ts";
-import type { FileStat, FileSystem } from "../../platform/fileSystem.typedefs.ts";
+import type { AbsPath } from "@/core/index.ts";
+import type { FileStat, FileSystem } from "@/platform/index.ts";
 
 type MemoryFile = { readonly kind: "file"; contents: string; mtimeMs: number };
 type MemoryDir = { readonly kind: "dir" };

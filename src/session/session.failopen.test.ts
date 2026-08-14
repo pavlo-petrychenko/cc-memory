@@ -11,9 +11,9 @@
  */
 import { beforeAll, describe, expect, test } from "bun:test";
 
-import { ensureDistBuilt } from "../testing/utils/buildDist.utils.ts";
-import { createTempDir } from "../testing/utils/tempDir.utils.ts";
-import { HookName } from "./hook.command.ts";
+import { HookName } from "@/session/session.typedefs.ts";
+import { ensureDistBuilt } from "@/testing/utils/buildDist.utils.ts";
+import { createTempDir } from "@/testing/utils/tempDir.utils.ts";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 const DIST_ENTRYPOINT = `${REPO_ROOT}dist/memory.js`;

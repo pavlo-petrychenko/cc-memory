@@ -1,23 +1,21 @@
-import type { Config } from "../core/Config.ts";
-import { parseConfig } from "../core/Config.ts";
-import { doctor } from "../install/doctor.command.ts";
-import { install, uninstall } from "../install/install.command.ts";
-import type { Container } from "../platform/container.ts";
-import { makeRealContainer } from "../platform/container.ts";
-import { notes } from "../retrieval/notes.command.ts";
-import { reindex } from "../retrieval/reindex.command.ts";
-import { search } from "../retrieval/search.command.ts";
-import { hook } from "../session/hook.command.ts";
-import { commit } from "../worklog/commit.command.ts";
-import { resolve } from "../workspace/resolve.command.ts";
-import {
-  workspaceAdd,
-  workspaceLs,
-  workspaceRm,
-} from "../workspace/workspace.command.ts";
-import { CliCommand, parseArgs, type ParsedArgs } from "./args.ts";
-import { type CliOutcome, cliFailure } from "./CliOutcome.ts";
-import { help, version } from "./help.command.ts";
+import { CliCommand, parseArgs, type ParsedArgs } from "@/cli/args/index.ts";
+import { help, version } from "@/cli/help/index.ts";
+import type { Config } from "@/core/index.ts";
+import { parseConfig } from "@/core/index.ts";
+import { cliFailure } from "@/core/outcome/index.ts";
+import { ARGS_PARSE_ERROR_EXIT_CODE } from "@/core/outcome/outcome.constants.ts";
+import type { CliOutcome } from "@/core/outcome/outcome.typedefs.ts";
+import { doctor } from "@/install/index.ts";
+import { install, uninstall } from "@/install/index.ts";
+import type { Container } from "@/platform/index.ts";
+import { makeRealContainer } from "@/platform/index.ts";
+import { notes } from "@/retrieval/index.ts";
+import { reindex } from "@/retrieval/index.ts";
+import { search } from "@/retrieval/index.ts";
+import { hook } from "@/session/index.ts";
+import { commit } from "@/worklog/index.ts";
+import { resolve } from "@/workspace/index.ts";
+import { workspaceAdd, workspaceLs, workspaceRm } from "@/workspace/index.ts";
 
 /**
  * Dispatch a successfully-parsed `ParsedArgs` to its command function and
@@ -77,7 +75,7 @@ export async function runCli(
   config: Config,
 ): Promise<CliOutcome> {
   const parsed = parseArgs(argv);
-  if (!parsed.ok) return cliFailure(parsed.error.message, 2);
+  if (!parsed.ok) return cliFailure(parsed.error.message, ARGS_PARSE_ERROR_EXIT_CODE);
   return dispatch(container, config, parsed.value);
 }
 

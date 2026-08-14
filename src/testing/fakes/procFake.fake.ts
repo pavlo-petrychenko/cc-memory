@@ -1,4 +1,4 @@
-import type { Proc, ProcResult, ProcRunOptions } from "../../platform/proc.typedefs.ts";
+import type { Proc, ProcResult, ProcRunOptions } from "@/platform/index.ts";
 
 /** One invocation of `Proc.run`, exactly as the fake recorded it, for
  * assertions like "git-cli passed the right argv/timeout". */

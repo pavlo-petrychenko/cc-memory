@@ -1,5 +1,5 @@
-import type { AbsPath } from "../../core/AbsPath.ts";
-import type { Git } from "../../platform/git.typedefs.ts";
+import type { AbsPath } from "@/core/index.ts";
+import type { Git } from "@/platform/index.ts";
 
 /** One recorded `Git` call, for assertions in services/hooks tests that don't
  * care about the underlying `Proc` invocation, only "did we call `git add`". */

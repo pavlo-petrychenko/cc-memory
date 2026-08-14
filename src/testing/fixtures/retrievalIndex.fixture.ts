@@ -1,10 +1,9 @@
-import type { AbsPath } from "../../core/AbsPath.ts";
-import { expandPath } from "../../core/paths.ts";
-import type { Workspace } from "../../core/Workspace.ts";
-import type { Container } from "../../platform/container.ts";
-import { makeFileSystemAdapter } from "../../platform/fileSystem.adapter.ts";
-import { createTempDir, type TempDir } from "../utils/tempDir.utils.ts";
-import { makeTestContainer } from "./testContainer.fixture.ts";
+import type { AbsPath } from "@/core/index.ts";
+import { expandPath } from "@/core/index.ts";
+import type { Workspace } from "@/core/index.ts";
+import type { Container } from "@/platform/index.ts";
+import { makeFileSystemAdapter } from "@/platform/index.ts";
+import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 /**
  * Shared setup for the retrieval integration tests: a REAL vault on disk
  * built by `tests/fixtures/vault.ts`'s `buildFixtureVault`, plus a second,
@@ -19,7 +18,8 @@ import {
   buildFixtureVault,
   type FixtureVault,
   type FixtureWorkspace,
-} from "./vault.fixture.ts";
+} from "@/testing/fixtures/vault.fixture.ts";
+import { createTempDir, type TempDir } from "@/testing/utils/tempDir.utils.ts";
 
 export type IndexFixture = {
   readonly tempDir: TempDir;

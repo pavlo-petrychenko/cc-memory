@@ -1,4 +1,4 @@
-import type { Clock } from "../../platform/clock.typedefs.ts";
+import type { Clock } from "@/platform/index.ts";
 
 export type ClockFake = Clock & {
   readonly setNowMs: (value: number) => void;

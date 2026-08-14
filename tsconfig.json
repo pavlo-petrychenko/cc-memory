@@ -12,6 +12,12 @@
     "isolatedModules": true,
     "skipLibCheck": true,
 
+    // Absolute imports everywhere in src/: `@/session/session.typedefs.ts`, never
+    // `../../../session/...`. A file's imports then read the same wherever it sits,
+    // and moving a file no longer rewrites its import block.
+    // TypeScript 7 removed `baseUrl`; `paths` now resolves relative to this file.
+    "paths": { "@/*": ["./src/*"] },
+
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,

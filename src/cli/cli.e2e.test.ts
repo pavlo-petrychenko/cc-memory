@@ -12,10 +12,10 @@ import { join } from "node:path";
 import {
   buildFixtureVault,
   type FixtureVault,
-} from "../testing/fixtures/vault.fixture.ts";
-import { ensureDistBuilt } from "../testing/utils/buildDist.utils.ts";
-import { normalizeText, runBuiltCli } from "../testing/utils/runCli.utils.ts";
-import { createTempDir, type TempDir } from "../testing/utils/tempDir.utils.ts";
+} from "@/testing/fixtures/vault.fixture.ts";
+import { ensureDistBuilt } from "@/testing/utils/buildDist.utils.ts";
+import { normalizeText, runBuiltCli } from "@/testing/utils/runCli.utils.ts";
+import { createTempDir, type TempDir } from "@/testing/utils/tempDir.utils.ts";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 const GOLDEN_DIR = join(REPO_ROOT, "src", "testing", "golden", "cli");

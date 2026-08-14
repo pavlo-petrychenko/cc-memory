@@ -1,0 +1,18 @@
+export { makeClockAdapter } from "@/platform/clock/index.ts";
+export type { Clock } from "@/platform/clock/index.ts";
+export { makeRealContainer } from "@/platform/container/index.ts";
+export type { Container } from "@/platform/container/index.ts";
+export { makeDatabaseAdapter } from "@/platform/db/index.ts";
+export type { SqlDatabase, SqlValue } from "@/platform/db/index.ts";
+export { makeEnvAdapter } from "@/platform/env/index.ts";
+export type { Env } from "@/platform/env/index.ts";
+export { makeFileSystemAdapter } from "@/platform/fileSystem/index.ts";
+export type { FileStat, FileSystem } from "@/platform/fileSystem/index.ts";
+export { makeGitAdapter } from "@/platform/git/index.ts";
+export type { Git } from "@/platform/git/index.ts";
+export { makeLoggerAdapter } from "@/platform/logger/index.ts";
+export type { Logger } from "@/platform/logger/index.ts";
+export { makeProcAdapter } from "@/platform/proc/index.ts";
+export type { Proc, ProcResult, ProcRunOptions } from "@/platform/proc/index.ts";
+export { makeStdioAdapter } from "@/platform/stdio/index.ts";
+export type { Stdio } from "@/platform/stdio/index.ts";

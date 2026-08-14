@@ -3,12 +3,12 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-import { LogLevel } from "../core/Config.ts";
-import { makeDatabaseAdapter } from "../platform/database.adapter.ts";
-import type { SqlDatabase } from "../platform/database.typedefs.ts";
-import { makeIoFake } from "../testing/fakes/ioFake.fake.ts";
-import { makeTestContainer } from "../testing/fixtures/testContainer.fixture.ts";
-import { runCli } from "./main.ts";
+import { runCli } from "@/cli/main.ts";
+import { LogLevel } from "@/core/index.ts";
+import { makeDatabaseAdapter } from "@/platform/index.ts";
+import type { SqlDatabase } from "@/platform/index.ts";
+import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
+import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 
 /** Same rationale as `commands/workspace.command.test.ts`'s helper of the same
  * name: `workspace add`/`workspace rm --purge` derive `index_db` from `home` +
