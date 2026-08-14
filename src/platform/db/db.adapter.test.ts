@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { makeDatabaseAdapter } from "@/platform/db/db.adapter.ts";
+import { DatabaseAdapter } from "@/platform/db/db.adapter.ts";
 import type { SqlValue } from "@/platform/db/db.typedefs.ts";
 import { SCHEMA } from "@/retrieval/index.ts";
 import { NOTES_SEARCH_SQL } from "@/retrieval/index.ts";
@@ -20,7 +20,7 @@ import { NOTES_SEARCH_SQL } from "@/retrieval/index.ts";
  */
 
 function insertNote(
-  db: ReturnType<typeof makeDatabaseAdapter>,
+  db: DatabaseAdapter,
   title: string,
   body: string,
   tags: string,
@@ -32,7 +32,7 @@ function insertNote(
 
 describe("FTS5 capability smoke test", () => {
   test("porter stemming matches a different inflection of the query term", () => {
-    const db = makeDatabaseAdapter(":memory:");
+    const db = new DatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     insertNote(db, "Injection", "we are injecting context into the session", "", "a.md");
 
@@ -46,7 +46,7 @@ describe("FTS5 capability smoke test", () => {
   });
 
   test("bm25() ranks the more relevant document first (lower score = stronger)", () => {
-    const db = makeDatabaseAdapter(":memory:");
+    const db = new DatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     // "memory" appears 3 times in the body and once in the title (weighted 10x) —
     // this document must outrank the one where it merely appears once in tags.
@@ -64,7 +64,7 @@ describe("FTS5 capability smoke test", () => {
   });
 
   test("snippet() produces highlighted, truncated output", () => {
-    const db = makeDatabaseAdapter(":memory:");
+    const db = new DatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     insertNote(
       db,
@@ -81,7 +81,7 @@ describe("FTS5 capability smoke test", () => {
   });
 
   test("NEAR(…, 8) matches two terms within the window", () => {
-    const db = makeDatabaseAdapter(":memory:");
+    const db = new DatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     insertNote(db, "Title", "we are injecting some extra context here", "", "near.md");
     insertNote(
@@ -102,7 +102,7 @@ describe("FTS5 capability smoke test", () => {
   });
 
   test("PRAGMA user_version round-trips through getUserVersion/setUserVersion", () => {
-    const db = makeDatabaseAdapter(":memory:");
+    const db = new DatabaseAdapter(":memory:");
     db.exec(SCHEMA);
 
     expect(db.getUserVersion()).toBe(0);
@@ -112,7 +112,7 @@ describe("FTS5 capability smoke test", () => {
   });
 
   test("the prepared-statement cache serves repeated queries against the same SQL string", () => {
-    const db = makeDatabaseAdapter(":memory:");
+    const db = new DatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     insertNote(db, "One", "alpha beta", "", "one.md");
     insertNote(db, "Two", "alpha gamma", "", "two.md");

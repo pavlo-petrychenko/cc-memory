@@ -5,7 +5,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { reindex } from "@/retrieval/commands/reindex/reindex.command.ts";
+import { ReindexCommand } from "@/retrieval/commands/reindex/reindex.command.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
@@ -28,6 +28,8 @@ const PRIMARY: RawWorkspace = {
   indexDb: ":memory:",
 };
 
+const reindexCommand = new ReindexCommand();
+
 function reindexArgs(overrides: Partial<ReindexArgs> = {}): ReindexArgs {
   return { command: CliCommand.Reindex, workspace: null, full: false, ...overrides };
 }
@@ -46,11 +48,14 @@ async function seedRegistry(): Promise<{
   return { container, io };
 }
 
-describe("reindex", () => {
+describe("ReindexCommand.execute", () => {
   test("reindexes a single workspace and prints the +/~/- summary", async () => {
     const { container, io } = await seedRegistry();
 
-    const outcome = await reindex(container, reindexArgs({ workspace: "primary" }));
+    const outcome = await reindexCommand.execute(
+      container,
+      reindexArgs({ workspace: "primary" }),
+    );
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
     expect(io.written).toEqual(["primary: +1 ~0 -0 = 1 notes"]);
   });
@@ -58,7 +63,10 @@ describe("reindex", () => {
   test("an unknown workspace fails with the exact 'no such workspace' message", async () => {
     const { container } = await seedRegistry();
 
-    const outcome = await reindex(container, reindexArgs({ workspace: "ghost" }));
+    const outcome = await reindexCommand.execute(
+      container,
+      reindexArgs({ workspace: "ghost" }),
+    );
     expect(outcome).toEqual({ exitCode: 1, stderrMessage: "no such workspace: ghost" });
   });
 });

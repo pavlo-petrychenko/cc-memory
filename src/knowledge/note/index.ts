@@ -1,12 +1,4 @@
-export {
-  cleanInline,
-  extractInlineTags,
-  extractTypedRelations,
-  extractWikilinks,
-  parseFrontmatter,
-  parseIndexNote,
-  parseNote,
-} from "@/knowledge/note/note.parser.ts";
+export { NoteParser } from "@/knowledge/note/note.parser.ts";
 export type {
   Frontmatter,
   FrontmatterValue,

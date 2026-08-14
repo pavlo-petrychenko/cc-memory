@@ -1,9 +1,10 @@
+import type { Container } from "@/platform/index.ts";
 import { RECENT_COMMIT_COUNT } from "@/session/hooks/worklogFloor/worklogFloor.constants.ts";
 import type { WorklogFloorPayload } from "@/session/payload/payload.typedefs.ts";
-import type { HookHandler } from "@/session/runtime/runtime.service.ts";
+import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.ts";
 import { HookResultKind } from "@/session/session.typedefs.ts";
-import { appendToDated } from "@/worklog/index.ts";
-import { formatFloorBlock } from "@/worklog/index.ts";
+import type { HookResult } from "@/session/session.typedefs.ts";
+import { WorklogFloorFormatter, WorklogStoreService } from "@/worklog/index.ts";
 import { worktreeSlug } from "@/workspace/index.ts";
 
 /** The last line of a multi-line git output, trimmed. */
@@ -22,34 +23,46 @@ function lastLineTrimmed(text: string): string {
  * the `Git` port itself, since other callers of the same port need the
  * untrimmed output — see `git.typedefs.ts`.
  */
-export const handleWorklogFloor: HookHandler<WorklogFloorPayload> = async (
-  context,
-  payload,
-) => {
-  const { container, workspace, cwd } = context;
-  const slug = await worktreeSlug(container.git, cwd, workspace);
-  const date = container.clock.today();
+export class WorklogFloorHook implements HookHandler<WorklogFloorPayload> {
+  constructor(
+    private readonly container: Container,
+    private readonly worklogFloorFormatter: WorklogFloorFormatter = new WorklogFloorFormatter(),
+    private readonly worklogStoreService: WorklogStoreService = new WorklogStoreService(
+      container.fs,
+      container.git,
+    ),
+  ) {}
 
-  const branch = (await container.git.revParse(cwd, ["--abbrev-ref", "HEAD"])).trim();
-  const diffStat = (await container.git.diffStat(cwd, false)).trim();
-  const stagedStat = (await container.git.diffStat(cwd, true)).trim();
-  const recentCommits = (await container.git.logOneline(cwd, RECENT_COMMIT_COUNT)).trim();
+  async handle(payload: HookInput<WorklogFloorPayload>): Promise<HookResult> {
+    const { workspace, cwd, reason } = payload;
+    const slug = await worktreeSlug(this.container.git, cwd, workspace);
+    const date = this.container.clock.today();
 
-  const combinedStat = diffStat !== "" ? diffStat : stagedStat;
-  const uncommitted = combinedStat === "" ? "" : lastLineTrimmed(combinedStat);
+    const branch = (
+      await this.container.git.revParse(cwd, ["--abbrev-ref", "HEAD"])
+    ).trim();
+    const diffStat = (await this.container.git.diffStat(cwd, false)).trim();
+    const stagedStat = (await this.container.git.diffStat(cwd, true)).trim();
+    const recentCommits = (
+      await this.container.git.logOneline(cwd, RECENT_COMMIT_COUNT)
+    ).trim();
 
-  const block = formatFloorBlock({
-    date,
-    reason: payload.reason,
-    branch,
-    uncommitted,
-    commits: recentCommits,
-  });
+    const combinedStat = diffStat !== "" ? diffStat : stagedStat;
+    const uncommitted = combinedStat === "" ? "" : lastLineTrimmed(combinedStat);
 
-  try {
-    await appendToDated(container.fs, workspace, slug, date, block);
-  } catch {
-    // best-effort write only.
+    const block = this.worklogFloorFormatter.format({
+      date,
+      reason,
+      branch,
+      uncommitted,
+      commits: recentCommits,
+    });
+
+    try {
+      await this.worklogStoreService.appendToDated(workspace, slug, date, block);
+    } catch {
+      // best-effort write only.
+    }
+    return { kind: HookResultKind.Silent };
   }
-  return { kind: HookResultKind.Silent };
-};
+}

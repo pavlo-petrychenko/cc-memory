@@ -1,4 +1,4 @@
-export { buildIndex } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
+export { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
 export type {
   BuildOptions,
   BuildStats,

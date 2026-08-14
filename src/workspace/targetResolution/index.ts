@@ -4,4 +4,5 @@ export {
   noSuchWorkspaceMessage,
   resolveTargetWorkspaces,
   resolveWorkspaceForCwd,
+  TargetResolutionService,
 } from "@/workspace/targetResolution/targetResolution.service.ts";

@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import { formatFloorBlock } from "@/worklog/formatters/worklogFloor/worklogFloor.formatter.ts";
+import { WorklogFloorFormatter } from "@/worklog/formatters/worklogFloor/worklogFloor.formatter.ts";
 
-describe("formatFloorBlock", () => {
+describe("WorklogFloorFormatter.format", () => {
   test("golden: every field present", () => {
-    const rendered = formatFloorBlock({
+    const formatter = new WorklogFloorFormatter();
+    const rendered = formatter.format({
       date: "2026-08-14",
       reason: "other",
       branch: "p2-domain",
@@ -25,8 +26,9 @@ describe("formatFloorBlock", () => {
   });
 
   test("no reason falls back to n/a", () => {
+    const formatter = new WorklogFloorFormatter();
     expect(
-      formatFloorBlock({
+      formatter.format({
         date: "2026-08-14",
         reason: "",
         branch: "",
@@ -39,7 +41,8 @@ describe("formatFloorBlock", () => {
   });
 
   test("branch/uncommitted/commits all empty still yields the no-activity line", () => {
-    const rendered = formatFloorBlock({
+    const formatter = new WorklogFloorFormatter();
+    const rendered = formatter.format({
       date: "2026-08-14",
       reason: "clear",
       branch: "",

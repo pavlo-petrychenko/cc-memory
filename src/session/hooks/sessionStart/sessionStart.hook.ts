@@ -1,12 +1,12 @@
-import { formatKbMap } from "@/knowledge/index.ts";
-import { buildKbMapInput } from "@/knowledge/index.ts";
-import { buildIndex } from "@/retrieval/index.ts";
+import { KbMapFormatter, KbMapService, NoteParser } from "@/knowledge/index.ts";
+import type { Container } from "@/platform/index.ts";
+import { IndexBuildService } from "@/retrieval/index.ts";
 import { CONTEXT_SEPARATOR } from "@/session/hooks/sessionStart/sessionStart.constants.ts";
 import type { SessionStartPayload } from "@/session/payload/payload.typedefs.ts";
-import type { HookHandler } from "@/session/runtime/runtime.service.ts";
+import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.ts";
 import { HookEvent, HookResultKind } from "@/session/session.typedefs.ts";
-import { formatWorkingMemory } from "@/worklog/index.ts";
-import { readState } from "@/worklog/index.ts";
+import type { HookResult } from "@/session/session.typedefs.ts";
+import { WorkingMemoryFormatter, WorklogStoreService } from "@/worklog/index.ts";
 import { worktreeSlug } from "@/workspace/index.ts";
 
 /**
@@ -17,35 +17,57 @@ import { worktreeSlug } from "@/workspace/index.ts";
  * heading), so this only fires when the KB map is also missing, but the
  * guard is kept regardless.
  *
- * `payload` carries only `cwd` (already folded into `context.cwd` by
- * `runtime.service.ts`), so it's unused here.
+ * `payload` carries only the resolved `workspace`/`cwd` (there is no other
+ * `SessionStart` field), so it's barely used here.
  */
-export const handleSessionStart: HookHandler<SessionStartPayload> = async (context) => {
-  const { container, workspace, cwd } = context;
+export class SessionStartHook implements HookHandler<SessionStartPayload> {
+  constructor(
+    private readonly container: Container,
+    private readonly indexBuildService: IndexBuildService = new IndexBuildService(),
+    private readonly kbMapService: KbMapService = new KbMapService(
+      container.fs,
+      new NoteParser(),
+    ),
+    private readonly kbMapFormatter: KbMapFormatter = new KbMapFormatter(),
+    private readonly worklogStoreService: WorklogStoreService = new WorklogStoreService(
+      container.fs,
+      container.git,
+    ),
+    private readonly workingMemoryFormatter: WorkingMemoryFormatter = new WorkingMemoryFormatter(),
+  ) {}
 
-  try {
-    await buildIndex(container, workspace, { incremental: true });
-  } catch {
-    // reindex failures are swallowed: a stale index beats a broken SessionStart.
+  async handle(payload: HookInput<SessionStartPayload>): Promise<HookResult> {
+    const { workspace, cwd } = payload;
+
+    try {
+      await this.indexBuildService.build(this.container, workspace, {
+        incremental: true,
+      });
+    } catch {
+      // reindex failures are swallowed: a stale index beats a broken SessionStart.
+    }
+
+    const slug = await worktreeSlug(this.container.git, cwd, workspace);
+    const kbMapInput = await this.kbMapService.build(
+      workspace,
+      this.container.env.home(),
+    );
+    const kbMapText = kbMapInput === null ? "" : this.kbMapFormatter.format(kbMapInput);
+
+    const state = await this.worklogStoreService.readState(workspace, slug);
+    const workingMemoryText = this.workingMemoryFormatter.format({
+      workspaceId: workspace.id,
+      slug,
+      state,
+    });
+
+    const parts = [kbMapText, workingMemoryText].filter((part) => part !== "");
+    if (parts.length === 0) return { kind: HookResultKind.Silent };
+
+    return {
+      kind: HookResultKind.Context,
+      event: HookEvent.SessionStart,
+      text: parts.join(CONTEXT_SEPARATOR),
+    };
   }
-
-  const slug = await worktreeSlug(container.git, cwd, workspace);
-  const kbMapInput = await buildKbMapInput(container.fs, workspace, container.env.home());
-  const kbMapText = kbMapInput === null ? "" : formatKbMap(kbMapInput);
-
-  const state = await readState(container.fs, workspace, slug);
-  const workingMemoryText = formatWorkingMemory({
-    workspaceId: workspace.id,
-    slug,
-    state,
-  });
-
-  const parts = [kbMapText, workingMemoryText].filter((part) => part !== "");
-  if (parts.length === 0) return { kind: HookResultKind.Silent };
-
-  return {
-    kind: HookResultKind.Context,
-    event: HookEvent.SessionStart,
-    text: parts.join(CONTEXT_SEPARATOR),
-  };
-};
+}

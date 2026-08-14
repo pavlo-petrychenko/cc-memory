@@ -1,11 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
 import { STOPWORDS } from "@/retrieval/query/tokenizer/tokenizer.constants.ts";
-import {
-  orderedTerms,
-  salientTokens,
-  subtokens,
-} from "@/retrieval/query/tokenizer/tokenizer.parser.ts";
+import { TokenizerParser } from "@/retrieval/query/tokenizer/tokenizer.parser.ts";
+
+const tokenizerParser = new TokenizerParser();
 
 describe("STOPWORDS", () => {
   test("has exactly the 28 known stopwords", () => {
@@ -18,7 +16,7 @@ describe("STOPWORDS", () => {
 // A chunk must emit BOTH the glued lowercase form AND every camel/underscore-split
 // part, so `overallScore` and `overall score` retrieve each other regardless of
 // which form the note was written in.
-describe("subtokens", () => {
+describe("TokenizerParser.subtokens", () => {
   const cases: ReadonlyArray<{
     readonly name: string;
     readonly chunk: string;
@@ -55,16 +53,18 @@ describe("subtokens", () => {
 
   for (const testCase of cases) {
     test(testCase.name, () => {
-      expect([...subtokens(testCase.chunk)].toSorted()).toEqual(
+      expect([...tokenizerParser.subtokens(testCase.chunk)].toSorted()).toEqual(
         [...testCase.expected].toSorted(),
       );
     });
   }
 });
 
-describe("salientTokens", () => {
+describe("TokenizerParser.salientTokens", () => {
   test("camel split, glued form, 2-char identifier kept, stopwords dropped", () => {
-    const tokens = salientTokens("How do the wrap-gate and overallScore work with db?");
+    const tokens = tokenizerParser.salientTokens(
+      "How do the wrap-gate and overallScore work with db?",
+    );
     expect(tokens.has("wrap")).toBe(true);
     expect(tokens.has("gate")).toBe(true);
     expect(tokens.has("overall")).toBe(true);
@@ -76,27 +76,27 @@ describe("salientTokens", () => {
   });
 
   test("pure digits are never a salient token", () => {
-    expect(salientTokens("the 2026 plan").has("2026")).toBe(false);
+    expect(tokenizerParser.salientTokens("the 2026 plan").has("2026")).toBe(false);
   });
 });
 
-describe("orderedTerms", () => {
+describe("TokenizerParser.orderedTerms", () => {
   test("keeps sequence and per-chunk sub-word order", () => {
-    expect(orderedTerms("red car")).toEqual(["red", "car"]);
+    expect(tokenizerParser.orderedTerms("red car")).toEqual(["red", "car"]);
   });
 
   test("camel-split parts replace the glued form when any part is kept", () => {
-    expect(orderedTerms("overallScore")).toEqual(["overall", "score"]);
+    expect(tokenizerParser.orderedTerms("overallScore")).toEqual(["overall", "score"]);
   });
 
   test("falls back to the glued form when no camel part is kept", () => {
     // "AI" alone camel-splits to one part ("ai"), which IS kept (length 2) — use
     // a chunk whose only camel part is too short to be kept, so the fallback path
     // (the glued form) is what fires.
-    expect(orderedTerms("x9")).toEqual(["x9"]);
+    expect(tokenizerParser.orderedTerms("x9")).toEqual(["x9"]);
   });
 
   test("drops stopwords and pure-digit chunks entirely", () => {
-    expect(orderedTerms("the 2026 plan")).toEqual(["plan"]);
+    expect(tokenizerParser.orderedTerms("the 2026 plan")).toEqual(["plan"]);
   });
 });

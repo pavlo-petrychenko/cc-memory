@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { CliCommand, parseArgs } from "@/cli/args/index.ts";
-import { help, version } from "@/cli/help/help.command.ts";
+import { HelpCommand } from "@/cli/help/help.command.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { CC_MEMORY_VERSION } from "@/version.ts";
 
@@ -37,10 +37,10 @@ describe("help and version parsing", () => {
   });
 });
 
-describe("help output", () => {
+describe("HelpCommand.execute — help output", () => {
   test("exits 0 and lists every command", () => {
     const stdio = makeIoFake();
-    const outcome = help(stdio);
+    const outcome = new HelpCommand(stdio).execute({ command: CliCommand.Help });
 
     expect(outcome.exitCode).toBe(0);
     expect(outcome.stderrMessage).toBeNull();
@@ -64,7 +64,7 @@ describe("help output", () => {
 
   test("documents every CCMEM_* environment variable", () => {
     const stdio = makeIoFake();
-    help(stdio);
+    new HelpCommand(stdio).execute({ command: CliCommand.Help });
     const written = stdio.written.join("");
     for (const variable of [
       "CCMEM_INJECT_MIN_SCORE",
@@ -80,10 +80,10 @@ describe("help output", () => {
   });
 });
 
-describe("version output", () => {
+describe("HelpCommand.execute — version output", () => {
   test("prints the version and exits 0", () => {
     const stdio = makeIoFake();
-    const outcome = version(stdio);
+    const outcome = new HelpCommand(stdio).execute({ command: CliCommand.Version });
     expect(outcome.exitCode).toBe(0);
     expect(stdio.written.join("")).toBe(`memory ${CC_MEMORY_VERSION}\n`);
   });

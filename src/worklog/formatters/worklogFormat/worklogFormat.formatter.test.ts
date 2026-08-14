@@ -1,14 +1,16 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-  entryTemplate,
-  stateTemplate,
-} from "@/worklog/formatters/worklogFormat/worklogFormat.formatter.ts";
+import { WorklogFormatter } from "@/worklog/formatters/worklogFormat/worklogFormat.formatter.ts";
 
 describe("stateTemplate", () => {
   test("golden string", () => {
+    const formatter = new WorklogFormatter();
     expect(
-      stateTemplate({ workspace: "homeserver", slug: "cc-memory", date: "2026-08-14" }),
+      formatter.stateTemplate({
+        workspace: "homeserver",
+        slug: "cc-memory",
+        date: "2026-08-14",
+      }),
     ).toBe(
       `---
 type: worktree-state
@@ -33,8 +35,9 @@ _(nothing yet)_
 
 describe("entryTemplate", () => {
   test("golden string", () => {
+    const formatter = new WorklogFormatter();
     expect(
-      entryTemplate({
+      formatter.entryTemplate({
         time: "14:32",
         topic: "wrap-gate port",
         changes: "ported rank.ts",

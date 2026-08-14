@@ -2,7 +2,10 @@ import { describe, expect, test } from "bun:test";
 
 import { CliCommand } from "@/cli/index.ts";
 import type { AbsPath } from "@/core/index.ts";
-import { install, uninstall } from "@/install/commands/install/install.command.ts";
+import {
+  InstallCommand,
+  UninstallCommand,
+} from "@/install/commands/install/install.command.ts";
 import type { Container } from "@/platform/index.ts";
 import type { ProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
@@ -10,14 +13,14 @@ import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 import { defaultRegistryPath } from "@/workspace/index.ts";
 
 /**
- * `install`/`uninstall` (`src/install/commands/install/install.command.ts`) ALWAYS take
- * an explicit fake `Container` here — never the real default `main.ts` uses
- * in production. `runInstall`/`runUninstall` write to real paths
- * through the injected ports; on the real
- * container that is a REAL mutation of this machine, which
- * a test must never trigger. `procFake` records every call instead of
- * spawning anything, so every assertion below is about what THIS command
- * decided to do, not about the real OS.
+ * `InstallCommand`/`UninstallCommand`
+ * (`src/install/commands/install/install.command.ts`) ALWAYS get an explicit
+ * fake `Container` here — never the real default `main.ts` uses in
+ * production. `InstallService`'s `install`/`uninstall` write to real paths
+ * through the injected ports; on the real container that is a REAL mutation
+ * of this machine, which a test must never trigger. `procFake` records
+ * every call instead of spawning anything, so every assertion below is about
+ * what THIS command decided to do, not about the real OS.
  */
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — same
@@ -33,13 +36,13 @@ function shimPathFor(container: Container): AbsPath {
 }
 
 /**
- * `runInstall` seeds `registry.toml` from `<repoRoot>/registry.example.toml`
- * when absent (`seed.ts`) — under `bun test` (unbundled), `install.command.ts`'s
- * `repoRootFromRunningFile()` resolves to a path with no such example file at
- * all (see that function's doc comment: it is only correct for the BUNDLED
- * artifact). Pre-seeding a registry here takes that codepath's "already
- * exists, left as-is" branch instead, matching what a real second install
- * run looks like anyway.
+ * `InstallService.install` seeds `registry.toml` from
+ * `<repoRoot>/registry.example.toml` when absent (`seed.service.ts`) —
+ * under `bun test` (unbundled), `InstallCommand`'s `repoRootFromRunningFile()`
+ * resolves to a path with no such example file at all (see that function's
+ * doc comment: it is only correct for the BUNDLED artifact). Pre-seeding a
+ * registry here takes that codepath's "already exists, left as-is" branch
+ * instead, matching what a real second install run looks like anyway.
  */
 async function seedExistingRegistry(container: Container): Promise<void> {
   await container.fs.writeFile(defaultRegistryPath(container.env.home()), "");
@@ -65,10 +68,10 @@ describe("install command (fake container — never the real default)", () => {
     await container.fs.writeFile(REAL_BUN_PATH, "");
     await seedExistingRegistry(container);
 
-    const outcome = await install(
-      { command: CliCommand.Install, dryRun: false },
-      container,
-    );
+    const outcome = await new InstallCommand(container).execute({
+      command: CliCommand.Install,
+      dryRun: false,
+    });
 
     expect(outcome.exitCode).toBe(0);
     expect(outcome.stderrMessage).toBeNull();
@@ -81,10 +84,10 @@ describe("install command (fake container — never the real default)", () => {
     const container = makeTestContainer({ proc });
     await container.fs.writeFile(REAL_BUN_PATH, "");
 
-    const outcome = await install(
-      { command: CliCommand.Install, dryRun: true },
-      container,
-    );
+    const outcome = await new InstallCommand(container).execute({
+      command: CliCommand.Install,
+      dryRun: true,
+    });
 
     expect(outcome.exitCode).toBe(0);
     const shimPath = shimPathFor(container);
@@ -96,10 +99,10 @@ describe("install command (fake container — never the real default)", () => {
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 1 } });
     const container = makeTestContainer({ proc });
 
-    const outcome = await install(
-      { command: CliCommand.Install, dryRun: false },
-      container,
-    );
+    const outcome = await new InstallCommand(container).execute({
+      command: CliCommand.Install,
+      dryRun: false,
+    });
 
     expect(outcome.exitCode).toBe(1);
     expect(outcome.stderrMessage).toContain("bun not found");
@@ -109,7 +112,7 @@ describe("install command (fake container — never the real default)", () => {
 
   test("uninstall with no prior install reports nothing to do", async () => {
     const container = makeTestContainer({ proc: makeProcFake() });
-    const outcome = await uninstall(container);
+    const outcome = await new UninstallCommand(container).execute();
     expect(outcome.exitCode).toBe(0);
     expect(outcome.stderrMessage).toBeNull();
   });
@@ -119,11 +122,14 @@ describe("install command (fake container — never the real default)", () => {
     const container = makeTestContainer({ proc });
     await container.fs.writeFile(REAL_BUN_PATH, "");
     await seedExistingRegistry(container);
-    await install({ command: CliCommand.Install, dryRun: false }, container);
+    await new InstallCommand(container).execute({
+      command: CliCommand.Install,
+      dryRun: false,
+    });
     const shimPath = shimPathFor(container);
     expect(await container.fs.exists(shimPath)).toBe(true);
 
-    const outcome = await uninstall(container);
+    const outcome = await new UninstallCommand(container).execute();
 
     expect(outcome.exitCode).toBe(0);
     expect(await container.fs.exists(shimPath)).toBe(false);

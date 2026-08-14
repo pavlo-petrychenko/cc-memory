@@ -4,10 +4,7 @@ import { join } from "node:path";
 
 import type { AbsPath } from "@/core/index.ts";
 import { LogLevel } from "@/core/index.ts";
-import {
-  appendWithRotation,
-  makeLoggerAdapter,
-} from "@/platform/logger/logger.adapter.ts";
+import { appendWithRotation, LoggerAdapter } from "@/platform/logger/logger.adapter.ts";
 import { MAX_LOG_BYTES } from "@/platform/logger/logger.constants.ts";
 import { createTempDir, type TempDir } from "@/testing/utils/tempDir.utils.ts";
 
@@ -28,7 +25,7 @@ function tempLogPath(): AbsPath {
 describe("logger adapter — level filtering", () => {
   test("a message below minLevel is not written at all", () => {
     const path = tempLogPath();
-    const logger = makeLoggerAdapter(path, LogLevel.Warn);
+    const logger = new LoggerAdapter(path, LogLevel.Warn);
 
     logger.debug("should not appear");
     logger.info("should not appear either");
@@ -38,7 +35,7 @@ describe("logger adapter — level filtering", () => {
 
   test("a message at or above minLevel is written", () => {
     const path = tempLogPath();
-    const logger = makeLoggerAdapter(path, LogLevel.Warn);
+    const logger = new LoggerAdapter(path, LogLevel.Warn);
 
     logger.warn("a warning");
     logger.error("an error");

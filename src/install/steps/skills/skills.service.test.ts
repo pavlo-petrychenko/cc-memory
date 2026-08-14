@@ -1,10 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import {
-  discoverSkillNames,
-  installSkills,
-} from "@/install/steps/skills/skills.service.ts";
+import { SkillsService } from "@/install/steps/skills/skills.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — matches
@@ -20,26 +17,29 @@ function fixturePath(...segments: readonly string[]): AbsPath {
   return segments.join("") as AbsPath;
 }
 
-describe("install/skills.ts — symlinking src/skills into ~/.claude/skills", () => {
-  test("discoverSkillNames returns [] when the source directory doesn't exist", async () => {
+describe("SkillsService — symlinking src/skills into ~/.claude/skills", () => {
+  test("discoverNames returns [] when the source directory doesn't exist", async () => {
     const fs = makeFsMemoryFake();
-    expect(await discoverSkillNames(fs, SOURCE_DIR)).toEqual([]);
+    const service = new SkillsService(fs);
+    expect(await service.discoverNames(SOURCE_DIR)).toEqual([]);
   });
 
-  test("discoverSkillNames returns only directories, sorted", async () => {
+  test("discoverNames returns only directories, sorted", async () => {
     const fs = makeFsMemoryFake();
     fs.seedDir(fixturePath(SOURCE_DIR, "/remember"));
     fs.seedDir(fixturePath(SOURCE_DIR, "/save-learning"));
     fs.seedFile(fixturePath(SOURCE_DIR, "/README.md"), "not a skill");
+    const service = new SkillsService(fs);
 
-    const names = await discoverSkillNames(fs, SOURCE_DIR);
+    const names = await service.discoverNames(SOURCE_DIR);
 
     expect(names).toEqual(["remember", "save-learning"]);
   });
 
   test("a brand-new skill (no manifest entry, nothing pre-existing) is symlinked with backedUp: false", async () => {
     const fs = makeFsMemoryFake();
-    const outcome = await installSkills(fs, SOURCE_DIR, TARGET_DIR, ["remember"], []);
+    const service = new SkillsService(fs);
+    const outcome = await service.install(SOURCE_DIR, TARGET_DIR, ["remember"], []);
 
     expect(outcome.skills).toEqual([{ name: "remember", backedUp: false }]);
     expect(outcome.actionLines).toEqual(["skill remember"]);
@@ -50,8 +50,9 @@ describe("install/skills.ts — symlinking src/skills into ~/.claude/skills", ()
     const fs = makeFsMemoryFake();
     const targetPath = fixturePath(TARGET_DIR, "/remember");
     fs.seedFile(fixturePath(targetPath, "/SKILL.md"), "a real, foreign skill file");
+    const service = new SkillsService(fs);
 
-    const outcome = await installSkills(fs, SOURCE_DIR, TARGET_DIR, ["remember"], []);
+    const outcome = await service.install(SOURCE_DIR, TARGET_DIR, ["remember"], []);
 
     expect(outcome.skills).toEqual([{ name: "remember", backedUp: true }]);
     // The backup now holds what used to be at `targetPath`.
@@ -73,8 +74,9 @@ describe("install/skills.ts — symlinking src/skills into ~/.claude/skills", ()
       fixturePath(targetPath, "/SKILL.md"),
       "a second, unrelated real directory",
     );
+    const service = new SkillsService(fs);
 
-    const outcome = await installSkills(fs, SOURCE_DIR, TARGET_DIR, ["remember"], []);
+    const outcome = await service.install(SOURCE_DIR, TARGET_DIR, ["remember"], []);
 
     expect(outcome.skills).toEqual([{ name: "remember", backedUp: true }]);
     // The original backup is untouched — never overwritten by a second one.
@@ -87,9 +89,9 @@ describe("install/skills.ts — symlinking src/skills into ~/.claude/skills", ()
     const fs = makeFsMemoryFake();
     const targetPath = fixturePath(TARGET_DIR, "/remember");
     await fs.symlink(fixturePath(SOURCE_DIR, "/remember"), targetPath);
+    const service = new SkillsService(fs);
 
-    const outcome = await installSkills(
-      fs,
+    const outcome = await service.install(
       SOURCE_DIR,
       TARGET_DIR,
       ["remember"],
@@ -105,9 +107,9 @@ describe("install/skills.ts — symlinking src/skills into ~/.claude/skills", ()
   test("a skill already in the manifest but deleted by hand is re-linked", async () => {
     const fs = makeFsMemoryFake();
     const targetPath = fixturePath(TARGET_DIR, "/remember");
+    const service = new SkillsService(fs);
 
-    const outcome = await installSkills(
-      fs,
+    const outcome = await service.install(
       SOURCE_DIR,
       TARGET_DIR,
       ["remember"],
@@ -120,8 +122,8 @@ describe("install/skills.ts — symlinking src/skills into ~/.claude/skills", ()
 
   test("multiple skills all get processed, each with its own outcome", async () => {
     const fs = makeFsMemoryFake();
-    const outcome = await installSkills(
-      fs,
+    const service = new SkillsService(fs);
+    const outcome = await service.install(
       SOURCE_DIR,
       TARGET_DIR,
       ["memory-search", "remember"],

@@ -1,1 +1,1 @@
-export { help, version } from "@/cli/help/help.command.ts";
+export { HelpCommand } from "@/cli/help/help.command.ts";

@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { parseConfig } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { handleSessionStart } from "@/session/hooks/sessionStart/sessionStart.hook.ts";
-import { parseSessionStartPayload } from "@/session/payload/payload.parser.ts";
-import { runHook } from "@/session/runtime/runtime.service.ts";
+import { SessionStartHook } from "@/session/hooks/sessionStart/sessionStart.hook.ts";
+import { PayloadParser } from "@/session/payload/payload.parser.ts";
+import { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts";
+import { HookRuntimeService } from "@/session/runtime/runtime.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
@@ -27,7 +27,6 @@ const HOME = "/home/test" as AbsPath;
 // `tests/helpers/container.ts`'s DEFAULT_CWD.
 const CWD = "/home/test/project" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
-const CONFIG = parseConfig({});
 
 const PRIMARY: RawWorkspace = {
   id: "primary",
@@ -57,12 +56,16 @@ async function runSessionStart(
   stdin: string,
 ): Promise<void> {
   io.setStdin(stdin);
-  await runHook(
+  const payloadParser = new PayloadParser();
+  const hookRuntimeService = new HookRuntimeService(
     container,
-    CONFIG,
+    payloadParser,
+    new HookResultSerializer(),
+  );
+  await hookRuntimeService.run(
     "session-start",
-    parseSessionStartPayload,
-    handleSessionStart,
+    (record) => payloadParser.parseSessionStart(record),
+    new SessionStartHook(container),
   );
 }
 

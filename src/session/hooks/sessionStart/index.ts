@@ -1,1 +1,1 @@
-export { handleSessionStart } from "@/session/hooks/sessionStart/sessionStart.hook.ts";
+export { SessionStartHook } from "@/session/hooks/sessionStart/sessionStart.hook.ts";

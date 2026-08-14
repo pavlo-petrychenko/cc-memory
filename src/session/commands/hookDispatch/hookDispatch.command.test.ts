@@ -1,24 +1,24 @@
 import { describe, expect, test } from "bun:test";
 
 import { CliCommand } from "@/cli/index.ts";
-import { parseConfig } from "@/core/index.ts";
+import { ConfigParser } from "@/core/index.ts";
 import {
-  dispatchHook,
   hook,
+  HookDispatchCommand,
 } from "@/session/commands/hookDispatch/hookDispatch.command.ts";
 import { HookName } from "@/session/session.typedefs.ts";
 import type { IoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 
-const CONFIG = parseConfig({});
+const CONFIG = new ConfigParser().parse({});
 
 describe("hook dispatch (memory hook <name>)", () => {
   test("an unknown hook name stays fail-open: exit 0, a stderr diagnostic, nothing on stdout", async () => {
     const stdio = makeIoFake();
     const container = makeTestContainer({ stdio });
 
-    const outcome = await dispatchHook(container, CONFIG, {
+    const outcome = await new HookDispatchCommand(container, CONFIG).execute({
       command: CliCommand.Hook,
       name: "not-a-real-hook",
     });
@@ -31,10 +31,11 @@ describe("hook dispatch (memory hook <name>)", () => {
 
   test("hook() itself (the real-container wrapper) stays fail-open for an unknown name", async () => {
     // The ONE safe way to exercise `hook()` in-process: an unknown name makes
-    // `dispatchHook` return before ever calling `runHook`, so this never
-    // reaches a real `container.stdio.exit()` (a genuine `process.exit()`
-    // for the REAL container `hook()` builds) — which WOULD tear down the
-    // entire `bun test` process mid-run for any KNOWN name. Building a real
+    // `HookDispatchCommand.execute` return before ever calling
+    // `HookRuntimeService.run`, so this never reaches a real
+    // `container.stdio.exit()` (a genuine `process.exit()` for the REAL
+    // container `hook()` builds) — which WOULD tear down the entire `bun
+    // test` process mid-run for any KNOWN name. Building a real
     // `Container`/`Config` from the actual process environment is itself
     // side-effect-free (every adapter constructor is lazy — I/O only happens
     // when a method is actually called), so this is hermetic despite using
@@ -54,7 +55,7 @@ describe("hook dispatch (memory hook <name>)", () => {
         const stdio: IoFake = makeIoFake("{}");
         const container = makeTestContainer({ stdio });
 
-        const outcome = await dispatchHook(container, CONFIG, {
+        const outcome = await new HookDispatchCommand(container, CONFIG).execute({
           command: CliCommand.Hook,
           name,
         });

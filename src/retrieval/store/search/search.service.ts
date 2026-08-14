@@ -2,11 +2,11 @@ import type { AbsPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
 import type { SqlDatabase } from "@/platform/index.ts";
-import { ftsQuery, phraseQuery } from "@/retrieval/query/index.ts";
-import { fuse } from "@/retrieval/ranking/index.ts";
+import { FtsQueryBuilder } from "@/retrieval/query/index.ts";
+import { Ranker } from "@/retrieval/ranking/index.ts";
 import { SearchKind, type FusedHit, type Hit } from "@/retrieval/retrieval.typedefs.ts";
-import { openIndexDb } from "@/retrieval/store/connection/index.ts";
-import { inlinkCounts } from "@/retrieval/store/graph/index.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/index.ts";
+import { LinkGraphService } from "@/retrieval/store/graph/index.ts";
 import {
   DEFAULT_KIND,
   DEFAULT_LIMIT,
@@ -58,64 +58,79 @@ function runMatch(
   }
 }
 
-/**
- * Single BM25 query over one workspace. `query` is natural text: it is
- * always tokenized via `ftsQuery` and never interpreted as raw FTS5 syntax,
- * so any prompt (including one containing `OR`/`AND`/`NEAR`/quotes) is safe
- * and never errors.
- */
-export async function search(
-  container: Container,
-  workspace: Workspace,
-  query: string,
-  options: SearchOptions = {},
-): Promise<readonly Hit[]> {
-  const { db } = await openIndexDb(container, workspace);
-  return runMatch(
-    db,
-    ftsQuery(query),
-    options.limit ?? DEFAULT_LIMIT,
-    options.kind ?? DEFAULT_KIND,
-  );
-}
+export class SearchService {
+  constructor(
+    private readonly connectionService: IndexConnectionService = new IndexConnectionService(),
+    private readonly ftsQueryBuilder: FtsQueryBuilder = new FtsQueryBuilder(),
+    private readonly ranker: Ranker = new Ranker(),
+    private readonly linkGraphService: LinkGraphService = new LinkGraphService(),
+  ) {}
 
-/**
- * Proximity-aware retrieval: fuse a token-OR ranking with a phrase/`NEAR`
- * ranking via Reciprocal Rank Fusion, plus the small wikilink-corroboration
- * bonus. Returns `[]` EARLY when the token query yields no candidates at
- * all — phrase hits are always a subset of token hits (`NEAR` requires both
- * terms to already match), so the token list is the complete candidate set.
- * Degrades to pure BM25 ordering when `phraseQuery` has no adjacent-term
- * pair to build a `NEAR` clause from.
- *
- * Reuses the SAME `SqlDatabase` handle for the token search, the phrase search and
- * the in-link count (via `openIndexDb`/`Container.openDatabase`'s per-path
- * memoization) instead of opening three separate connections.
- */
-export async function searchFused(
-  container: Container,
-  workspace: Workspace,
-  query: string,
-  options: SearchFusedOptions,
-): Promise<readonly FusedHit[]> {
-  const limit = options.limit ?? DEFAULT_LIMIT;
-  const kind = options.kind ?? DEFAULT_KIND;
-  const links = options.links ?? true;
-  const pool = Math.max(limit * 3, 10); // candidate pool size before fusion
+  /**
+   * Single BM25 query over one workspace. `query` is natural text: it is
+   * always tokenized via `ftsQuery` and never interpreted as raw FTS5 syntax,
+   * so any prompt (including one containing `OR`/`AND`/`NEAR`/quotes) is safe
+   * and never errors.
+   */
+  async search(
+    container: Container,
+    workspace: Workspace,
+    query: string,
+    options: SearchOptions = {},
+  ): Promise<readonly Hit[]> {
+    const { db } = await this.connectionService.open(container, workspace);
+    return runMatch(
+      db,
+      this.ftsQueryBuilder.ftsQuery(query),
+      options.limit ?? DEFAULT_LIMIT,
+      options.kind ?? DEFAULT_KIND,
+    );
+  }
 
-  const { db } = await openIndexDb(container, workspace);
-  const tokenHits = runMatch(db, ftsQuery(query), pool, kind);
-  if (tokenHits.length === 0) return [];
+  /**
+   * Proximity-aware retrieval: fuse a token-OR ranking with a phrase/`NEAR`
+   * ranking via Reciprocal Rank Fusion, plus the small wikilink-corroboration
+   * bonus. Returns `[]` EARLY when the token query yields no candidates at
+   * all — phrase hits are always a subset of token hits (`NEAR` requires both
+   * terms to already match), so the token list is the complete candidate set.
+   * Degrades to pure BM25 ordering when `phraseQuery` has no adjacent-term
+   * pair to build a `NEAR` clause from.
+   *
+   * Reuses the SAME `SqlDatabase` handle for the token search, the phrase search and
+   * the in-link count (via `openIndexDb`/`Container.openDatabase`'s per-path
+   * memoization) instead of opening three separate connections.
+   */
+  async searchFused(
+    container: Container,
+    workspace: Workspace,
+    query: string,
+    options: SearchFusedOptions,
+  ): Promise<readonly FusedHit[]> {
+    const limit = options.limit ?? DEFAULT_LIMIT;
+    const kind = options.kind ?? DEFAULT_KIND;
+    const links = options.links ?? true;
+    const pool = Math.max(limit * 3, 10); // candidate pool size before fusion
 
-  const phraseHits = runMatch(db, phraseQuery(query), pool, kind);
-  const phraseRanks = new Map(phraseHits.map((hit, index) => [hit.path, index]));
-  const inlinks = links
-    ? await inlinkCounts(
-        container,
-        workspace,
-        tokenHits.map((hit) => hit.path),
-      )
-    : new Map<AbsPath, number>();
+    const { db } = await this.connectionService.open(container, workspace);
+    const tokenHits = runMatch(db, this.ftsQueryBuilder.ftsQuery(query), pool, kind);
+    if (tokenHits.length === 0) return [];
 
-  return fuse({ tokenHits, phraseRanks, inlinks, linkBoost: options.linkBoost, limit });
+    const phraseHits = runMatch(db, this.ftsQueryBuilder.phraseQuery(query), pool, kind);
+    const phraseRanks = new Map(phraseHits.map((hit, index) => [hit.path, index]));
+    const inlinks = links
+      ? await this.linkGraphService.inlinkCounts(
+          container,
+          workspace,
+          tokenHits.map((hit) => hit.path),
+        )
+      : new Map<AbsPath, number>();
+
+    return this.ranker.fuse({
+      tokenHits,
+      phraseRanks,
+      inlinks,
+      linkBoost: options.linkBoost,
+      limit,
+    });
+  }
 }

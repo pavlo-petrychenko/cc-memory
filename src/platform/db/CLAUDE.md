@@ -7,7 +7,7 @@ concatenating untrusted input.
 
 **Never faked.** FTS5's porter stemmer, `bm25()` weighting and `NEAR`
 semantics are the behavior under test, so every test that needs a
-`SqlDatabase` opens a real `:memory:` database via `makeDatabaseAdapter`
+`SqlDatabase` opens a real `:memory:` database via `DatabaseAdapter`
 instead of a fake — including the FTS5 capability smoke test in this
 folder's test file.
 

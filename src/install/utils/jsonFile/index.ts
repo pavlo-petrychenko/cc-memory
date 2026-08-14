@@ -1,13 +1,4 @@
-export {
-  isJsonArray,
-  isJsonBoolean,
-  isJsonNumber,
-  isJsonObject,
-  isJsonString,
-  readJsonObjectFile,
-  stringifyJson,
-  writeJsonObjectAtomic,
-} from "@/install/utils/jsonFile/jsonFile.service.ts";
+export { JsonFileService } from "@/install/utils/jsonFile/jsonFile.service.ts";
 export type {
   JsonFileError,
   JsonObject,

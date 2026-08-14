@@ -3,7 +3,7 @@ export {
   NOTES_SEARCH_SQL,
   WORKLOG_SEARCH_SQL,
 } from "@/retrieval/store/search/search.constants.ts";
-export { search, searchFused } from "@/retrieval/store/search/search.service.ts";
+export { SearchService } from "@/retrieval/store/search/search.service.ts";
 export type {
   SearchFusedOptions,
   SearchOptions,

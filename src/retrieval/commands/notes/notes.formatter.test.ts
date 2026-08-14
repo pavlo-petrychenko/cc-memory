@@ -1,41 +1,40 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-  formatNoNotes,
-  formatNoteLine,
-} from "@/retrieval/commands/notes/notes.formatter.ts";
+import { NotesFormatter } from "@/retrieval/commands/notes/notes.formatter.ts";
 
-describe("formatNoNotes", () => {
+const notesFormatter = new NotesFormatter();
+
+describe("NotesFormatter.noNotes", () => {
   test("no folder", () => {
-    expect(formatNoNotes(null)).toBe("(no notes)");
+    expect(notesFormatter.noNotes(null)).toBe("(no notes)");
   });
 
   test("with a folder", () => {
-    expect(formatNoNotes("Alpha")).toBe("(no notes) under Alpha");
+    expect(notesFormatter.noNotes("Alpha")).toBe("(no notes) under Alpha");
   });
 });
 
-describe("formatNoteLine", () => {
+describe("NotesFormatter.noteLine", () => {
   test("importance present, right-justified width 2", () => {
-    expect(formatNoteLine(6, "note", "Alpha/Injection Hook.md", "Injection Hook")).toBe(
-      "[ 6] note   Alpha/Injection Hook.md  — Injection Hook",
-    );
+    expect(
+      notesFormatter.noteLine(6, "note", "Alpha/Injection Hook.md", "Injection Hook"),
+    ).toBe("[ 6] note   Alpha/Injection Hook.md  — Injection Hook");
   });
 
   test("missing importance renders '-'", () => {
-    expect(formatNoteLine(null, "note", "Alpha/Alpha.md", "Alpha")).toBe(
+    expect(notesFormatter.noteLine(null, "note", "Alpha/Alpha.md", "Alpha")).toBe(
       "[ -] note   Alpha/Alpha.md  — Alpha",
     );
   });
 
   test("a two-digit importance is not truncated by the width-2 field", () => {
-    expect(formatNoteLine(10, "note", "Alpha/Alpha.md", "Alpha")).toBe(
+    expect(notesFormatter.noteLine(10, "note", "Alpha/Alpha.md", "Alpha")).toBe(
       "[10] note   Alpha/Alpha.md  — Alpha",
     );
   });
 
   test("an empty type string falls back to 'note'", () => {
-    expect(formatNoteLine(5, "", "Alpha/Alpha.md", "Alpha")).toBe(
+    expect(notesFormatter.noteLine(5, "", "Alpha/Alpha.md", "Alpha")).toBe(
       "[ 5] note   Alpha/Alpha.md  — Alpha",
     );
   });

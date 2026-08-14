@@ -1,1 +1,1 @@
-export { notes } from "@/retrieval/commands/notes/notes.command.ts";
+export { NotesCommand } from "@/retrieval/commands/notes/notes.command.ts";

@@ -1,17 +1,19 @@
 import { describe, expect, test } from "bun:test";
 
-import { ftsQuery, phraseQuery } from "@/retrieval/query/ftsQuery/ftsQuery.builder.ts";
+import { FtsQueryBuilder } from "@/retrieval/query/ftsQuery/ftsQuery.builder.ts";
 
-describe("ftsQuery", () => {
+const ftsQueryBuilder = new FtsQueryBuilder();
+
+describe("FtsQueryBuilder.ftsQuery", () => {
   test("ORs quoted salient tokens, sorted", () => {
-    expect(ftsQuery("red car")).toBe('"car" OR "red"');
+    expect(ftsQueryBuilder.ftsQuery("red car")).toBe('"car" OR "red"');
   });
 
   test("a natural prompt containing FTS operator words is tokenized, not passed through raw", () => {
     // "OR"/"NEAR"/"AND" are ordinary English words here, not raw FTS5 syntax —
     // every token is lowercased and quoted, so an operator word can never be
     // mistaken for ftsQuery's own unquoted " OR " join separator.
-    const query = ftsQuery("does injecting tokens use NEAR or AND?");
+    const query = ftsQueryBuilder.ftsQuery("does injecting tokens use NEAR or AND?");
     expect(query.includes('"near"')).toBe(true);
     expect(query.includes('"or"')).toBe(true);
     expect(query.includes("AND")).toBe(false);
@@ -19,34 +21,34 @@ describe("ftsQuery", () => {
 
   test("caps at 32 tokens", () => {
     const words = Array.from({ length: 40 }, (_, index) => `word${index}`).join(" ");
-    const tokenCount = ftsQuery(words).split(" OR ").length;
+    const tokenCount = ftsQueryBuilder.ftsQuery(words).split(" OR ").length;
     expect(tokenCount).toBe(32);
   });
 
   test("empty text yields the empty string", () => {
-    expect(ftsQuery("")).toBe("");
+    expect(ftsQueryBuilder.ftsQuery("")).toBe("");
   });
 });
 
-describe("phraseQuery", () => {
+describe("FtsQueryBuilder.phraseQuery", () => {
   test("contains a NEAR clause for two adjacent terms", () => {
-    expect(phraseQuery("red car")).toContain("NEAR");
+    expect(ftsQueryBuilder.phraseQuery("red car")).toContain("NEAR");
   });
 
   test("a single term yields the empty string", () => {
-    expect(phraseQuery("solo")).toBe("");
+    expect(ftsQueryBuilder.phraseQuery("solo")).toBe("");
   });
 
   test("uses the given window", () => {
-    expect(phraseQuery("red car", 3)).toBe('NEAR("red" "car", 3)');
+    expect(ftsQueryBuilder.phraseQuery("red car", 3)).toBe('NEAR("red" "car", 3)');
   });
 
   test("skips a self-adjacent pair (a === b)", () => {
-    expect(phraseQuery("red red car")).toBe('NEAR("red" "car", 8)');
+    expect(ftsQueryBuilder.phraseQuery("red red car")).toBe('NEAR("red" "car", 8)');
   });
 
   test("de-duplicates identical clauses", () => {
-    expect(phraseQuery("red car red car")).toBe(
+    expect(ftsQueryBuilder.phraseQuery("red car red car")).toBe(
       'NEAR("red" "car", 8) OR NEAR("car" "red", 8)',
     );
   });
@@ -57,7 +59,7 @@ describe("phraseQuery", () => {
     // camel part, keeps the distinguishing digit. 30 distinct terms -> 29
     // distinct adjacent pairs, capped to 24.
     const words = Array.from({ length: 30 }, (_, index) => `a${index}`).join(" ");
-    const clauseCount = phraseQuery(words).split(" OR ").length;
+    const clauseCount = ftsQueryBuilder.phraseQuery(words).split(" OR ").length;
     expect(clauseCount).toBe(24);
   });
 });

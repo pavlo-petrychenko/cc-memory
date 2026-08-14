@@ -10,39 +10,59 @@ import type { FileStat, FileSystem } from "@/platform/fileSystem/fileSystem.type
  * create nested directories or remove either a file or a directory without
  * knowing which up front.
  */
-export function makeFileSystemAdapter(): FileSystem {
-  return {
-    readFile: (path: AbsPath) => nodeFs.readFile(path, "utf-8"),
-    writeFile: (path: AbsPath, contents: string) =>
-      nodeFs.writeFile(path, contents, "utf-8"),
-    appendFile: (path: AbsPath, contents: string) =>
-      nodeFs.appendFile(path, contents, "utf-8"),
-    readDir: (path: AbsPath) => nodeFs.readdir(path),
-    stat: async (path: AbsPath): Promise<FileStat> => {
-      const stats = await nodeFs.stat(path);
-      return {
-        mtimeMs: stats.mtimeMs,
-        size: stats.size,
-        isDirectory: stats.isDirectory(),
-        isFile: stats.isFile(),
-      };
-    },
-    exists: async (path: AbsPath) => {
-      try {
-        await nodeFs.access(path);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    mkdir: async (path: AbsPath) => {
-      await nodeFs.mkdir(path, { recursive: true });
-    },
-    remove: async (path: AbsPath) => {
-      await nodeFs.rm(path, { recursive: true, force: true });
-    },
-    rename: (from: AbsPath, to: AbsPath) => nodeFs.rename(from, to),
-    symlink: (target: AbsPath, linkPath: AbsPath) => nodeFs.symlink(target, linkPath),
-    chmod: (path: AbsPath, mode: number) => nodeFs.chmod(path, mode),
-  };
+export class FileSystemAdapter implements FileSystem {
+  readFile(path: AbsPath): Promise<string> {
+    return nodeFs.readFile(path, "utf-8");
+  }
+
+  writeFile(path: AbsPath, contents: string): Promise<void> {
+    return nodeFs.writeFile(path, contents, "utf-8");
+  }
+
+  appendFile(path: AbsPath, contents: string): Promise<void> {
+    return nodeFs.appendFile(path, contents, "utf-8");
+  }
+
+  readDir(path: AbsPath): Promise<readonly string[]> {
+    return nodeFs.readdir(path);
+  }
+
+  async stat(path: AbsPath): Promise<FileStat> {
+    const stats = await nodeFs.stat(path);
+    return {
+      mtimeMs: stats.mtimeMs,
+      size: stats.size,
+      isDirectory: stats.isDirectory(),
+      isFile: stats.isFile(),
+    };
+  }
+
+  async exists(path: AbsPath): Promise<boolean> {
+    try {
+      await nodeFs.access(path);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async mkdir(path: AbsPath): Promise<void> {
+    await nodeFs.mkdir(path, { recursive: true });
+  }
+
+  async remove(path: AbsPath): Promise<void> {
+    await nodeFs.rm(path, { recursive: true, force: true });
+  }
+
+  rename(from: AbsPath, to: AbsPath): Promise<void> {
+    return nodeFs.rename(from, to);
+  }
+
+  symlink(target: AbsPath, linkPath: AbsPath): Promise<void> {
+    return nodeFs.symlink(target, linkPath);
+  }
+
+  chmod(path: AbsPath, mode: number): Promise<void> {
+    return nodeFs.chmod(path, mode);
+  }
 }

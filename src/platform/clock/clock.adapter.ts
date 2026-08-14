@@ -5,16 +5,18 @@ function twoDigits(value: number): string {
 }
 
 /** The real `Clock`, reading the system clock in **local** time, not UTC. */
-export function makeClockAdapter(): Clock {
-  return {
-    nowMs: () => Date.now(),
-    today: () => {
-      const now = new Date();
-      return `${now.getFullYear()}-${twoDigits(now.getMonth() + 1)}-${twoDigits(now.getDate())}`;
-    },
-    timeHHMM: () => {
-      const now = new Date();
-      return `${twoDigits(now.getHours())}:${twoDigits(now.getMinutes())}`;
-    },
-  };
+export class ClockAdapter implements Clock {
+  nowMs(): number {
+    return Date.now();
+  }
+
+  today(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${twoDigits(now.getMonth() + 1)}-${twoDigits(now.getDate())}`;
+  }
+
+  timeHHMM(): string {
+    const now = new Date();
+    return `${twoDigits(now.getHours())}:${twoDigits(now.getMinutes())}`;
+  }
 }

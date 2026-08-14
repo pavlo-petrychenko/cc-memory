@@ -1,6 +1,6 @@
 import type { AbsPath } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { makeDatabaseAdapter } from "@/platform/index.ts";
+import { DatabaseAdapter } from "@/platform/index.ts";
 import type { SqlDatabase } from "@/platform/index.ts";
 import { makeClockFake } from "@/testing/fakes/clockFixed.fake.ts";
 import { makeEnvFake } from "@/testing/fakes/envMap.fake.ts";
@@ -17,7 +17,7 @@ const DEFAULT_HOME = "/home/test" as AbsPath;
 const DEFAULT_CWD = "/home/test/project" as AbsPath;
 
 /**
- * Build every fake at once, wired the way `makeRealContainer` wires the real
+ * Build every fake at once, wired the way `AppContainer` wires the real
  * adapters (`git` over `proc`), so a test only overrides what it cares about.
  *
  * `openDatabase` is the one exception to "everything is a fake" — [[conventions]]
@@ -41,7 +41,7 @@ export function makeTestContainer(overrides: Partial<Container> = {}): Container
     openDatabase: (path: string) => {
       const existing = dbHandles.get(path);
       if (existing !== undefined) return existing;
-      const db = makeDatabaseAdapter(path);
+      const db = new DatabaseAdapter(path);
       dbHandles.set(path, db);
       return db;
     },

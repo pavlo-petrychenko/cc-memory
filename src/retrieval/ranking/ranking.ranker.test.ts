@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
 import { RRF_K } from "@/retrieval/ranking/ranking.constants.ts";
-import { applyScoreFloor, fuse } from "@/retrieval/ranking/ranking.ranker.ts";
+import { Ranker } from "@/retrieval/ranking/ranking.ranker.ts";
 import type { Hit } from "@/retrieval/retrieval.typedefs.ts";
 
 // Test-only helper. These paths never touch a real filesystem — `rank` only
@@ -17,15 +17,17 @@ function hit(path: string, score: number): Hit {
   return { path: toAbsPath(path), title: path, snippet: "…", score };
 }
 
+const ranker = new Ranker();
+
 describe("RRF_K", () => {
   test("is the standard RRF constant", () => {
     expect(RRF_K).toBe(60);
   });
 });
 
-describe("fuse", () => {
+describe("Ranker.fuse", () => {
   test("token-only hits get the plain 1/(k+i+1) RRF score", () => {
-    const fused = fuse({
+    const fused = ranker.fuse({
       tokenHits: [hit("/a", -5), hit("/b", -3)],
       phraseRanks: new Map(),
       inlinks: new Map(),
@@ -37,7 +39,7 @@ describe("fuse", () => {
   });
 
   test("a phrase-rank match adds the phrase RRF term", () => {
-    const fused = fuse({
+    const fused = ranker.fuse({
       tokenHits: [hit("/a", -5), hit("/b", -3)],
       phraseRanks: new Map([["/b", 0]]),
       inlinks: new Map(),
@@ -52,7 +54,7 @@ describe("fuse", () => {
   });
 
   test("inlinks add linkBoost per corroborating in-link", () => {
-    const fused = fuse({
+    const fused = ranker.fuse({
       tokenHits: [hit("/a", -5)],
       phraseRanks: new Map(),
       inlinks: new Map([["/a", 3]]),
@@ -63,7 +65,7 @@ describe("fuse", () => {
   });
 
   test("preserves the original bm25 score on each fused hit", () => {
-    const fused = fuse({
+    const fused = ranker.fuse({
       tokenHits: [hit("/a", -5)],
       phraseRanks: new Map(),
       inlinks: new Map(),
@@ -74,7 +76,7 @@ describe("fuse", () => {
   });
 
   test("sorts descending by fused score and truncates to limit", () => {
-    const fused = fuse({
+    const fused = ranker.fuse({
       tokenHits: [hit("/low", -1), hit("/high", -9)],
       phraseRanks: new Map([["/low", 0]]),
       inlinks: new Map(),
@@ -87,7 +89,7 @@ describe("fuse", () => {
 
   test("no token hits fuses to an empty array", () => {
     expect(
-      fuse({
+      ranker.fuse({
         tokenHits: [],
         phraseRanks: new Map(),
         inlinks: new Map(),
@@ -98,21 +100,21 @@ describe("fuse", () => {
   });
 });
 
-describe("applyScoreFloor", () => {
+describe("Ranker.applyScoreFloor", () => {
   // bm25 returns a negative score; "strength" is -score.
   test("keeps a hit whose strength clears the floor", () => {
-    expect(applyScoreFloor([hit("/a", -5)], 0.2)).toEqual([hit("/a", -5)]);
+    expect(ranker.applyScoreFloor([hit("/a", -5)], 0.2)).toEqual([hit("/a", -5)]);
   });
 
   test("drops a hit whose strength is below the floor", () => {
-    expect(applyScoreFloor([hit("/a", -0.05)], 0.2)).toEqual([]);
+    expect(ranker.applyScoreFloor([hit("/a", -0.05)], 0.2)).toEqual([]);
   });
 
   test("a floor of 0 keeps every match", () => {
-    expect(applyScoreFloor([hit("/a", -0.0001)], 0)).toEqual([hit("/a", -0.0001)]);
+    expect(ranker.applyScoreFloor([hit("/a", -0.0001)], 0)).toEqual([hit("/a", -0.0001)]);
   });
 
   test("the boundary score exactly at the floor is kept (>=, not >)", () => {
-    expect(applyScoreFloor([hit("/a", -0.2)], 0.2)).toEqual([hit("/a", -0.2)]);
+    expect(ranker.applyScoreFloor([hit("/a", -0.2)], 0.2)).toEqual([hit("/a", -0.2)]);
   });
 });

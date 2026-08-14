@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { formatInjectContext } from "@/session/hooks/memoryInject/memoryInject.formatter.ts";
+import { MemoryInjectFormatter } from "@/session/hooks/memoryInject/memoryInject.formatter.ts";
 
-describe("formatInjectContext", () => {
+describe("MemoryInjectFormatter.formatInjectContext", () => {
+  const formatter = new MemoryInjectFormatter();
+
   test("golden: header, one note bullet, one worklog bullet", () => {
-    const rendered = formatInjectContext({
+    const rendered = formatter.formatInjectContext({
       workspaceId: "homeserver",
       notes: [
         {
@@ -32,7 +34,7 @@ describe("formatInjectContext", () => {
   });
 
   test("no hits at all: just the header line", () => {
-    const rendered = formatInjectContext({
+    const rendered = formatter.formatInjectContext({
       workspaceId: "homeserver",
       notes: [],
       worklogs: [],

@@ -1,7 +1,4 @@
-export {
-  entryTemplate,
-  stateTemplate,
-} from "@/worklog/formatters/worklogFormat/worklogFormat.formatter.ts";
+export { WorklogFormatter } from "@/worklog/formatters/worklogFormat/worklogFormat.formatter.ts";
 export type {
   EntryTemplateInput,
   StateTemplateInput,

@@ -6,7 +6,7 @@ One folder per port — each pairs a `*.typedefs.ts` interface with the one real
 implementation behind it, so a test can swap in a fake from `src/testing/`
 without touching the port's consumers.
 
-`container/` is the composition root: `makeRealContainer` builds every real
+`container/` is the composition root: `AppContainer` builds every real
 adapter once and bundles them into a `Container`, the single value threaded
 into services, commands and hooks. Nothing outside `platform/` constructs an
 adapter directly — code depends on the port type, never the concrete adapter.

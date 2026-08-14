@@ -1,9 +1,4 @@
-export {
-  defaultManifestPath,
-  loadManifest,
-  saveManifest,
-  serializeManifest,
-} from "@/install/steps/manifest/manifest.service.ts";
+export { ManifestService } from "@/install/steps/manifest/manifest.service.ts";
 export {
   MANIFEST_SCHEMA_VERSION,
   PRE_CCMEMORY_BACKUP_SUFFIX,

@@ -7,10 +7,10 @@ import type {
  * The two worklog file formats. Both strings are a contract with every worklog already
  * written into a vault, so they must stay exact, character for character.
  */
-
-/** The living per-worktree state file. */
-export function stateTemplate(input: StateTemplateInput): string {
-  return `---
+export class WorklogFormatter {
+  /** The living per-worktree state file. */
+  stateTemplate(input: StateTemplateInput): string {
+    return `---
 type: worktree-state
 workspace: ${input.workspace}
 worktree: ${input.slug}
@@ -27,15 +27,16 @@ _(nothing yet)_
 ## Working notes (ephemeral, not yet KB)
 - _(none)_
 `;
-}
+  }
 
-/** One append-only journal entry. */
-export function entryTemplate(input: EntryTemplateInput): string {
-  return `## ${input.time} — ${input.topic}
+  /** One append-only journal entry. */
+  entryTemplate(input: EntryTemplateInput): string {
+    return `## ${input.time} — ${input.topic}
 **Changes:** ${input.changes}
 **Learned:** ${input.learned}
 **Decided:** ${input.decided}
 **Open:** ${input.open}
 **Refs:** ${input.refs}
 `;
+  }
 }

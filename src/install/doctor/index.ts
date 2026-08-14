@@ -1,5 +1,5 @@
-export { gatherDoctorReport } from "@/install/doctor/doctor.service.ts";
-export { renderDoctorReport } from "@/install/doctor/doctor.formatter.ts";
+export { DoctorService } from "@/install/doctor/doctor.service.ts";
+export { DoctorFormatter } from "@/install/doctor/doctor.formatter.ts";
 export type {
   DoctorReport,
   GatherDoctorReportOptions,

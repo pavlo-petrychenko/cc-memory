@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { makeDatabaseAdapter } from "@/platform/index.ts";
+import { DatabaseAdapter } from "@/platform/index.ts";
 import { SCHEMA, SCHEMA_VERSION } from "@/retrieval/store/schema/schema.constants.ts";
-import { resetSchema } from "@/retrieval/store/schema/schema.service.ts";
+import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
+
+const schemaService = new SchemaService();
 
 describe("index/schema", () => {
   test("SCHEMA_VERSION is 2", () => {
@@ -10,7 +12,7 @@ describe("index/schema", () => {
   });
 
   test("SCHEMA creates notes, notes_fts, links, worklog_fts and worklog_files", () => {
-    const db = makeDatabaseAdapter(":memory:");
+    const db = new DatabaseAdapter(":memory:");
     db.exec(SCHEMA);
 
     const tableNames = db
@@ -18,7 +20,7 @@ describe("index/schema", () => {
         "SELECT name FROM sqlite_master WHERE type IN ('table','view') ORDER BY name",
         [],
       )
-      .map((row) => row.name);
+      .map((row: { readonly name: string }) => row.name);
 
     expect(tableNames).toContain("notes");
     expect(tableNames).toContain("notes_fts");
@@ -29,15 +31,15 @@ describe("index/schema", () => {
   });
 
   test("SCHEMA is idempotent (CREATE ... IF NOT EXISTS)", () => {
-    const db = makeDatabaseAdapter(":memory:");
+    const db = new DatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     db.exec(SCHEMA); // must not throw on a second exec
     expect(db.getUserVersion()).toBe(0);
     db.close();
   });
 
-  test("resetSchema drops and recreates every table, then stamps PRAGMA user_version", () => {
-    const db = makeDatabaseAdapter(":memory:");
+  test("reset drops and recreates every table, then stamps PRAGMA user_version", () => {
+    const db = new DatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     db.run("INSERT INTO notes(path,title,type,importance,mtime) VALUES(?,?,?,?,?)", [
       "a.md",
@@ -47,7 +49,7 @@ describe("index/schema", () => {
       1,
     ]);
 
-    resetSchema(db);
+    schemaService.reset(db);
 
     expect(db.getUserVersion()).toBe(SCHEMA_VERSION);
     expect(db.query("SELECT * FROM notes", [])).toEqual([]);

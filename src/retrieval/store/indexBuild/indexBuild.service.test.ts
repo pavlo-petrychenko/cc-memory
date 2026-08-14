@@ -4,9 +4,9 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import type { FileSystem } from "@/platform/index.ts";
-import { openIndexDb } from "@/retrieval/store/connection/index.ts";
-import { buildIndex } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
-import { listNotes } from "@/retrieval/store/noteList/index.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/index.ts";
+import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
+import { NoteListService } from "@/retrieval/store/noteList/index.ts";
 import { SCHEMA_VERSION } from "@/retrieval/store/schema/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
@@ -16,6 +16,10 @@ const HOME = "/home/test" as AbsPath;
 // SAFETY: bun:sqlite's own in-memory-database identifier — an opaque key into
 // Container.openDatabase's per-path memoization, not a real filesystem path.
 const IN_MEMORY_DB = ":memory:" as AbsPath;
+
+const connectionService = new IndexConnectionService();
+const indexBuildService = new IndexBuildService(connectionService);
+const noteListService = new NoteListService(connectionService);
 
 function under(relativePath: string): AbsPath {
   return expandPath(`/home/test/kb/${relativePath}`, HOME);
@@ -43,14 +47,16 @@ function makeWorkspace(overrides: Partial<Workspace> = {}): Workspace {
 const NOTE_A = "---\ntype: note\n---\n# Alpha Note\nsome body text about apples.\n";
 const NOTE_B = "---\ntype: note\n---\n# Beta Note\nsome other body text about oranges.\n";
 
-describe("index/build buildIndex — notes", () => {
+describe("index/build IndexBuildService.build — notes", () => {
   test("initial full build adds every markdown note", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(under("A.md"), NOTE_A, 100);
     fs.seedFile(under("B.md"), NOTE_B, 100);
     const container = makeTestContainer({ fs });
 
-    const stats = await buildIndex(container, makeWorkspace(), { incremental: false });
+    const stats = await indexBuildService.build(container, makeWorkspace(), {
+      incremental: false,
+    });
 
     expect(stats).toEqual({ added: 2, updated: 0, removed: 0, total: 2 });
   });
@@ -60,9 +66,9 @@ describe("index/build buildIndex — notes", () => {
     fs.seedFile(under("A.md"), NOTE_A, 100);
     fs.seedFile(under("B.md"), NOTE_B, 100);
     const container = makeTestContainer({ fs });
-    await buildIndex(container, makeWorkspace(), { incremental: false });
+    await indexBuildService.build(container, makeWorkspace(), { incremental: false });
 
-    const stats = await buildIndex(container, makeWorkspace());
+    const stats = await indexBuildService.build(container, makeWorkspace());
 
     expect(stats).toEqual({ added: 0, updated: 0, removed: 0, total: 2 });
   });
@@ -72,13 +78,13 @@ describe("index/build buildIndex — notes", () => {
     fs.seedFile(under("A.md"), NOTE_A, 100);
     fs.seedFile(under("B.md"), NOTE_B, 100);
     const container = makeTestContainer({ fs });
-    await buildIndex(container, makeWorkspace(), { incremental: false });
+    await indexBuildService.build(container, makeWorkspace(), { incremental: false });
 
     fs.seedFile(under("A.md"), "---\ntype: note\n---\n# Alpha Renamed\nnew body.\n", 200);
-    const stats = await buildIndex(container, makeWorkspace());
+    const stats = await indexBuildService.build(container, makeWorkspace());
 
     expect(stats).toEqual({ added: 0, updated: 1, removed: 0, total: 2 });
-    const notes = await listNotes(container, makeWorkspace());
+    const notes = await noteListService.list(container, makeWorkspace());
     const renamed = notes.find((note) => note.path === "A.md");
     expect(renamed?.title).toBe("Alpha Renamed");
   });
@@ -88,13 +94,13 @@ describe("index/build buildIndex — notes", () => {
     fs.seedFile(under("A.md"), NOTE_A, 100);
     fs.seedFile(under("B.md"), NOTE_B, 100);
     const container = makeTestContainer({ fs });
-    await buildIndex(container, makeWorkspace(), { incremental: false });
+    await indexBuildService.build(container, makeWorkspace(), { incremental: false });
 
     await fs.remove(under("B.md"));
-    const stats = await buildIndex(container, makeWorkspace());
+    const stats = await indexBuildService.build(container, makeWorkspace());
 
     expect(stats).toEqual({ added: 0, updated: 0, removed: 1, total: 1 });
-    const notes = await listNotes(container, makeWorkspace());
+    const notes = await noteListService.list(container, makeWorkspace());
     expect(notes.map((note) => note.path)).toEqual(["A.md"]);
   });
 
@@ -104,12 +110,12 @@ describe("index/build buildIndex — notes", () => {
     fs.seedFile(under("B.md"), NOTE_B, 100);
     const container = makeTestContainer({ fs });
     const workspace = makeWorkspace();
-    await buildIndex(container, workspace, { incremental: false });
+    await indexBuildService.build(container, workspace, { incremental: false });
 
-    const { db } = await openIndexDb(container, workspace);
+    const { db } = await connectionService.open(container, workspace);
     db.setUserVersion(SCHEMA_VERSION - 1); // simulate a tokenizer/schema bump
 
-    const stats = await buildIndex(container, workspace); // incremental: true (default)
+    const stats = await indexBuildService.build(container, workspace); // incremental: true (default)
 
     // Every note re-added from scratch, none "updated" — the reset wiped
     // `notes` first, so there was nothing to consider already-known.
@@ -124,10 +130,12 @@ describe("index/build buildIndex — notes", () => {
     fs.seedFile(under("_Worklogs/Not A Note.md"), "# not a note\n", 100);
     const container = makeTestContainer({ fs });
 
-    const stats = await buildIndex(container, makeWorkspace(), { incremental: false });
+    const stats = await indexBuildService.build(container, makeWorkspace(), {
+      incremental: false,
+    });
 
     expect(stats).toEqual({ added: 1, updated: 0, removed: 0, total: 1 });
-    const notes = await listNotes(container, makeWorkspace());
+    const notes = await noteListService.list(container, makeWorkspace());
     expect(notes.map((note) => note.path)).toEqual(["A.md"]);
   });
 
@@ -137,9 +145,11 @@ describe("index/build buildIndex — notes", () => {
     fs.seedFile(under("Drafts/Skip.md"), "# skip\n", 100);
     const container = makeTestContainer({ fs });
 
-    const stats = await buildIndex(container, makeWorkspace({ exclude: ["/Drafts/"] }), {
-      incremental: false,
-    });
+    const stats = await indexBuildService.build(
+      container,
+      makeWorkspace({ exclude: ["/Drafts/"] }),
+      { incremental: false },
+    );
 
     expect(stats.total).toBe(1);
   });
@@ -159,12 +169,14 @@ describe("index/build buildIndex — notes", () => {
     };
     const container = makeTestContainer({ fs: flakyFs });
 
-    const stats = await buildIndex(container, makeWorkspace(), { incremental: false });
+    const stats = await indexBuildService.build(container, makeWorkspace(), {
+      incremental: false,
+    });
 
     // A parse failure skips the file silently; the reindex still succeeds
     // for everything else.
     expect(stats).toEqual({ added: 1, updated: 0, removed: 0, total: 1 });
-    const notes = await listNotes(container, makeWorkspace());
+    const notes = await noteListService.list(container, makeWorkspace());
     expect(notes.map((note) => note.path)).toEqual(["A.md"]);
   });
 
@@ -172,13 +184,15 @@ describe("index/build buildIndex — notes", () => {
     const fs = makeFsMemoryFake();
     const container = makeTestContainer({ fs });
 
-    const stats = await buildIndex(container, makeWorkspace(), { incremental: false });
+    const stats = await indexBuildService.build(container, makeWorkspace(), {
+      incremental: false,
+    });
 
     expect(stats).toEqual({ added: 0, updated: 0, removed: 0, total: 0 });
   });
 });
 
-describe("index/build buildIndex — worklogs (incremental by mtime)", () => {
+describe("index/build IndexBuildService.build — worklogs (incremental by mtime)", () => {
   test("indexes worklog files under each non-dot worktree slug", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(underWorklogs("wt1/STATE.md"), "# wt1\n## Current focus\nnothing\n", 100);
@@ -190,9 +204,9 @@ describe("index/build buildIndex — worklogs (incremental by mtime)", () => {
     const container = makeTestContainer({ fs });
     const workspace = makeWorkspace();
 
-    await buildIndex(container, workspace, { incremental: false });
+    await indexBuildService.build(container, workspace, { incremental: false });
 
-    const { db } = await openIndexDb(container, workspace);
+    const { db } = await connectionService.open(container, workspace);
     const rows = db.query<{ readonly slug: string; readonly date: string }>(
       "SELECT slug, date FROM worklog_fts ORDER BY date",
       [],
@@ -209,9 +223,9 @@ describe("index/build buildIndex — worklogs (incremental by mtime)", () => {
     const container = makeTestContainer({ fs });
     const workspace = makeWorkspace();
 
-    await buildIndex(container, workspace, { incremental: false });
+    await indexBuildService.build(container, workspace, { incremental: false });
 
-    const { db } = await openIndexDb(container, workspace);
+    const { db } = await connectionService.open(container, workspace);
     expect(db.query("SELECT * FROM worklog_fts", [])).toEqual([]);
   });
 
@@ -229,10 +243,10 @@ describe("index/build buildIndex — worklogs (incremental by mtime)", () => {
     };
     const container = makeTestContainer({ fs: countingFs });
     const workspace = makeWorkspace();
-    await buildIndex(container, workspace, { incremental: false });
+    await indexBuildService.build(container, workspace, { incremental: false });
     expect(readCount).toBe(1);
 
-    await buildIndex(container, workspace);
+    await indexBuildService.build(container, workspace);
 
     expect(readCount).toBe(1); // still exactly one read — the second build skipped it
   });
@@ -243,12 +257,12 @@ describe("index/build buildIndex — worklogs (incremental by mtime)", () => {
     fs.seedFile(statePath, "# wt1\n## Current focus\nnothing\n", 100);
     const container = makeTestContainer({ fs });
     const workspace = makeWorkspace();
-    await buildIndex(container, workspace, { incremental: false });
+    await indexBuildService.build(container, workspace, { incremental: false });
 
     fs.seedFile(statePath, "# wt1\n## Current focus\nnew focus\n", 200);
-    await buildIndex(container, workspace);
+    await indexBuildService.build(container, workspace);
 
-    const { db } = await openIndexDb(container, workspace);
+    const { db } = await connectionService.open(container, workspace);
     const rows = db.query<{ readonly body: string }>("SELECT body FROM worklog_fts", []);
     expect(rows).toEqual([{ body: "# wt1\n## Current focus\nnew focus\n" }]);
   });
@@ -259,12 +273,12 @@ describe("index/build buildIndex — worklogs (incremental by mtime)", () => {
     fs.seedFile(statePath, "# wt1\n## Current focus\nnothing\n", 100);
     const container = makeTestContainer({ fs });
     const workspace = makeWorkspace();
-    await buildIndex(container, workspace, { incremental: false });
+    await indexBuildService.build(container, workspace, { incremental: false });
 
     await fs.remove(statePath);
-    await buildIndex(container, workspace);
+    await indexBuildService.build(container, workspace);
 
-    const { db } = await openIndexDb(container, workspace);
+    const { db } = await connectionService.open(container, workspace);
     expect(db.query("SELECT * FROM worklog_fts", [])).toEqual([]);
     expect(db.query("SELECT * FROM worklog_files", [])).toEqual([]);
   });
@@ -275,9 +289,9 @@ describe("index/build buildIndex — worklogs (incremental by mtime)", () => {
     const container = makeTestContainer({ fs });
     const workspace = makeWorkspace();
 
-    await buildIndex(container, workspace, { incremental: false });
+    await indexBuildService.build(container, workspace, { incremental: false });
 
-    const { db } = await openIndexDb(container, workspace);
+    const { db } = await connectionService.open(container, workspace);
     expect(db.query("SELECT * FROM worklog_fts", [])).toEqual([]);
   });
 });

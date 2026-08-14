@@ -6,8 +6,8 @@ import { LogLevel } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { search } from "@/retrieval/commands/search/search.command.ts";
-import { buildIndex } from "@/retrieval/store/index.ts";
+import { SearchCommand } from "@/retrieval/commands/search/search.command.ts";
+import { IndexBuildService } from "@/retrieval/store/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake, type IoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
@@ -35,6 +35,9 @@ const PRIMARY: RawWorkspace = {
   indexDb: ":memory:",
 };
 
+const indexBuildService = new IndexBuildService();
+const searchCommand = new SearchCommand();
+
 function searchArgs(overrides: Partial<SearchArgs> = {}): SearchArgs {
   return {
     command: CliCommand.Search,
@@ -60,15 +63,19 @@ async function seedIndexedWorkspace(): Promise<SeededFixture> {
     "# Kryptonite Handbook\nGeneral notes about assorted green minerals.\n",
   );
   await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
-  await buildIndex(container, expandWorkspace(PRIMARY, HOME));
+  await indexBuildService.build(container, expandWorkspace(PRIMARY, HOME));
   return { container, io };
 }
 
-describe("search", () => {
+describe("SearchCommand.execute", () => {
   test("prints a hit's title, relative path and snippet", async () => {
     const { container, io } = await seedIndexedWorkspace();
 
-    const outcome = await search(container, CONFIG, searchArgs({ workspace: "primary" }));
+    const outcome = await searchCommand.execute(
+      container,
+      CONFIG,
+      searchArgs({ workspace: "primary" }),
+    );
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
     expect(io.written[0]).toBe("• Kryptonite Handbook  (Kryptonite.md)");
     expect(io.written[1]).toContain("green minerals");
@@ -77,7 +84,7 @@ describe("search", () => {
   test("no hits prints '(no hits)'", async () => {
     const { container, io } = await seedIndexedWorkspace();
 
-    const outcome = await search(
+    const outcome = await searchCommand.execute(
       container,
       CONFIG,
       searchArgs({ workspace: "primary", query: "nonexistentterm" }),
@@ -89,14 +96,18 @@ describe("search", () => {
   test("an unknown --workspace fails with the exact 'no such workspace' message", async () => {
     const { container } = await seedIndexedWorkspace();
 
-    const outcome = await search(container, CONFIG, searchArgs({ workspace: "ghost" }));
+    const outcome = await searchCommand.execute(
+      container,
+      CONFIG,
+      searchArgs({ workspace: "ghost" }),
+    );
     expect(outcome).toEqual({ exitCode: 1, stderrMessage: "no such workspace: ghost" });
   });
 
   test("no --workspace and a cwd under no workspace fails with the exact message", async () => {
     const { container } = await seedIndexedWorkspace();
 
-    const outcome = await search(
+    const outcome = await searchCommand.execute(
       container,
       CONFIG,
       searchArgs({ cwd: "/nowhere/under/any/workspace" }),

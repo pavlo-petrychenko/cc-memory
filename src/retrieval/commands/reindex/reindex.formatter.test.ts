@@ -1,9 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import { formatReindexLine } from "@/retrieval/commands/reindex/reindex.formatter.ts";
+import { ReindexFormatter } from "@/retrieval/commands/reindex/reindex.formatter.ts";
 
-describe("formatReindexLine", () => {
+const reindexFormatter = new ReindexFormatter();
+
+describe("ReindexFormatter.line", () => {
   test("the +/~/- summary line", () => {
-    expect(formatReindexLine("primary", 2, 1, 0, 8)).toBe("primary: +2 ~1 -0 = 8 notes");
+    expect(reindexFormatter.line("primary", 2, 1, 0, 8)).toBe(
+      "primary: +2 ~1 -0 = 8 notes",
+    );
   });
 });

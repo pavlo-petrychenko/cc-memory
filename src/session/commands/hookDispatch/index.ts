@@ -1,5 +1,5 @@
 export {
   dispatchableHookNames,
-  dispatchHook,
   hook,
+  HookDispatchCommand,
 } from "@/session/commands/hookDispatch/hookDispatch.command.ts";

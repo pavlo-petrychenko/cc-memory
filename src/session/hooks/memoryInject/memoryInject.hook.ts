@@ -1,8 +1,7 @@
-import type { AbsPath } from "@/core/index.ts";
-import type { FileSystem } from "@/platform/index.ts";
+import type { AbsPath, Config, Workspace } from "@/core/index.ts";
+import type { Container, FileSystem } from "@/platform/index.ts";
 import type { FusedHit } from "@/retrieval/index.ts";
-import { SearchKind, searchFused } from "@/retrieval/index.ts";
-import { salientTokens } from "@/retrieval/index.ts";
+import { SearchKind, SearchService, TokenizerParser } from "@/retrieval/index.ts";
 import {
   INJECT_LOG_FILENAME,
   KEPT_LOG_GENERATIONS,
@@ -15,14 +14,15 @@ import {
   MIN_SALIENT_TOKENS,
   NOTES_POOL_SIZE,
 } from "@/session/hooks/memoryInject/memoryInject.constants.ts";
-import { formatInjectContext } from "@/session/hooks/memoryInject/memoryInject.formatter.ts";
+import type { MemoryInjectFormatter } from "@/session/hooks/memoryInject/memoryInject.formatter.ts";
 import type {
   CandidateLogEntry,
   InjectedHit,
 } from "@/session/hooks/memoryInject/memoryInject.typedefs.ts";
 import type { MemoryInjectPayload } from "@/session/payload/payload.typedefs.ts";
-import type { HookContext, HookHandler } from "@/session/runtime/runtime.service.ts";
+import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.ts";
 import { HookEvent, HookResultKind } from "@/session/session.typedefs.ts";
+import type { HookResult } from "@/session/session.typedefs.ts";
 
 /**
  * `UserPromptSubmit`: auto-retrieve relevant memory for the prompt via a
@@ -128,100 +128,108 @@ function toInjectedHit(hit: FusedHit, base: AbsPath): InjectedHit {
   };
 }
 
-async function logInjectCandidates(
-  context: HookContext,
-  prompt: string,
-  tokens: ReadonlySet<string>,
-  notePool: readonly FusedHit[],
-  worklogPool: readonly FusedHit[],
-  injectedNotes: readonly FusedHit[],
-  injectedWorklogs: readonly FusedHit[],
-): Promise<void> {
-  if (!context.config.injectLogEnabled) return; // CCMEM_INJECT_LOG=0
-  try {
-    const record = {
-      ts: new Date(context.container.clock.nowMs()).toISOString(),
-      ws: context.workspace.id,
-      cwd: context.cwd,
-      prompt: prompt.slice(0, MAX_LOGGED_PROMPT_LENGTH),
-      tokens: [...tokens].toSorted().slice(0, MAX_LOGGED_TOKENS),
-      candidates: toCandidateLogEntries(notePool, context.workspace.kb),
-      worklog: toCandidateLogEntries(worklogPool, context.workspace.worklogs),
-      injected: {
-        notes: injectedNotes.map((hit) =>
-          relativeOrAbsolute(hit.path, context.workspace.kb),
-        ),
-        worklog: injectedWorklogs.map((hit) =>
-          relativeOrAbsolute(hit.path, context.workspace.worklogs),
-        ),
-      },
-    };
-    const logPath = joinAbsPath(
-      parentDir(context.workspace.indexDb),
-      INJECT_LOG_FILENAME,
+export class MemoryInjectHook implements HookHandler<MemoryInjectPayload> {
+  constructor(
+    private readonly container: Container,
+    private readonly config: Config,
+    private readonly formatter: MemoryInjectFormatter,
+    private readonly searchService: SearchService = new SearchService(),
+    private readonly tokenizerParser: TokenizerParser = new TokenizerParser(),
+  ) {}
+
+  private async logInjectCandidates(
+    workspace: Workspace,
+    cwd: AbsPath,
+    prompt: string,
+    tokens: ReadonlySet<string>,
+    notePool: readonly FusedHit[],
+    worklogPool: readonly FusedHit[],
+    injectedNotes: readonly FusedHit[],
+    injectedWorklogs: readonly FusedHit[],
+  ): Promise<void> {
+    if (!this.config.injectLogEnabled) return; // CCMEM_INJECT_LOG=0
+    try {
+      const record = {
+        ts: new Date(this.container.clock.nowMs()).toISOString(),
+        ws: workspace.id,
+        cwd,
+        prompt: prompt.slice(0, MAX_LOGGED_PROMPT_LENGTH),
+        tokens: [...tokens].toSorted().slice(0, MAX_LOGGED_TOKENS),
+        candidates: toCandidateLogEntries(notePool, workspace.kb),
+        worklog: toCandidateLogEntries(worklogPool, workspace.worklogs),
+        injected: {
+          notes: injectedNotes.map((hit) => relativeOrAbsolute(hit.path, workspace.kb)),
+          worklog: injectedWorklogs.map((hit) =>
+            relativeOrAbsolute(hit.path, workspace.worklogs),
+          ),
+        },
+      };
+      const logPath = joinAbsPath(parentDir(workspace.indexDb), INJECT_LOG_FILENAME);
+      await appendInjectLogLine(this.container.fs, logPath, JSON.stringify(record));
+    } catch {
+      // logging failures never propagate.
+    }
+  }
+
+  async handle(payload: HookInput<MemoryInjectPayload>): Promise<HookResult> {
+    const { workspace, cwd } = payload;
+    const prompt = payload.prompt.trim();
+    if (prompt.length < MIN_PROMPT_LENGTH) return { kind: HookResultKind.Silent };
+
+    const tokens = this.tokenizerParser.salientTokens(prompt);
+    if (tokens.size < MIN_SALIENT_TOKENS) return { kind: HookResultKind.Silent };
+
+    let notePool: readonly FusedHit[];
+    let worklogPool: readonly FusedHit[];
+    try {
+      notePool = await this.searchService.searchFused(this.container, workspace, prompt, {
+        limit: NOTES_POOL_SIZE,
+        kind: SearchKind.Notes,
+        linkBoost: this.config.linkBoost,
+      });
+      worklogPool = await this.searchService.searchFused(
+        this.container,
+        workspace,
+        prompt,
+        {
+          limit: MAX_INJECTED_WORKLOGS,
+          kind: SearchKind.Worklog,
+          linkBoost: this.config.linkBoost,
+        },
+      );
+    } catch {
+      // a search failure returns silently, before any logging happens.
+      return { kind: HookResultKind.Silent };
+    }
+
+    const injectedNotes = notePool
+      .filter((hit) => -hit.score >= this.config.injectMinScore)
+      .slice(0, MAX_INJECTED_NOTES);
+    const injectedWorklogs = worklogPool
+      .filter((hit) => -hit.score >= this.config.injectMinScore)
+      .slice(0, MAX_INJECTED_WORKLOGS);
+
+    // logged even when nothing gets injected.
+    await this.logInjectCandidates(
+      workspace,
+      cwd,
+      prompt,
+      tokens,
+      notePool,
+      worklogPool,
+      injectedNotes,
+      injectedWorklogs,
     );
-    await appendInjectLogLine(context.container.fs, logPath, JSON.stringify(record));
-  } catch {
-    // logging failures never propagate.
+
+    if (injectedNotes.length === 0 && injectedWorklogs.length === 0) {
+      return { kind: HookResultKind.Silent };
+    }
+
+    const text = this.formatter.formatInjectContext({
+      workspaceId: workspace.id,
+      notes: injectedNotes.map((hit) => toInjectedHit(hit, workspace.kb)),
+      worklogs: injectedWorklogs.map((hit) => toInjectedHit(hit, workspace.worklogs)),
+    });
+    return { kind: HookResultKind.Context, event: HookEvent.UserPromptSubmit, text };
   }
 }
-
-export const handleMemoryInject: HookHandler<MemoryInjectPayload> = async (
-  context,
-  payload,
-) => {
-  const prompt = payload.prompt.trim();
-  if (prompt.length < MIN_PROMPT_LENGTH) return { kind: HookResultKind.Silent };
-
-  const tokens = salientTokens(prompt);
-  if (tokens.size < MIN_SALIENT_TOKENS) return { kind: HookResultKind.Silent };
-
-  let notePool: readonly FusedHit[];
-  let worklogPool: readonly FusedHit[];
-  try {
-    notePool = await searchFused(context.container, context.workspace, prompt, {
-      limit: NOTES_POOL_SIZE,
-      kind: SearchKind.Notes,
-      linkBoost: context.config.linkBoost,
-    });
-    worklogPool = await searchFused(context.container, context.workspace, prompt, {
-      limit: MAX_INJECTED_WORKLOGS,
-      kind: SearchKind.Worklog,
-      linkBoost: context.config.linkBoost,
-    });
-  } catch {
-    // a search failure returns silently, before any logging happens.
-    return { kind: HookResultKind.Silent };
-  }
-
-  const injectedNotes = notePool
-    .filter((hit) => -hit.score >= context.config.injectMinScore)
-    .slice(0, MAX_INJECTED_NOTES);
-  const injectedWorklogs = worklogPool
-    .filter((hit) => -hit.score >= context.config.injectMinScore)
-    .slice(0, MAX_INJECTED_WORKLOGS);
-
-  // logged even when nothing gets injected.
-  await logInjectCandidates(
-    context,
-    prompt,
-    tokens,
-    notePool,
-    worklogPool,
-    injectedNotes,
-    injectedWorklogs,
-  );
-
-  if (injectedNotes.length === 0 && injectedWorklogs.length === 0) {
-    return { kind: HookResultKind.Silent };
-  }
-
-  const text = formatInjectContext({
-    workspaceId: context.workspace.id,
-    notes: injectedNotes.map((hit) => toInjectedHit(hit, context.workspace.kb)),
-    worklogs: injectedWorklogs.map((hit) =>
-      toInjectedHit(hit, context.workspace.worklogs),
-    ),
-  });
-  return { kind: HookResultKind.Context, event: HookEvent.UserPromptSubmit, text };
-};

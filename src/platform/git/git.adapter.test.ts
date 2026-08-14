@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { makeGitAdapter } from "@/platform/git/git.adapter.ts";
+import { GitAdapter } from "@/platform/git/git.adapter.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 
 // SAFETY: fixed test fixture, never a real filesystem lookup.
@@ -14,7 +14,7 @@ describe("git adapter — argv and timeouts", () => {
       kind: "resolve",
       result: { stdout: " M a.md\n", stderr: "", exitCode: 0 },
     });
-    const git = makeGitAdapter(proc);
+    const git = new GitAdapter(proc);
 
     const result = await git.statusPorcelain(CWD);
 
@@ -34,7 +34,7 @@ describe("git adapter — argv and timeouts", () => {
       kind: "resolve",
       result: { stdout: "deadbeef\n", stderr: "", exitCode: 0 },
     });
-    const git = makeGitAdapter(proc);
+    const git = new GitAdapter(proc);
 
     const result = await git.revParse(CWD, ["--abbrev-ref", "HEAD"]);
 
@@ -49,7 +49,7 @@ describe("git adapter — argv and timeouts", () => {
       kind: "resolve",
       result: { stdout: "/repo\n", stderr: "", exitCode: 0 },
     });
-    const git = makeGitAdapter(proc);
+    const git = new GitAdapter(proc);
 
     await git.showToplevel(CWD);
 
@@ -63,7 +63,7 @@ describe("git adapter — argv and timeouts", () => {
       kind: "resolve",
       result: { stdout: " 1 file changed\n", stderr: "", exitCode: 0 },
     });
-    const git = makeGitAdapter(proc);
+    const git = new GitAdapter(proc);
 
     await git.diffStat(CWD, false);
 
@@ -73,7 +73,7 @@ describe("git adapter — argv and timeouts", () => {
   test("diffStat(staged=true) uses `diff --cached --stat`", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } });
-    const git = makeGitAdapter(proc);
+    const git = new GitAdapter(proc);
 
     await git.diffStat(CWD, true);
 
@@ -86,7 +86,7 @@ describe("git adapter — argv and timeouts", () => {
       kind: "resolve",
       result: { stdout: "abc123 msg\n", stderr: "", exitCode: 0 },
     });
-    const git = makeGitAdapter(proc);
+    const git = new GitAdapter(proc);
 
     await git.logOneline(CWD, 5);
 
@@ -96,7 +96,7 @@ describe("git adapter — argv and timeouts", () => {
   test("add runs `git add -- <...paths>` with a 10s timeout", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } });
-    const git = makeGitAdapter(proc);
+    const git = new GitAdapter(proc);
 
     const result = await git.add(CWD, ["_Worklogs/foo.md"]);
 
@@ -108,7 +108,7 @@ describe("git adapter — argv and timeouts", () => {
   test("commit runs `git commit -m <message>` with a 10s timeout", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } });
-    const git = makeGitAdapter(proc);
+    const git = new GitAdapter(proc);
 
     const result = await git.commit(CWD, "worklog update");
 
@@ -128,7 +128,7 @@ describe("git adapter — failure semantics", () => {
         exitCode: 128,
       },
     });
-    const git = makeGitAdapter(proc);
+    const git = new GitAdapter(proc);
 
     const result = await git.statusPorcelain(CWD);
 
@@ -138,7 +138,7 @@ describe("git adapter — failure semantics", () => {
   test("a rejected Proc.run (timeout/spawn failure) resolves to an empty string too", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "reject", error: new Error("timed out") });
-    const git = makeGitAdapter(proc);
+    const git = new GitAdapter(proc);
 
     const result = await git.revParse(CWD, ["HEAD"]);
 
@@ -148,7 +148,7 @@ describe("git adapter — failure semantics", () => {
   test("add resolves false only when the process itself fails to run", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "reject", error: new Error("timed out") });
-    const git = makeGitAdapter(proc);
+    const git = new GitAdapter(proc);
 
     expect(await git.add(CWD, ["x.md"])).toBe(false);
   });
@@ -159,7 +159,7 @@ describe("git adapter — failure semantics", () => {
       kind: "resolve",
       result: { stdout: "", stderr: "nothing to commit", exitCode: 1 },
     });
-    const git = makeGitAdapter(proc);
+    const git = new GitAdapter(proc);
 
     expect(await git.commit(CWD, "no-op")).toBe(true);
   });

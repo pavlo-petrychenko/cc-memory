@@ -1,14 +1,17 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { parseConfig } from "@/core/index.ts";
+import { ConfigParser } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
+import type { Config } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { buildIndex } from "@/retrieval/index.ts";
-import { handleMemoryInject } from "@/session/hooks/memoryInject/memoryInject.hook.ts";
-import { parseMemoryInjectPayload } from "@/session/payload/payload.parser.ts";
-import { runHook } from "@/session/runtime/runtime.service.ts";
+import { IndexBuildService } from "@/retrieval/index.ts";
+import { MemoryInjectFormatter } from "@/session/hooks/memoryInject/memoryInject.formatter.ts";
+import { MemoryInjectHook } from "@/session/hooks/memoryInject/memoryInject.hook.ts";
+import { PayloadParser } from "@/session/payload/payload.parser.ts";
+import { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts";
+import { HookRuntimeService } from "@/session/runtime/runtime.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
@@ -26,7 +29,7 @@ const HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `HOME` above.
 const CWD = "/home/test/project" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
-const CONFIG = parseConfig({});
+const CONFIG = new ConfigParser().parse({});
 
 const PRIMARY: RawWorkspace = {
   id: "primary",
@@ -84,17 +87,25 @@ async function seedIndexedWorkspace(fixture: Fixture): Promise<void> {
     "---\ntype: note\n---\n# Fast Vehicle\nThe red car is very fast.\n",
   );
   await saveRegistry(fixture.fs, REGISTRY_PATH, [PRIMARY]);
-  await buildIndex(fixture.container, expandWorkspace(PRIMARY, HOME));
+  await new IndexBuildService().build(fixture.container, expandWorkspace(PRIMARY, HOME));
 }
 
-async function runMemoryInject(fixture: Fixture, stdin: string): Promise<void> {
+async function runMemoryInject(
+  fixture: Fixture,
+  stdin: string,
+  config: Config = CONFIG,
+): Promise<void> {
   fixture.io.setStdin(stdin);
-  await runHook(
+  const payloadParser = new PayloadParser();
+  const hookRuntimeService = new HookRuntimeService(
     fixture.container,
-    CONFIG,
+    payloadParser,
+    new HookResultSerializer(),
+  );
+  await hookRuntimeService.run(
     "memory-inject",
-    parseMemoryInjectPayload,
-    handleMemoryInject,
+    (record) => payloadParser.parseMemoryInject(record),
+    new MemoryInjectHook(fixture.container, config, new MemoryInjectFormatter()),
   );
 }
 
@@ -160,7 +171,10 @@ describe("UserPromptSubmit (memory-inject) hook", () => {
       "/home/test/vault-primary/_Worklogs/wt1/2026-01-03.md" as AbsPath,
       "## 08:00 — cleanup\n**Changes:** archived old build artifacts and logs.\n",
     );
-    await buildIndex(fixture.container, expandWorkspace(PRIMARY, HOME));
+    await new IndexBuildService().build(
+      fixture.container,
+      expandWorkspace(PRIMARY, HOME),
+    );
 
     await runMemoryInject(
       fixture,
@@ -279,20 +293,15 @@ describe("UserPromptSubmit (memory-inject) hook", () => {
   test("CCMEM_INJECT_LOG=0 disables logging entirely", async () => {
     const fixture = makeFixture();
     await seedIndexedWorkspace(fixture);
-    const configLogDisabled = parseConfig({ CCMEM_INJECT_LOG: "0" });
+    const configLogDisabled = new ConfigParser().parse({ CCMEM_INJECT_LOG: "0" });
 
-    fixture.io.setStdin(
+    await runMemoryInject(
+      fixture,
       JSON.stringify({
         cwd: CWD,
         prompt: "tell me about the injection hook and wrap-gate blocking",
       }),
-    );
-    await runHook(
-      fixture.container,
       configLogDisabled,
-      "memory-inject",
-      parseMemoryInjectPayload,
-      handleMemoryInject,
     );
 
     expect(fixture.io.written).toHaveLength(1); // injection itself is unaffected

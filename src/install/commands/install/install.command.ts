@@ -1,7 +1,6 @@
 import type { InstallArgs } from "@/cli/index.ts";
-import { type CliOutcome } from "@/cli/index.ts";
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
-import type { AbsPath } from "@/core/index.ts";
+import type { AbsPath, CliOutcome } from "@/core/index.ts";
 import {
   INSTALL_BANNER,
   INSTALL_DONE_MESSAGE,
@@ -11,24 +10,24 @@ import {
   UNINSTALL_BANNER,
   UNINSTALL_NOTHING_MESSAGE,
 } from "@/install/commands/install/install.constants.ts";
-import { runInstall, runUninstall } from "@/install/install.service.ts";
+import { InstallService } from "@/install/install.service.ts";
 import { type InstallError, InstallErrorKind } from "@/install/install.typedefs.ts";
 import type { Container } from "@/platform/index.ts";
-import { makeRealContainer } from "@/platform/index.ts";
+import { AppContainer } from "@/platform/index.ts";
 
 /**
  * `memory install [--dry-run]` / `memory uninstall`.
  *
  * `main.ts` dispatches to `install(parsed)` and `uninstall()` with no
- * `Container` argument, unlike every other command. Both functions take
- * `container` as an OPTIONAL trailing parameter instead, defaulting to a
- * fresh real one — `main.ts`'s call sites stay valid untouched, while a test
- * supplies `makeTestContainer(...)` explicitly (`proc: procFake`, `fs` seeded
- * under a faked `$HOME`) and never triggers the real default at all. This is
- * the seam that makes these two functions safe to exercise directly:
- * `runInstall`/`runUninstall` write to the user's real home directory
- * through `container.proc` — on the real container that is a real mutation of
- * this machine's state, so every test
+ * `Container` argument, unlike every other command. Both `InstallCommand` and
+ * `UninstallCommand` take `container` as an OPTIONAL constructor parameter
+ * instead, defaulting to a fresh real one — `main.ts`'s call sites stay valid
+ * untouched, while a test supplies `makeTestContainer(...)` explicitly
+ * (`proc: procFake`, `fs` seeded under a faked `$HOME`) and never triggers the
+ * real default at all. This is the seam that makes these two safe to
+ * exercise directly: `InstallService`'s `install`/`uninstall` write to the
+ * user's real home directory through `container.proc` — on the real
+ * container that is a real mutation of this machine's state, so every test
  * passes an explicit fake container instead.
  */
 
@@ -68,36 +67,57 @@ function installErrorMessage(error: InstallError): string {
   }
 }
 
+export class InstallCommand {
+  constructor(private readonly container: Container = new AppContainer(process.env)) {}
+
+  async execute(args: InstallArgs): Promise<CliOutcome> {
+    const repoRoot = repoRootFromRunningFile();
+    const result = await new InstallService(this.container).install({
+      repoRoot,
+      dryRun: args.dryRun,
+    });
+    if (!result.ok) return cliFailure(installErrorMessage(result.error));
+
+    const report = result.value;
+    this.container.stdio.write(report.dryRun ? INSTALL_DRY_RUN_BANNER : INSTALL_BANNER);
+    if (report.settingsDiffLines.length > 0) {
+      this.container.stdio.write(SETTINGS_DIFF_HEADER);
+      for (const line of report.settingsDiffLines) this.container.stdio.write(line);
+    }
+    for (const line of report.actionLines) this.container.stdio.write(line);
+    this.container.stdio.write(
+      report.dryRun ? INSTALL_DRY_RUN_DONE_MESSAGE : INSTALL_DONE_MESSAGE,
+    );
+    return CLI_SUCCESS;
+  }
+}
+
+export class UninstallCommand {
+  constructor(private readonly container: Container = new AppContainer(process.env)) {}
+
+  async execute(): Promise<CliOutcome> {
+    const report = await new InstallService(this.container).uninstall();
+    this.container.stdio.write(
+      report.uninstalled ? UNINSTALL_BANNER : UNINSTALL_NOTHING_MESSAGE,
+    );
+    if (report.uninstalled) {
+      for (const line of report.actionLines) this.container.stdio.write(line);
+    }
+    return CLI_SUCCESS;
+  }
+}
+
+/** Thin, signature-preserving delegates to `InstallCommand`/`UninstallCommand`
+ * — `cli/main.ts` dispatches to plain functions with these exact signatures. */
 export async function install(
   args: InstallArgs,
-  container: Container = makeRealContainer(process.env),
+  container: Container = new AppContainer(process.env),
 ): Promise<CliOutcome> {
-  const repoRoot = repoRootFromRunningFile();
-  const result = await runInstall(container, { repoRoot, dryRun: args.dryRun });
-  if (!result.ok) return cliFailure(installErrorMessage(result.error));
-
-  const report = result.value;
-  container.stdio.write(report.dryRun ? INSTALL_DRY_RUN_BANNER : INSTALL_BANNER);
-  if (report.settingsDiffLines.length > 0) {
-    container.stdio.write(SETTINGS_DIFF_HEADER);
-    for (const line of report.settingsDiffLines) container.stdio.write(line);
-  }
-  for (const line of report.actionLines) container.stdio.write(line);
-  container.stdio.write(
-    report.dryRun ? INSTALL_DRY_RUN_DONE_MESSAGE : INSTALL_DONE_MESSAGE,
-  );
-  return CLI_SUCCESS;
+  return new InstallCommand(container).execute(args);
 }
 
 export async function uninstall(
-  container: Container = makeRealContainer(process.env),
+  container: Container = new AppContainer(process.env),
 ): Promise<CliOutcome> {
-  const report = await runUninstall(container);
-  container.stdio.write(
-    report.uninstalled ? UNINSTALL_BANNER : UNINSTALL_NOTHING_MESSAGE,
-  );
-  if (report.uninstalled) {
-    for (const line of report.actionLines) container.stdio.write(line);
-  }
-  return CLI_SUCCESS;
+  return new UninstallCommand(container).execute();
 }

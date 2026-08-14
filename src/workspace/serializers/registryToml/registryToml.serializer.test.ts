@@ -2,11 +2,13 @@ import { describe, expect, test } from "bun:test";
 
 import { parse } from "smol-toml";
 
-import { serializeRegistry } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
+import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
 
-describe("serializeRegistry", () => {
+const serializer = new RegistryTomlSerializer();
+
+describe("RegistryTomlSerializer.serialize", () => {
   test("an empty registry is just the header comment", () => {
-    expect(serializeRegistry([])).toBe(
+    expect(serializer.serialize([])).toBe(
       "# cc-memory workspace registry (managed by `memory workspace …`).\n" +
         "# Paths may use ~; they are expanded at load time. One block per workspace.\n\n",
     );
@@ -17,7 +19,7 @@ describe("serializeRegistry", () => {
   // registry. This golden asserts arrays are emitted without inner spaces
   // (smol-toml's default `[ "a", "b" ]` would produce a diff on every write).
   test("emits stable bytes (no spaces inside arrays)", () => {
-    const output = serializeRegistry([
+    const output = serializer.serialize([
       {
         id: "acme",
         match: ["~/code/acme"],
@@ -44,7 +46,7 @@ describe("serializeRegistry", () => {
 
   // Quoting escapes backslashes then double quotes, and nothing else.
   test("quoting escapes backslashes and double quotes", () => {
-    const output = serializeRegistry([
+    const output = serializer.serialize([
       {
         id: 'we"ird\\path',
         match: [],
@@ -59,7 +61,7 @@ describe("serializeRegistry", () => {
   });
 
   test("keeps the header and field order, round-trips through smol-toml", () => {
-    const output = serializeRegistry([
+    const output = serializer.serialize([
       {
         id: "homeserver",
         match: ["~/code/acme/service-api"],
@@ -91,7 +93,7 @@ describe("serializeRegistry", () => {
   });
 
   test("multiple workspaces produce multiple [[workspace]] blocks, blank-line separated", () => {
-    const output = serializeRegistry([
+    const output = serializer.serialize([
       {
         id: "a",
         match: ["/x"],

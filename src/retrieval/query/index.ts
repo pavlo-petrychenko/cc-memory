@@ -1,6 +1,2 @@
-export { ftsQuery, phraseQuery } from "@/retrieval/query/ftsQuery/index.ts";
-export {
-  orderedTerms,
-  salientTokens,
-  subtokens,
-} from "@/retrieval/query/tokenizer/index.ts";
+export { FtsQueryBuilder } from "@/retrieval/query/ftsQuery/index.ts";
+export { TokenizerParser } from "@/retrieval/query/tokenizer/index.ts";

@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { runCli } from "@/cli/main.ts";
 import { LogLevel } from "@/core/index.ts";
-import { makeDatabaseAdapter } from "@/platform/index.ts";
+import { DatabaseAdapter } from "@/platform/index.ts";
 import type { SqlDatabase } from "@/platform/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
@@ -21,7 +21,7 @@ function makeInMemoryOnlyOpenDb(): (path: string) => SqlDatabase {
   return (path: string) => {
     const existing = handles.get(path);
     if (existing !== undefined) return existing;
-    const db = makeDatabaseAdapter(":memory:");
+    const db = new DatabaseAdapter(":memory:");
     handles.set(path, db);
     return db;
   };

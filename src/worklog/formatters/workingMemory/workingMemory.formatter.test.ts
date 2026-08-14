@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import { formatWorkingMemory } from "@/worklog/formatters/workingMemory/workingMemory.formatter.ts";
+import { WorkingMemoryFormatter } from "@/worklog/formatters/workingMemory/workingMemory.formatter.ts";
 
-describe("formatWorkingMemory", () => {
+describe("WorkingMemoryFormatter.format", () => {
   test("with state: trims it and appends the wrap reminder", () => {
-    const rendered = formatWorkingMemory({
+    const formatter = new WorkingMemoryFormatter();
+    const rendered = formatter.format({
       workspaceId: "homeserver",
       slug: "cc-memory",
       state: "\n## Current focus\nporting rank.ts\n\n",
@@ -17,7 +18,8 @@ describe("formatWorkingMemory", () => {
   });
 
   test("without state: the 'start one' variant", () => {
-    const rendered = formatWorkingMemory({
+    const formatter = new WorkingMemoryFormatter();
+    const rendered = formatter.format({
       workspaceId: "homeserver",
       slug: "cc-memory",
       state: null,

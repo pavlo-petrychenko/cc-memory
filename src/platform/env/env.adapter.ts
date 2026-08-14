@@ -11,18 +11,20 @@ import type { Env } from "@/platform/env/env.typedefs.ts";
  * outside `core/paths.ts` an `AbsPath` cast is warranted, because there is no
  * relative or `~`-prefixed input to run through `expandPath`.
  */
-export function makeEnvAdapter(): Env {
-  return {
-    get: (name: string) => process.env[name],
-    home: () => {
-      // SAFETY: `os.homedir()` always returns an absolute, OS-native path — no
-      // `~`/relative segment to normalize.
-      return homedir() as AbsPath;
-    },
-    cwd: () => {
-      // SAFETY: `process.cwd()` always returns an absolute, OS-native path, same
-      // reasoning as `home()` above.
-      return process.cwd() as AbsPath;
-    },
-  };
+export class EnvAdapter implements Env {
+  get(name: string): string | undefined {
+    return process.env[name];
+  }
+
+  home(): AbsPath {
+    // SAFETY: `os.homedir()` always returns an absolute, OS-native path — no
+    // `~`/relative segment to normalize.
+    return homedir() as AbsPath;
+  }
+
+  cwd(): AbsPath {
+    // SAFETY: `process.cwd()` always returns an absolute, OS-native path, same
+    // reasoning as `home()` above.
+    return process.cwd() as AbsPath;
+  }
 }

@@ -8,7 +8,7 @@ import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
-import { commit } from "@/worklog/commands/commit/commit.command.ts";
+import { CommitCommand } from "@/worklog/commands/commit/commit.command.ts";
 import { saveRegistry } from "@/workspace/index.ts";
 
 // SAFETY: a fixed test fixture, matching tests/helpers/container.ts's DEFAULT_HOME.
@@ -28,13 +28,19 @@ function commitArgs(overrides: Partial<CommitArgs> = {}): CommitArgs {
   return { command: CliCommand.Commit, workspace: null, message: null, ...overrides };
 }
 
-describe("commit", () => {
+describe("CommitCommand.execute", () => {
   test("a kb with no .git directory is skipped", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
     await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
+    const command = new CommitCommand(
+      container.fs,
+      container.proc,
+      container.env,
+      container.stdio,
+    );
 
-    const outcome = await commit(container, commitArgs({ workspace: "primary" }));
+    const outcome = await command.execute(commitArgs({ workspace: "primary" }));
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
     expect(io.written).toEqual(["primary: not a git repo, skipping"]);
   });
@@ -47,9 +53,14 @@ describe("commit", () => {
     await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
     // SAFETY: a fixed literal directory segment under a hard-coded test fixture path.
     fs.seedDir("/vault-primary/.git" as AbsPath);
+    const command = new CommitCommand(
+      container.fs,
+      container.proc,
+      container.env,
+      container.stdio,
+    );
 
-    const outcome = await commit(
-      container,
+    const outcome = await command.execute(
       commitArgs({ workspace: "primary", message: "wip" }),
     );
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
@@ -67,8 +78,14 @@ describe("commit", () => {
     await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
     // SAFETY: a fixed literal directory segment under a hard-coded test fixture path.
     fs.seedDir("/vault-primary/.git" as AbsPath);
+    const command = new CommitCommand(
+      container.fs,
+      container.proc,
+      container.env,
+      container.stdio,
+    );
 
-    await commit(container, commitArgs({ workspace: "primary" }));
+    await command.execute(commitArgs({ workspace: "primary" }));
     expect(proc.calls[1]?.args).toEqual([
       "-C",
       "/vault-primary",
@@ -88,8 +105,14 @@ describe("commit", () => {
     fs.seedDir("/vault-primary/.git" as AbsPath);
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } }); // add
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 1 } }); // commit
+    const command = new CommitCommand(
+      container.fs,
+      container.proc,
+      container.env,
+      container.stdio,
+    );
 
-    const outcome = await commit(container, commitArgs({ workspace: "primary" }));
+    const outcome = await command.execute(commitArgs({ workspace: "primary" }));
     expect(outcome.exitCode).toBe(0);
     expect(io.written).toEqual(["primary: nothing to commit"]);
   });
@@ -98,8 +121,14 @@ describe("commit", () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
     await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
+    const command = new CommitCommand(
+      container.fs,
+      container.proc,
+      container.env,
+      container.stdio,
+    );
 
-    const outcome = await commit(container, commitArgs({ workspace: "ghost" }));
+    const outcome = await command.execute(commitArgs({ workspace: "ghost" }));
     expect(outcome).toEqual({ exitCode: 1, stderrMessage: "no such workspace: ghost" });
   });
 });

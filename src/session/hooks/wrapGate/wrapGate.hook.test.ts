@@ -1,13 +1,16 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { parseConfig } from "@/core/index.ts";
+import { ConfigParser } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
+import type { Config } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { handleWrapGate } from "@/session/hooks/wrapGate/wrapGate.hook.ts";
-import { parseWrapGatePayload } from "@/session/payload/payload.parser.ts";
-import { runHook } from "@/session/runtime/runtime.service.ts";
+import { WrapGateFormatter } from "@/session/hooks/wrapGate/wrapGate.formatter.ts";
+import { WrapGateHook } from "@/session/hooks/wrapGate/wrapGate.hook.ts";
+import { PayloadParser } from "@/session/payload/payload.parser.ts";
+import { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts";
+import { HookRuntimeService } from "@/session/runtime/runtime.service.ts";
 import { type ClockFake, makeClockFake } from "@/testing/fakes/clockFixed.fake.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type GitFake, makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
@@ -27,7 +30,7 @@ const HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `HOME` above.
 const CWD = "/home/test/project" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
-const CONFIG = parseConfig({});
+const CONFIG = new ConfigParser().parse({});
 // SAFETY: `PRIMARY.indexDb` is `":memory:"`; its `parentDir` is the fixed
 // literal `"/"`, so the marker lands at this fixed literal path.
 const MARKER_PATH = "/wrap-state.json" as AbsPath;
@@ -72,14 +75,22 @@ function statusPorcelainWithLines(count: number): string {
   ).join("\n");
 }
 
-async function runWrapGate(fixture: Fixture, stdin: string): Promise<void> {
+async function runWrapGate(
+  fixture: Fixture,
+  stdin: string,
+  config: Config = CONFIG,
+): Promise<void> {
   fixture.io.setStdin(stdin);
-  await runHook(
+  const payloadParser = new PayloadParser();
+  const hookRuntimeService = new HookRuntimeService(
     fixture.container,
-    CONFIG,
+    payloadParser,
+    new HookResultSerializer(),
+  );
+  await hookRuntimeService.run(
     "wrap-gate",
-    parseWrapGatePayload,
-    handleWrapGate,
+    (record) => payloadParser.parseWrapGate(record),
+    new WrapGateHook(fixture.container, config, payloadParser, new WrapGateFormatter()),
   );
 }
 
@@ -227,24 +238,10 @@ describe("Stop (wrap-gate) hook", () => {
   test("CCMEM_GATE_DISABLE=1 nudges forever instead of escalating", async () => {
     const fixture = await makeFixture();
     fixture.git.setStatusPorcelain(statusPorcelainWithLines(5));
-    const gateDisabledConfig = parseConfig({ CCMEM_GATE_DISABLE: "1" });
+    const gateDisabledConfig = new ConfigParser().parse({ CCMEM_GATE_DISABLE: "1" });
 
-    fixture.io.setStdin(payload());
-    await runHook(
-      fixture.container,
-      gateDisabledConfig,
-      "wrap-gate",
-      parseWrapGatePayload,
-      handleWrapGate,
-    );
-    fixture.io.setStdin(payload());
-    await runHook(
-      fixture.container,
-      gateDisabledConfig,
-      "wrap-gate",
-      parseWrapGatePayload,
-      handleWrapGate,
-    );
+    await runWrapGate(fixture, payload(), gateDisabledConfig);
+    await runWrapGate(fixture, payload(), gateDisabledConfig);
 
     const secondResult: { readonly decision?: string } = JSON.parse(
       fixture.io.written[1] ?? "",

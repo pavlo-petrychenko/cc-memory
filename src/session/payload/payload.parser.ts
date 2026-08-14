@@ -16,11 +16,11 @@ import type {
  * accepts a `source` field that is never read, so it has no field here
  * either).
  *
- * `runtime.service.ts` owns the tolerant top-level parse
+ * `HookRuntimeService` owns the tolerant top-level parse
  * (`parseTolerantJson`) — empty or invalid stdin becomes `{}`, never a
- * thrown error. Each `parse*Payload` function below then reads its own
- * fields out of that already-parsed `JsonRecord`, tolerantly: a field of the
- * wrong JSON type is treated the same as an absent one rather than raising.
+ * thrown error. Each `parse*` method below then reads its own fields out of
+ * that already-parsed `JsonRecord`, tolerantly: a field of the wrong JSON
+ * type is treated the same as an absent one rather than raising.
  */
 
 // `typeof`/`Array.isArray` are avoided in favor of `Object.prototype.toString`
@@ -44,22 +44,6 @@ function isJsonBoolean(value: JsonValue | undefined): value is boolean {
   );
 }
 
-/**
- * Parses stdin tolerantly: empty input, invalid JSON, and JSON that parses
- * but isn't an object (an array, a string, a bare number) all fold to `{}`
- * rather than throwing, so a malformed payload results in every field
- * reading as absent instead of the hook crashing.
- */
-export function parseTolerantJson(raw: string): JsonRecord {
-  if (raw.trim() === "") return {};
-  try {
-    const parsed: JsonValue = JSON.parse(raw);
-    return isJsonRecord(parsed) ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
 /** Read one field as a plain string, or `null` if absent/wrongly typed. */
 function stringField(record: JsonRecord, key: string): string | null {
   const value = record[key];
@@ -78,38 +62,54 @@ function booleanField(record: JsonRecord, key: string): boolean {
   return isJsonBoolean(value) && value;
 }
 
-export function parseSessionStartPayload(record: JsonRecord): SessionStartPayload {
-  return { cwd: stringField(record, "cwd") };
-}
+export class PayloadParser {
+  /**
+   * Parses stdin tolerantly: empty input, invalid JSON, and JSON that parses
+   * but isn't an object (an array, a string, a bare number) all fold to `{}`
+   * rather than throwing, so a malformed payload results in every field
+   * reading as absent instead of the hook crashing.
+   */
+  parseTolerantJson(raw: string): JsonRecord {
+    if (raw.trim() === "") return {};
+    try {
+      const parsed: JsonValue = JSON.parse(raw);
+      return isJsonRecord(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
 
-export function parseMemoryInjectPayload(record: JsonRecord): MemoryInjectPayload {
-  return {
-    cwd: stringField(record, "cwd"),
-    prompt: stringFieldOrEmpty(record, "prompt"),
-  };
-}
+  parseSessionStart(record: JsonRecord): SessionStartPayload {
+    return { cwd: stringField(record, "cwd") };
+  }
 
-export function parseWrapGatePayload(record: JsonRecord): WrapGatePayload {
-  return {
-    cwd: stringField(record, "cwd"),
-    sessionId: stringField(record, "session_id"),
-    stopHookActive: booleanField(record, "stop_hook_active"),
-  };
-}
+  parseMemoryInject(record: JsonRecord): MemoryInjectPayload {
+    return {
+      cwd: stringField(record, "cwd"),
+      prompt: stringFieldOrEmpty(record, "prompt"),
+    };
+  }
 
-export function parseWorklogFloorPayload(record: JsonRecord): WorklogFloorPayload {
-  return {
-    cwd: stringField(record, "cwd"),
-    reason: stringFieldOrEmpty(record, "reason"),
-  };
-}
+  parseWrapGate(record: JsonRecord): WrapGatePayload {
+    return {
+      cwd: stringField(record, "cwd"),
+      sessionId: stringField(record, "session_id"),
+      stopHookActive: booleanField(record, "stop_hook_active"),
+    };
+  }
 
-export function parseCompactCheckpointPayload(
-  record: JsonRecord,
-): CompactCheckpointPayload {
-  return {
-    cwd: stringField(record, "cwd"),
-    compactSummary: stringFieldOrEmpty(record, "compact_summary"),
-    trigger: stringFieldOrEmpty(record, "trigger"),
-  };
+  parseWorklogFloor(record: JsonRecord): WorklogFloorPayload {
+    return {
+      cwd: stringField(record, "cwd"),
+      reason: stringFieldOrEmpty(record, "reason"),
+    };
+  }
+
+  parseCompactCheckpoint(record: JsonRecord): CompactCheckpointPayload {
+    return {
+      cwd: stringField(record, "cwd"),
+      compactSummary: stringFieldOrEmpty(record, "compact_summary"),
+      trigger: stringFieldOrEmpty(record, "trigger"),
+    };
+  }
 }

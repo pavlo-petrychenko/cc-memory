@@ -1,11 +1,1 @@
-export {
-  appendToDated,
-  commitWorklogs,
-  datedPath,
-  ensureDir,
-  proposalsDir,
-  readState,
-  recentEntries,
-  statePath,
-  worktreeDir,
-} from "@/worklog/services/worklogStore/worklogStore.service.ts";
+export { WorklogStoreService } from "@/worklog/services/worklogStore/worklogStore.service.ts";

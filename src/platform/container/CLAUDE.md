@@ -1,6 +1,6 @@
 # container
 
-The composition root. `makeRealContainer` builds one real instance of every
+The composition root. `AppContainer` builds one real instance of every
 port and bundles them into a `Container` — the single value `cli/main.ts` and
 the hook runtime construct once and thread through the rest of the codebase.
 

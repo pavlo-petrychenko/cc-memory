@@ -1,15 +1,17 @@
 import { describe, expect, test } from "bun:test";
 
-import { serializeHookResult } from "@/session/runtime/hookResult.serializer.ts";
+import { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts";
 import { HookEvent, HookResultKind } from "@/session/session.typedefs.ts";
 
-describe("serializeHookResult", () => {
+describe("HookResultSerializer.serialize", () => {
+  const serializer = new HookResultSerializer();
+
   test("silent renders to null (nothing printed)", () => {
-    expect(serializeHookResult({ kind: HookResultKind.Silent })).toBeNull();
+    expect(serializer.serialize({ kind: HookResultKind.Silent })).toBeNull();
   });
 
   test("context renders the hookSpecificOutput envelope", () => {
-    const rendered = serializeHookResult({
+    const rendered = serializer.serialize({
       kind: HookResultKind.Context,
       event: HookEvent.SessionStart,
       text: "hello",
@@ -22,7 +24,7 @@ describe("serializeHookResult", () => {
   });
 
   test("block renders the decision/reason envelope", () => {
-    const rendered = serializeHookResult({ kind: HookResultKind.Block, reason: "stop" });
+    const rendered = serializer.serialize({ kind: HookResultKind.Block, reason: "stop" });
     expect(rendered).toBe(JSON.stringify({ decision: "block", reason: "stop" }));
   });
 });

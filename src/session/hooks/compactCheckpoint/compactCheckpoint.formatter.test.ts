@@ -1,18 +1,23 @@
 import { describe, expect, test } from "bun:test";
 
-import { formatCompactBlock } from "@/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";
+import { CompactCheckpointFormatter } from "@/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";
 
-describe("formatCompactBlock", () => {
+describe("CompactCheckpointFormatter.formatCompactBlock", () => {
+  const formatter = new CompactCheckpointFormatter();
+
   test("golden with an explicit trigger", () => {
     expect(
-      formatCompactBlock({ trigger: "manual", summary: "distilled context here" }),
+      formatter.formatCompactBlock({
+        trigger: "manual",
+        summary: "distilled context here",
+      }),
     ).toBe(
       "<!-- compaction checkpoint (manual) -->\n**Compaction summary:**\n\ndistilled context here",
     );
   });
 
   test("an empty trigger falls back to auto", () => {
-    expect(formatCompactBlock({ trigger: "", summary: "s" })).toBe(
+    expect(formatter.formatCompactBlock({ trigger: "", summary: "s" })).toBe(
       "<!-- compaction checkpoint (auto) -->\n**Compaction summary:**\n\ns",
     );
   });

@@ -12,47 +12,54 @@ import type { SqlDatabase, SqlValue } from "@/platform/db/db.typedefs.ts";
  * Bind values are `SqlValue` — `bun:sqlite` accepts a plain array of values for
  * a positional-`?`-parameterized statement.
  */
-export function makeDatabaseAdapter(path: string): SqlDatabase {
-  const database = new Database(path);
-  const statementCache = new Map<string, Statement>();
+export class DatabaseAdapter implements SqlDatabase {
+  private readonly database: Database;
+  private readonly statementCache = new Map<string, Statement>();
 
-  function prepared(sql: string): Statement {
-    const cached = statementCache.get(sql);
+  constructor(path: string) {
+    this.database = new Database(path);
+  }
+
+  private prepared(sql: string): Statement {
+    const cached = this.statementCache.get(sql);
     if (cached !== undefined) return cached;
-    const statement = database.prepare(sql);
-    statementCache.set(sql, statement);
+    const statement = this.database.prepare(sql);
+    this.statementCache.set(sql, statement);
     return statement;
   }
 
-  return {
-    exec: (sql: string) => {
-      database.exec(sql);
-    },
-    query: <RowType>(sql: string, params: readonly SqlValue[]): readonly RowType[] => {
-      // SAFETY: `bun:sqlite` has no way to type a row by the SQL text alone; the
-      // caller supplies `RowType` to match the columns their own SQL selects.
-      return prepared(sql).all(...params) as RowType[];
-    },
-    run: (sql: string, params: readonly SqlValue[]) => {
-      prepared(sql).run(...params);
-    },
-    getUserVersion: () => {
-      // SAFETY: `PRAGMA user_version` always returns exactly one row shaped
-      // `{ user_version: <integer> }` (SQLite's own pragma contract), never a
-      // different column set — the fallback `?? 0` only covers a driver-level
-      // empty result, not a mismatched shape.
-      const row = database.query("PRAGMA user_version").get() as {
-        user_version: number;
-      } | null;
-      return row?.user_version ?? 0;
-    },
-    setUserVersion: (version: number) => {
-      // PRAGMA does not accept a bound parameter, so the (trusted, integer)
-      // version is interpolated directly.
-      database.exec(`PRAGMA user_version = ${version}`);
-    },
-    close: () => {
-      database.close();
-    },
-  };
+  exec(sql: string): void {
+    this.database.exec(sql);
+  }
+
+  query<RowType>(sql: string, params: readonly SqlValue[]): readonly RowType[] {
+    // SAFETY: `bun:sqlite` has no way to type a row by the SQL text alone; the
+    // caller supplies `RowType` to match the columns their own SQL selects.
+    return this.prepared(sql).all(...params) as RowType[];
+  }
+
+  run(sql: string, params: readonly SqlValue[]): void {
+    this.prepared(sql).run(...params);
+  }
+
+  getUserVersion(): number {
+    // SAFETY: `PRAGMA user_version` always returns exactly one row shaped
+    // `{ user_version: <integer> }` (SQLite's own pragma contract), never a
+    // different column set — the fallback `?? 0` only covers a driver-level
+    // empty result, not a mismatched shape.
+    const row = this.database.query("PRAGMA user_version").get() as {
+      user_version: number;
+    } | null;
+    return row?.user_version ?? 0;
+  }
+
+  setUserVersion(version: number): void {
+    // PRAGMA does not accept a bound parameter, so the (trusted, integer)
+    // version is interpolated directly.
+    this.database.exec(`PRAGMA user_version = ${version}`);
+  }
+
+  close(): void {
+    this.database.close();
+  }
 }

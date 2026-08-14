@@ -1,11 +1,11 @@
 import type { AbsPath } from "@/core/index.ts";
 import { stripChars } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { parseNote } from "@/knowledge/index.ts";
+import { NoteParser } from "@/knowledge/index.ts";
 import type { Container } from "@/platform/index.ts";
 import type { SqlDatabase, SqlValue } from "@/platform/index.ts";
 import type { FileSystem } from "@/platform/index.ts";
-import { openIndexDb } from "@/retrieval/store/connection/index.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/index.ts";
 import type {
   BuildOptions,
   BuildStats,
@@ -131,7 +131,7 @@ async function upsertNote(
   } catch {
     return false;
   }
-  const note = parseNote(text, fallbackTitleFromPath(path));
+  const note = new NoteParser().parse(text, fallbackTitleFromPath(path));
   const upsertParams: readonly SqlValue[] = [
     path,
     note.title,
@@ -370,32 +370,41 @@ async function buildWorklogs(
   }
 }
 
-/**
- * Rebuild (or incrementally update) one workspace's index: notes, then
- * worklogs. A schema-version bump forces a full rebuild regardless of
- * `options.incremental` (`connection.service.ts`'s `forcedFullRebuild`).
- */
-export async function buildIndex(
-  container: Container,
-  workspace: Workspace,
-  options: BuildOptions = {},
-): Promise<BuildStats> {
-  const { db, forcedFullRebuild } = await openIndexDb(container, workspace);
-  const incremental = (options.incremental ?? true) && !forcedFullRebuild;
+export class IndexBuildService {
+  constructor(
+    private readonly connectionService: IndexConnectionService = new IndexConnectionService(),
+  ) {}
 
-  const { added, updated, seen } = await upsertNotes(
-    container.fs,
-    db,
-    workspace,
-    incremental,
-  );
-  const removed = pruneNotes(db, seen);
-  await buildWorklogs(container.fs, db, workspace);
+  /**
+   * Rebuild (or incrementally update) one workspace's index: notes, then
+   * worklogs. A schema-version bump forces a full rebuild regardless of
+   * `options.incremental` (`connection.service.ts`'s `forcedFullRebuild`).
+   */
+  async build(
+    container: Container,
+    workspace: Workspace,
+    options: BuildOptions = {},
+  ): Promise<BuildStats> {
+    const { db, forcedFullRebuild } = await this.connectionService.open(
+      container,
+      workspace,
+    );
+    const incremental = (options.incremental ?? true) && !forcedFullRebuild;
 
-  const totalRow = db.query<{ readonly "COUNT(*)": number }>(
-    "SELECT COUNT(*) FROM notes",
-    [],
-  )[0];
-  const total = totalRow?.["COUNT(*)"] ?? 0;
-  return { added, updated, removed, total };
+    const { added, updated, seen } = await upsertNotes(
+      container.fs,
+      db,
+      workspace,
+      incremental,
+    );
+    const removed = pruneNotes(db, seen);
+    await buildWorklogs(container.fs, db, workspace);
+
+    const totalRow = db.query<{ readonly "COUNT(*)": number }>(
+      "SELECT COUNT(*) FROM notes",
+      [],
+    )[0];
+    const total = totalRow?.["COUNT(*)"] ?? 0;
+    return { added, updated, removed, total };
+  }
 }

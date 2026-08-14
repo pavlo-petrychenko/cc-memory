@@ -2,7 +2,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { makeFileSystemAdapter } from "@/platform/index.ts";
+import { FileSystemAdapter } from "@/platform/index.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 /**
  * Shared setup for the retrieval integration tests: a REAL vault on disk
@@ -64,7 +64,7 @@ export function setupIndexFixture(): IndexFixture {
   // own doc comment).
   const home = tempDir.path as AbsPath;
   const vault = buildFixtureVault(tempDir.path);
-  const container = makeTestContainer({ fs: makeFileSystemAdapter() });
+  const container = makeTestContainer({ fs: new FileSystemAdapter() });
   return {
     tempDir,
     vault,

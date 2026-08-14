@@ -9,14 +9,21 @@ import {
   expandWorkspace,
   findWorkspace,
   loadRegistry,
-} from "@/workspace/index.ts";
-import { resolveWorkspace } from "@/workspace/index.ts";
+  RegistryService,
+} from "@/workspace/services/registry/index.ts";
+import {
+  resolveWorkspace,
+  WorkspaceResolverService,
+} from "@/workspace/services/resolver/index.ts";
 import { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/workspace/targetResolution/targetResolution.constants.ts";
 
 /**
  * Two resolvers shared across commands, both returning a `Result` a command
  * can match on and turn into a `CliOutcome` via `cliFailure`, rather than
  * terminating the process from inside the resolver itself.
+ *
+ * The free functions below are the canonical implementation;
+ * `TargetResolutionService` is a constructor-injected facade over them.
  */
 
 /** The exact "no such workspace" text, shared by both resolvers below. */
@@ -79,4 +86,63 @@ export async function loadRegistryForCli(
   const result = await loadRegistry(fs, registryPath);
   if (result.ok) return result;
   return { ok: false, error: cliFailure(`registry error: ${result.error.message}`) };
+}
+
+/**
+ * Constructor-injected facade over the free functions above, for callers
+ * (`commands/workspace`, `commands/resolve`) that hold instances rather than
+ * threading `fs` through every call.
+ */
+export class TargetResolutionService {
+  constructor(
+    private readonly registryService: RegistryService,
+    private readonly resolverService: WorkspaceResolverService,
+  ) {}
+
+  noSuchWorkspaceMessage(id: string): string {
+    return noSuchWorkspaceMessage(id);
+  }
+
+  resolveTargetWorkspaces(
+    raws: readonly RawWorkspace[],
+    home: AbsPath,
+    id: string | null,
+  ): Result<readonly Workspace[], string> {
+    if (id === null) {
+      return {
+        ok: true,
+        value: raws.map((raw) => this.registryService.expandWorkspace(raw, home)),
+      };
+    }
+    const found = this.registryService.find(raws, id);
+    if (found === null) return { ok: false, error: this.noSuchWorkspaceMessage(id) };
+    return { ok: true, value: [this.registryService.expandWorkspace(found, home)] };
+  }
+
+  resolveWorkspaceForCwd(
+    raws: readonly RawWorkspace[],
+    home: AbsPath,
+    cwd: AbsPath,
+    explicitId: string | null,
+  ): Result<Workspace, string> {
+    if (explicitId !== null) {
+      const found = this.registryService.find(raws, explicitId);
+      if (found === null) {
+        return { ok: false, error: this.noSuchWorkspaceMessage(explicitId) };
+      }
+      return { ok: true, value: this.registryService.expandWorkspace(found, home) };
+    }
+    const resolved = this.resolverService.resolveWorkspace(raws, cwd, home);
+    if (resolved === null) return { ok: false, error: NO_WORKSPACE_FOR_CWD_MESSAGE };
+    return { ok: true, value: resolved };
+  }
+
+  async loadRegistryForCli(
+    home: AbsPath,
+  ): Promise<Result<readonly RawWorkspace[], CliOutcome>> {
+    const registryPath = this.registryService.defaultPath(home);
+    const result = await this.registryService.load(registryPath);
+    if (result.ok) return result;
+    return { ok: false, error: cliFailure(`registry error: ${result.error.message}`) };
+  }
 }

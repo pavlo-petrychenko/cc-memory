@@ -1,5 +1,1 @@
-export {
-  defaultShimPath,
-  shimContent,
-  writeShim,
-} from "@/install/steps/shim/shim.service.ts";
+export { ShimService } from "@/install/steps/shim/shim.service.ts";

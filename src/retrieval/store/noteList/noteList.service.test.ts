@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
-import { buildIndex } from "@/retrieval/store/indexBuild/index.ts";
-import { listNotes } from "@/retrieval/store/noteList/noteList.service.ts";
+import { IndexBuildService } from "@/retrieval/store/indexBuild/index.ts";
+import { NoteListService } from "@/retrieval/store/noteList/noteList.service.ts";
 import {
   setupIndexFixture,
   teardownIndexFixture,
@@ -21,25 +21,30 @@ const ALL_NOTE_PATHS = [
   "Gamma/Apart.md",
 ] as const;
 
+const indexBuildService = new IndexBuildService();
+const noteListService = new NoteListService();
+
 let fixture: IndexFixture;
 
 beforeEach(async () => {
   fixture = setupIndexFixture();
-  await buildIndex(fixture.container, fixture.primary, { incremental: false });
+  await indexBuildService.build(fixture.container, fixture.primary, {
+    incremental: false,
+  });
 });
 
 afterEach(() => {
   teardownIndexFixture(fixture);
 });
 
-describe("index/notes listNotes", () => {
+describe("index/notes NoteListService.list", () => {
   test("with no folder, enumerates every indexed note, `.md` extension kept", async () => {
-    const all = await listNotes(fixture.container, fixture.primary);
+    const all = await noteListService.list(fixture.container, fixture.primary);
     expect(new Set(all.map((note) => note.path))).toEqual(new Set(ALL_NOTE_PATHS));
   });
 
   test("with a folder, only that folder's notes come back", async () => {
-    const alpha = await listNotes(fixture.container, fixture.primary, "Alpha");
+    const alpha = await noteListService.list(fixture.container, fixture.primary, "Alpha");
 
     expect(alpha.length).toBeGreaterThan(0);
     expect(alpha.every((note) => note.path.startsWith("Alpha/"))).toBe(true);
@@ -52,24 +57,33 @@ describe("index/notes listNotes", () => {
   });
 
   test("an empty folder string behaves like no folder at all", async () => {
-    const all = await listNotes(fixture.container, fixture.primary, "");
+    const all = await noteListService.list(fixture.container, fixture.primary, "");
     expect(all.length).toBe(ALL_NOTE_PATHS.length);
   });
 
   test("a folder with no matching notes returns an empty list", async () => {
-    const none = await listNotes(fixture.container, fixture.primary, "Nonexistent");
+    const none = await noteListService.list(
+      fixture.container,
+      fixture.primary,
+      "Nonexistent",
+    );
     expect(none).toEqual([]);
   });
 
   test("results are sorted by path", async () => {
-    const all = await listNotes(fixture.container, fixture.primary);
+    const all = await noteListService.list(fixture.container, fixture.primary);
     const paths = all.map((note) => note.path);
     expect(paths).toEqual([...paths].toSorted());
   });
 
   test("a workspace never sees another workspace's notes", async () => {
-    await buildIndex(fixture.container, fixture.secondary, { incremental: false });
-    const secondaryNotes = await listNotes(fixture.container, fixture.secondary);
+    await indexBuildService.build(fixture.container, fixture.secondary, {
+      incremental: false,
+    });
+    const secondaryNotes = await noteListService.list(
+      fixture.container,
+      fixture.secondary,
+    );
     expect(secondaryNotes.map((note) => note.path)).toEqual(["Widgets/Widget Guide.md"]);
   });
 });

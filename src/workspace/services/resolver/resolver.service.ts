@@ -2,7 +2,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { isUnder, sanitizeSlug } from "@/core/index.ts";
 import type { RawWorkspace, Workspace, WorktreeSlug } from "@/core/index.ts";
 import type { Git } from "@/platform/index.ts";
-import { expandWorkspace } from "@/workspace/services/registry/index.ts";
+import { expandWorkspace, RegistryService } from "@/workspace/services/registry/index.ts";
 import { PATH_SEPARATOR } from "@/workspace/services/resolver/resolver.constants.ts";
 
 /**
@@ -12,7 +12,9 @@ import { PATH_SEPARATOR } from "@/workspace/services/resolver/resolver.constants
  * else.
  *
  * `cwd` arrives already expanded (`Env.cwd()` returns an `AbsPath` directly),
- * so there is nothing left to expand here.
+ * so there is nothing left to expand here. This free function is the
+ * canonical implementation; `WorkspaceResolverService` is a
+ * constructor-injected facade over it.
  */
 export function resolveWorkspace(
   raws: readonly RawWorkspace[],
@@ -75,4 +77,41 @@ export async function worktreeSlug(
   // `-`, so it can be applied directly to the relative path without a
   // separate path-separator substitution first.
   return sanitizeSlug(relative);
+}
+
+/**
+ * Constructor-injected facade over `resolveWorkspace`/`worktreeSlug` above,
+ * for callers (`commands/resolve`, `targetResolution`) that hold an instance
+ * rather than threading `git` through every call.
+ */
+export class WorkspaceResolverService {
+  constructor(
+    private readonly registryService: RegistryService,
+    private readonly git: Git,
+  ) {}
+
+  resolveWorkspace(
+    raws: readonly RawWorkspace[],
+    cwd: AbsPath,
+    home: AbsPath,
+  ): Workspace | null {
+    let best: Workspace | null = null;
+    let bestPrefixLength = -1;
+
+    for (const raw of raws) {
+      const expanded = this.registryService.expandWorkspace(raw, home);
+      for (const prefix of expanded.match) {
+        const isMatch = cwd === prefix || cwd.startsWith(`${prefix}${PATH_SEPARATOR}`);
+        if (!isMatch || prefix.length <= bestPrefixLength) continue;
+        bestPrefixLength = prefix.length;
+        best = { ...expanded, matchedPrefix: prefix };
+      }
+    }
+
+    return best;
+  }
+
+  async worktreeSlug(cwd: AbsPath, ws: Workspace): Promise<WorktreeSlug> {
+    return worktreeSlug(this.git, cwd, ws);
+  }
 }

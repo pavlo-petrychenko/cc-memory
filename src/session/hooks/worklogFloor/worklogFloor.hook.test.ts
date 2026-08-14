@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { parseConfig } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { handleWorklogFloor } from "@/session/hooks/worklogFloor/worklogFloor.hook.ts";
-import { parseWorklogFloorPayload } from "@/session/payload/payload.parser.ts";
-import { runHook } from "@/session/runtime/runtime.service.ts";
+import { WorklogFloorHook } from "@/session/hooks/worklogFloor/worklogFloor.hook.ts";
+import { PayloadParser } from "@/session/payload/payload.parser.ts";
+import { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts";
+import { HookRuntimeService } from "@/session/runtime/runtime.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type GitFake, makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
@@ -25,7 +25,6 @@ const HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `HOME` above.
 const CWD = "/home/test/project" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
-const CONFIG = parseConfig({});
 // SAFETY: a fixed literal path — `Clock` fake's `today()` defaults to
 // "2026-01-01" (`clockFixed.fake.ts`), and the worktree slug is `_root`
 // (same reasoning as `sessionStart.hook.test.ts`'s `STATE_PATH`).
@@ -58,12 +57,16 @@ async function makeFixture(): Promise<Fixture> {
 
 async function runWorklogFloor(fixture: Fixture, stdin: string): Promise<void> {
   fixture.io.setStdin(stdin);
-  await runHook(
+  const payloadParser = new PayloadParser();
+  const hookRuntimeService = new HookRuntimeService(
     fixture.container,
-    CONFIG,
+    payloadParser,
+    new HookResultSerializer(),
+  );
+  await hookRuntimeService.run(
     "worklog-floor",
-    parseWorklogFloorPayload,
-    handleWorklogFloor,
+    (record) => payloadParser.parseWorklogFloor(record),
+    new WorklogFloorHook(fixture.container),
   );
 }
 

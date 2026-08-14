@@ -60,15 +60,30 @@ function formatLine(level: LogLevel, message: string): string {
  * `Config.logLevel` (`CCMEM_LOG_LEVEL`, default `warn`), applied here rather
  * than at every call site.
  */
-export function makeLoggerAdapter(path: AbsPath, minLevel: LogLevel): Logger {
-  const write = (level: LogLevel, message: string): void => {
-    if (LEVEL_ORDER[level] < LEVEL_ORDER[minLevel]) return;
-    appendWithRotation(path, formatLine(level, message));
-  };
-  return {
-    debug: (message) => write(LogLevel.Debug, message),
-    info: (message) => write(LogLevel.Info, message),
-    warn: (message) => write(LogLevel.Warn, message),
-    error: (message) => write(LogLevel.Error, message),
-  };
+export class LoggerAdapter implements Logger {
+  constructor(
+    private readonly path: AbsPath,
+    private readonly minLevel: LogLevel,
+  ) {}
+
+  private write(level: LogLevel, message: string): void {
+    if (LEVEL_ORDER[level] < LEVEL_ORDER[this.minLevel]) return;
+    appendWithRotation(this.path, formatLine(level, message));
+  }
+
+  debug(message: string): void {
+    this.write(LogLevel.Debug, message);
+  }
+
+  info(message: string): void {
+    this.write(LogLevel.Info, message);
+  }
+
+  warn(message: string): void {
+    this.write(LogLevel.Warn, message);
+  }
+
+  error(message: string): void {
+    this.write(LogLevel.Error, message);
+  }
 }

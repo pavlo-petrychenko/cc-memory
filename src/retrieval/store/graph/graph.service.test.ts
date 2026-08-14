@@ -1,19 +1,24 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { inlinkCounts, neighbors } from "@/retrieval/store/graph/graph.service.ts";
-import { buildIndex } from "@/retrieval/store/indexBuild/index.ts";
+import { LinkGraphService } from "@/retrieval/store/graph/graph.service.ts";
+import { IndexBuildService } from "@/retrieval/store/indexBuild/index.ts";
 import {
   setupIndexFixture,
   teardownIndexFixture,
   type IndexFixture,
 } from "@/testing/fixtures/retrievalIndex.fixture.ts";
 
+const indexBuildService = new IndexBuildService();
+const linkGraphService = new LinkGraphService();
+
 let fixture: IndexFixture;
 
 beforeEach(async () => {
   fixture = setupIndexFixture();
-  await buildIndex(fixture.container, fixture.primary, { incremental: false });
+  await indexBuildService.build(fixture.container, fixture.primary, {
+    incremental: false,
+  });
 });
 
 afterEach(() => {
@@ -27,24 +32,27 @@ function underKb(relativePath: string): AbsPath {
   return `${fixture.primary.kb}/${relativePath}` as AbsPath;
 }
 
-describe("index/graph inlinkCounts", () => {
+describe("index/graph LinkGraphService.inlinkCounts", () => {
   test("a note depends_on'd by another gets an in-link; the linker gets none", async () => {
     const injectionHook = underKb("Alpha/Injection Hook.md");
     const searchRanking = underKb("Alpha/Search Ranking.md");
 
-    const inDegree = await inlinkCounts(fixture.container, fixture.primary, [
-      injectionHook,
-      searchRanking,
-    ]);
+    const inDegree = await linkGraphService.inlinkCounts(
+      fixture.container,
+      fixture.primary,
+      [injectionHook, searchRanking],
+    );
 
     expect(inDegree.get(injectionHook)).toBe(1); // linked-to by Search Ranking
     expect(inDegree.get(searchRanking)).toBe(0);
   });
 
   test("fewer than 2 candidates returns an empty map", async () => {
-    const inDegree = await inlinkCounts(fixture.container, fixture.primary, [
-      underKb("Alpha/Injection Hook.md"),
-    ]);
+    const inDegree = await linkGraphService.inlinkCounts(
+      fixture.container,
+      fixture.primary,
+      [underKb("Alpha/Injection Hook.md")],
+    );
     expect(inDegree.size).toBe(0);
   });
 
@@ -56,20 +64,25 @@ describe("index/graph inlinkCounts", () => {
     const alpha = underKb("Alpha/Alpha.md");
     const injectionHook = underKb("Alpha/Injection Hook.md");
 
-    const inDegree = await inlinkCounts(fixture.container, fixture.primary, [
-      alpha,
-      injectionHook,
-    ]);
+    const inDegree = await linkGraphService.inlinkCounts(
+      fixture.container,
+      fixture.primary,
+      [alpha, injectionHook],
+    );
 
     expect(inDegree.get(alpha)).toBe(0);
     expect(inDegree.get(injectionHook)).toBe(1);
   });
 });
 
-describe("index/graph neighbors", () => {
+describe("index/graph LinkGraphService.neighbors", () => {
   test("returns the wikilink targets of one note", async () => {
     const alpha = underKb("Alpha/Alpha.md");
-    const targets = await neighbors(fixture.container, fixture.primary, alpha);
+    const targets = await linkGraphService.neighbors(
+      fixture.container,
+      fixture.primary,
+      alpha,
+    );
     // `links.dst` is stored with the `|display` label already stripped at
     // parse time (`note.ts`'s `extractWikilinks`), so the raw wikilink TARGET
     // survives, not its display text.
@@ -77,7 +90,7 @@ describe("index/graph neighbors", () => {
   });
 
   test("a note with no outgoing links has no neighbors", async () => {
-    const targets = await neighbors(
+    const targets = await linkGraphService.neighbors(
       fixture.container,
       fixture.primary,
       underKb("Gamma/Adjacent.md"),

@@ -1,5 +1,5 @@
-import type { AbsPath } from "@/core/index.ts";
-import type { FileSystem } from "@/platform/index.ts";
+import type { AbsPath, Config } from "@/core/index.ts";
+import type { Container } from "@/platform/index.ts";
 import {
   DEFAULT_SESSION_ID,
   HEAD_LENGTH,
@@ -7,23 +7,18 @@ import {
   SEVEN_DAYS_MS,
   WRAP_STATE_FILENAME,
 } from "@/session/hooks/wrapGate/wrapGate.constants.ts";
-import {
-  formatBlockReason,
-  formatNudge,
-} from "@/session/hooks/wrapGate/wrapGate.formatter.ts";
+import type { WrapGateFormatter } from "@/session/hooks/wrapGate/wrapGate.formatter.ts";
 import type {
   WrapStateEntry,
   WrapStateMap,
 } from "@/session/hooks/wrapGate/wrapGate.typedefs.ts";
-import { parseTolerantJson } from "@/session/payload/payload.parser.ts";
-import type {
-  JsonRecord,
-  JsonValue,
-  WrapGatePayload,
-} from "@/session/payload/payload.typedefs.ts";
-import type { HookHandler } from "@/session/runtime/runtime.service.ts";
+import type { PayloadParser } from "@/session/payload/payload.parser.ts";
+import type { JsonRecord, JsonValue } from "@/session/payload/payload.typedefs.ts";
+import type { WrapGatePayload } from "@/session/payload/payload.typedefs.ts";
+import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.ts";
 import { HookEvent, HookResultKind } from "@/session/session.typedefs.ts";
-import { statePath } from "@/worklog/index.ts";
+import type { HookResult } from "@/session/session.typedefs.ts";
+import { WorklogStoreService } from "@/worklog/index.ts";
 import { worktreeSlug } from "@/workspace/index.ts";
 
 /**
@@ -88,23 +83,6 @@ function parseWrapStateEntry(value: JsonValue | undefined): WrapStateEntry | nul
   return { sig, ts, nudges };
 }
 
-/** A missing or unreadable state file reads as `{}`. */
-async function readWrapStateMap(fs: FileSystem, path: AbsPath): Promise<WrapStateMap> {
-  let text: string;
-  try {
-    text = await fs.readFile(path);
-  } catch {
-    return {};
-  }
-  const record = parseTolerantJson(text);
-  const map: Record<string, WrapStateEntry> = {};
-  for (const [sessionId, value] of Object.entries(record)) {
-    const entry = parseWrapStateEntry(value);
-    if (entry !== null) map[sessionId] = entry;
-  }
-  return map;
-}
-
 /** Prune entries older than 7 days on every write, so the shared state file
  * never grows unboundedly. */
 function pruneStaleEntries(map: WrapStateMap, nowMs: number): WrapStateMap {
@@ -117,95 +95,129 @@ function withoutSession(map: WrapStateMap, sessionId: string): WrapStateMap {
   return Object.fromEntries(Object.entries(map).filter(([id]) => id !== sessionId));
 }
 
-async function writeWrapStateMap(
-  fs: FileSystem,
-  path: AbsPath,
-  map: WrapStateMap,
-  nowMs: number,
-): Promise<void> {
-  await fs.writeFile(path, JSON.stringify(pruneStaleEntries(map, nowMs)));
-}
+export class WrapGateHook implements HookHandler<WrapGatePayload> {
+  constructor(
+    private readonly container: Container,
+    private readonly config: Config,
+    private readonly payloadParser: PayloadParser,
+    private readonly formatter: WrapGateFormatter,
+    private readonly worklogStoreService: WorklogStoreService = new WorklogStoreService(
+      container.fs,
+      container.git,
+    ),
+  ) {}
 
-export const handleWrapGate: HookHandler<WrapGatePayload> = async (context, payload) => {
-  if (payload.stopHookActive) return { kind: HookResultKind.Silent }; // never loop
-
-  const { container, config, workspace, cwd } = context;
-  const sessionId =
-    payload.sessionId !== null && payload.sessionId !== ""
-      ? payload.sessionId
-      : DEFAULT_SESSION_ID;
-
-  const statusPorcelainRaw = await container.git.statusPorcelain(cwd);
-  const dirtyCount = statusPorcelainRaw
-    .split(/\r\n|\r|\n/)
-    .filter((line) => line.trim() !== "").length;
-
-  const markerPath = joinAbsPath(parentDir(workspace.indexDb), WRAP_STATE_FILENAME);
-
-  if (dirtyCount === 0) {
+  /** A missing or unreadable state file reads as `{}`. */
+  private async readWrapStateMap(path: AbsPath): Promise<WrapStateMap> {
+    let text: string;
     try {
-      const existingMap = await readWrapStateMap(container.fs, markerPath);
-      if (sessionId in existingMap) {
-        await writeWrapStateMap(
-          container.fs,
-          markerPath,
-          withoutSession(existingMap, sessionId),
-          container.clock.nowMs(),
-        );
+      text = await this.container.fs.readFile(path);
+    } catch {
+      return {};
+    }
+    const record = this.payloadParser.parseTolerantJson(text);
+    const map: Record<string, WrapStateEntry> = {};
+    for (const [sessionId, value] of Object.entries(record)) {
+      const entry = parseWrapStateEntry(value);
+      if (entry !== null) map[sessionId] = entry;
+    }
+    return map;
+  }
+
+  private async writeWrapStateMap(
+    path: AbsPath,
+    map: WrapStateMap,
+    nowMs: number,
+  ): Promise<void> {
+    await this.container.fs.writeFile(
+      path,
+      JSON.stringify(pruneStaleEntries(map, nowMs)),
+    );
+  }
+
+  async handle(payload: HookInput<WrapGatePayload>): Promise<HookResult> {
+    if (payload.stopHookActive) return { kind: HookResultKind.Silent }; // never loop
+
+    const { workspace, cwd } = payload;
+    const sessionId =
+      payload.sessionId !== null && payload.sessionId !== ""
+        ? payload.sessionId
+        : DEFAULT_SESSION_ID;
+
+    const statusPorcelainRaw = await this.container.git.statusPorcelain(cwd);
+    const dirtyCount = statusPorcelainRaw
+      .split(/\r\n|\r|\n/)
+      .filter((line) => line.trim() !== "").length;
+
+    const markerPath = joinAbsPath(parentDir(workspace.indexDb), WRAP_STATE_FILENAME);
+
+    if (dirtyCount === 0) {
+      try {
+        const existingMap = await this.readWrapStateMap(markerPath);
+        if (sessionId in existingMap) {
+          await this.writeWrapStateMap(
+            markerPath,
+            withoutSession(existingMap, sessionId),
+            this.container.clock.nowMs(),
+          );
+        }
+      } catch {
+        // best-effort cleanup only.
+      }
+      return { kind: HookResultKind.Silent }; // nothing uncommitted to capture
+    }
+
+    const headRaw = (await this.container.git.revParse(cwd, ["HEAD"])).trim();
+    const head = (headRaw === "" ? NO_GIT_HEAD : headRaw).slice(0, HEAD_LENGTH);
+    const sig = `${head}:${dirtyCount}`;
+
+    const slug = await worktreeSlug(this.container.git, cwd, workspace);
+    const state = this.worklogStoreService.statePath(workspace, slug);
+    let stateMtimeMs = 0;
+    try {
+      if (await this.container.fs.exists(state)) {
+        stateMtimeMs = (await this.container.fs.stat(state)).mtimeMs;
       }
     } catch {
-      // best-effort cleanup only.
+      stateMtimeMs = 0;
     }
-    return { kind: HookResultKind.Silent }; // nothing uncommitted to capture
-  }
 
-  const headRaw = (await container.git.revParse(cwd, ["HEAD"])).trim();
-  const head = (headRaw === "" ? NO_GIT_HEAD : headRaw).slice(0, HEAD_LENGTH);
-  const sig = `${head}:${dirtyCount}`;
+    const stateMap = await this.readWrapStateMap(markerPath);
+    const previous = stateMap[sessionId];
 
-  const slug = await worktreeSlug(container.git, cwd, workspace);
-  const state = statePath(workspace, slug);
-  let stateMtimeMs = 0;
-  try {
-    if (await container.fs.exists(state)) {
-      stateMtimeMs = (await container.fs.stat(state)).mtimeMs;
+    // Already captured: STATE refreshed after our last prompt for this signature.
+    if (previous !== undefined && previous.sig === sig && stateMtimeMs > previous.ts) {
+      return { kind: HookResultKind.Silent };
     }
-  } catch {
-    stateMtimeMs = 0;
-  }
 
-  const stateMap = await readWrapStateMap(container.fs, markerPath);
-  const previous = stateMap[sessionId];
+    const nudges =
+      previous !== undefined && previous.sig === sig ? previous.nudges + 1 : 1;
+    const nowMs = this.container.clock.nowMs();
+    try {
+      await this.writeWrapStateMap(
+        markerPath,
+        { ...stateMap, [sessionId]: { sig, ts: nowMs, nudges } },
+        nowMs,
+      );
+    } catch {
+      // best-effort persistence only.
+    }
 
-  // Already captured: STATE refreshed after our last prompt for this signature.
-  if (previous !== undefined && previous.sig === sig && stateMtimeMs > previous.ts) {
-    return { kind: HookResultKind.Silent };
+    const gateInput = { slug, dirtyCount };
+    const shouldBlock =
+      !this.config.gateDisabled &&
+      nudges >= this.config.blockAfter &&
+      dirtyCount >= this.config.blockDrift;
+    if (shouldBlock) {
+      return {
+        kind: HookResultKind.Block,
+        reason: this.formatter.formatBlockReason(gateInput),
+      };
+    }
+    return {
+      kind: HookResultKind.Context,
+      event: HookEvent.Stop,
+      text: this.formatter.formatNudge(gateInput),
+    };
   }
-
-  const nudges = previous !== undefined && previous.sig === sig ? previous.nudges + 1 : 1;
-  const nowMs = container.clock.nowMs();
-  try {
-    await writeWrapStateMap(
-      container.fs,
-      markerPath,
-      { ...stateMap, [sessionId]: { sig, ts: nowMs, nudges } },
-      nowMs,
-    );
-  } catch {
-    // best-effort persistence only.
-  }
-
-  const gateInput = { slug, dirtyCount };
-  const shouldBlock =
-    !config.gateDisabled &&
-    nudges >= config.blockAfter &&
-    dirtyCount >= config.blockDrift;
-  if (shouldBlock) {
-    return { kind: HookResultKind.Block, reason: formatBlockReason(gateInput) };
-  }
-  return {
-    kind: HookResultKind.Context,
-    event: HookEvent.Stop,
-    text: formatNudge(gateInput),
-  };
-};
+}

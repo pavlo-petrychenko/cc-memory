@@ -1,1 +1,1 @@
-export { reindex } from "@/retrieval/commands/reindex/reindex.command.ts";
+export { ReindexCommand } from "@/retrieval/commands/reindex/reindex.command.ts";

@@ -1,1 +1,1 @@
-export { search } from "@/retrieval/commands/search/search.command.ts";
+export { SearchCommand } from "@/retrieval/commands/search/search.command.ts";

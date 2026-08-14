@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { runInstall, runUninstall } from "@/install/install.service.ts";
+import { InstallService } from "@/install/install.service.ts";
 import { InstallErrorKind } from "@/install/install.typedefs.ts";
-import { defaultManifestPath, loadManifest } from "@/install/steps/manifest/index.ts";
-import { defaultSettingsPath } from "@/install/steps/settings/index.ts";
-import { defaultShimPath } from "@/install/steps/shim/index.ts";
-import { defaultSkillsTargetDir } from "@/install/steps/skills/index.ts";
+import { ManifestService } from "@/install/steps/manifest/index.ts";
+import { SettingsService } from "@/install/steps/settings/index.ts";
+import { ShimService } from "@/install/steps/shim/index.ts";
+import { SkillsService } from "@/install/steps/skills/index.ts";
 import type { Container } from "@/platform/index.ts";
 import { HookEvent } from "@/session/index.ts";
 import { makeProcFake, type ProcFake } from "@/testing/fakes/procFake.fake.ts";
@@ -14,10 +14,10 @@ import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 import { defaultRegistryPath } from "@/workspace/index.ts";
 
 /**
- * `run.ts`'s `runInstall`/`runUninstall` orchestration — every scenario here
- * runs against `makeTestContainer`'s in-memory `fs` and a `procFake`, NEVER
- * a real `bun`. See `tests/cli/install/install.command.test.ts`'s
- * doc comment for why that distinction matters on THIS machine specifically.
+ * `InstallService`'s `install`/`uninstall` orchestration — every scenario
+ * here runs against `makeTestContainer`'s in-memory `fs` and a `procFake`,
+ * NEVER a real `bun`. See `install.command.test.ts`'s doc comment for why
+ * that distinction matters on THIS machine specifically.
  */
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — matches
@@ -41,7 +41,7 @@ function fixturePath(...segments: readonly string[]): AbsPath {
  * path actually exists before trusting it), AND pre-seeds an existing
  * `registry.toml` so `seedRegistry` takes its "already exists, left as-is"
  * branch — every "full apply" scenario below reaches that step and none of
- * them are testing `seed.ts` itself (that's `seed.test.ts`'s job).
+ * them are testing `seed.ts` itself (that's `seed.service.test.ts`'s job).
  */
 async function setUpBunResolution(container: Container, proc: ProcFake): Promise<void> {
   proc.enqueue({
@@ -64,13 +64,16 @@ function rerunContainer(base: Container, proc: ProcFake): Container {
   return makeTestContainer({ fs: base.fs, env: base.env, proc });
 }
 
-describe("install/run.ts — runInstall error paths", () => {
+describe("InstallService — install error paths", () => {
   test("refuses when bun isn't on PATH", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 1 } });
     const container = makeTestContainer({ proc });
 
-    const result = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
+    const result = await new InstallService(container).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+    });
 
     expect(result).toEqual({ ok: false, error: { kind: InstallErrorKind.BunNotFound } });
   });
@@ -84,7 +87,10 @@ describe("install/run.ts — runInstall error paths", () => {
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 1 } });
     const container = makeTestContainer({ proc });
 
-    const result = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
+    const result = await new InstallService(container).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+    });
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.kind).toBe(InstallErrorKind.BunUnresolvable);
@@ -95,11 +101,14 @@ describe("install/run.ts — runInstall error paths", () => {
     const container = makeTestContainer({ proc });
     await setUpBunResolution(container, proc);
     await container.fs.writeFile(
-      defaultSettingsPath(container.env.home()),
+      SettingsService.defaultPath(container.env.home()),
       "not json {{{",
     );
 
-    const result = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
+    const result = await new InstallService(container).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+    });
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -111,45 +120,54 @@ describe("install/run.ts — runInstall error paths", () => {
   });
 });
 
-describe("install/run.ts — runInstall --dry-run", () => {
+describe("InstallService — install --dry-run", () => {
   test("writes nothing at all", async () => {
     const proc = makeProcFake();
     const container = makeTestContainer({ proc });
     await setUpBunResolution(container, proc);
 
-    const result = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: true });
+    const result = await new InstallService(container).install({
+      repoRoot: REPO_ROOT,
+      dryRun: true,
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.dryRun).toBe(true);
     expect(result.value.actionLines).toContain(
-      `would write CLI shim -> ${defaultShimPath(container.env.home())}`,
+      `would write CLI shim -> ${ShimService.defaultPath(container.env.home())}`,
     );
-    expect(await container.fs.exists(defaultSettingsPath(container.env.home()))).toBe(
+    expect(
+      await container.fs.exists(SettingsService.defaultPath(container.env.home())),
+    ).toBe(false);
+    expect(await container.fs.exists(ShimService.defaultPath(container.env.home()))).toBe(
       false,
     );
-    expect(await container.fs.exists(defaultShimPath(container.env.home()))).toBe(false);
-    expect(await container.fs.exists(defaultManifestPath(container.env.home()))).toBe(
-      false,
-    );
+    expect(
+      await container.fs.exists(ManifestService.defaultPath(container.env.home())),
+    ).toBe(false);
   });
 });
 
-describe("install/run.ts — runInstall full apply", () => {
+describe("InstallService — install full apply", () => {
   test("registers all 5 hooks, writes the shim, and records a manifest", async () => {
     const proc = makeProcFake();
     const container = makeTestContainer({ proc });
     await setUpBunResolution(container, proc);
 
-    const result = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
+    const result = await new InstallService(container).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.actionLines).toContain("hook SessionStart -> session-start");
-    expect(await container.fs.exists(defaultShimPath(container.env.home()))).toBe(true);
-    const manifest = await loadManifest(
-      container.fs,
-      defaultManifestPath(container.env.home()),
+    expect(await container.fs.exists(ShimService.defaultPath(container.env.home()))).toBe(
+      true,
+    );
+    const manifest = await new ManifestService(container.fs).load(
+      ManifestService.defaultPath(container.env.home()),
     );
     expect(manifest?.bunPath).toBe(REAL_BUN_PATH);
     expect(manifest?.hookCommands[HookEvent.SessionStart]).toContain(
@@ -163,22 +181,25 @@ describe("install/run.ts — runInstall full apply", () => {
     const container = makeTestContainer({ proc: firstProc });
     await setUpBunResolution(container, firstProc);
 
-    const first = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
+    const first = await new InstallService(container).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+    });
     expect(first.ok).toBe(true);
     const settingsAfterFirst = await container.fs.readFile(
-      defaultSettingsPath(container.env.home()),
+      SettingsService.defaultPath(container.env.home()),
     );
 
     const secondProc = makeProcFake();
     const secondContainer = rerunContainer(container, secondProc);
     await setUpBunResolution(secondContainer, secondProc);
-    const second = await runInstall(secondContainer, {
+    const second = await new InstallService(secondContainer).install({
       repoRoot: REPO_ROOT,
       dryRun: false,
     });
     expect(second.ok).toBe(true);
     const settingsAfterSecond = await container.fs.readFile(
-      defaultSettingsPath(container.env.home()),
+      SettingsService.defaultPath(container.env.home()),
     );
 
     expect(settingsAfterSecond).toBe(settingsAfterFirst);
@@ -196,7 +217,7 @@ describe("install/run.ts — runInstall full apply", () => {
     const container = makeTestContainer({ proc });
     await setUpBunResolution(container, proc);
     await container.fs.writeFile(
-      defaultSettingsPath(container.env.home()),
+      SettingsService.defaultPath(container.env.home()),
       JSON.stringify({
         hooks: {
           Stop: [
@@ -214,11 +235,14 @@ describe("install/run.ts — runInstall full apply", () => {
       }),
     );
 
-    const result = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
+    const result = await new InstallService(container).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+    });
     expect(result.ok).toBe(true);
 
     const settingsContent = await container.fs.readFile(
-      defaultSettingsPath(container.env.home()),
+      SettingsService.defaultPath(container.env.home()),
     );
     expect(settingsContent).toContain("claude-plan-review");
   });
@@ -227,7 +251,7 @@ describe("install/run.ts — runInstall full apply", () => {
     const firstProc = makeProcFake();
     const container = makeTestContainer({ proc: firstProc });
     await setUpBunResolution(container, firstProc);
-    const firstInstall = await runInstall(container, {
+    const firstInstall = await new InstallService(container).install({
       repoRoot: OLD_REPO_ROOT,
       dryRun: false,
     });
@@ -236,7 +260,7 @@ describe("install/run.ts — runInstall full apply", () => {
     const secondProc = makeProcFake();
     const movedContainer = rerunContainer(container, secondProc);
     await setUpBunResolution(movedContainer, secondProc);
-    const secondInstall = await runInstall(movedContainer, {
+    const secondInstall = await new InstallService(movedContainer).install({
       repoRoot: REPO_ROOT,
       dryRun: false,
     });
@@ -248,7 +272,7 @@ describe("install/run.ts — runInstall full apply", () => {
       );
     }
     const settingsContent = await container.fs.readFile(
-      defaultSettingsPath(container.env.home()),
+      SettingsService.defaultPath(container.env.home()),
     );
     expect(settingsContent).not.toContain(OLD_REPO_ROOT);
     expect(settingsContent).toContain(REPO_ROOT);
@@ -259,7 +283,7 @@ describe("install/run.ts — runInstall full apply", () => {
     const container = makeTestContainer({ proc: firstProc });
     await setUpBunResolution(container, firstProc);
     await container.fs.writeFile(
-      defaultSettingsPath(container.env.home()),
+      SettingsService.defaultPath(container.env.home()),
       JSON.stringify({
         hooks: {
           SessionStart: [
@@ -277,7 +301,10 @@ describe("install/run.ts — runInstall full apply", () => {
       }),
     );
 
-    const first = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
+    const first = await new InstallService(container).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+    });
     expect(first.ok).toBe(true);
     if (first.ok) {
       expect(first.value.actionLines.join("\n")).toContain("purged 1 stale");
@@ -286,7 +313,7 @@ describe("install/run.ts — runInstall full apply", () => {
     const secondProc = makeProcFake();
     const secondContainer = rerunContainer(container, secondProc);
     await setUpBunResolution(secondContainer, secondProc);
-    const second = await runInstall(secondContainer, {
+    const second = await new InstallService(secondContainer).install({
       repoRoot: REPO_ROOT,
       dryRun: false,
     });
@@ -300,10 +327,10 @@ describe("install/run.ts — runInstall full apply", () => {
   });
 });
 
-describe("install/run.ts — runUninstall", () => {
+describe("InstallService — uninstall", () => {
   test("reports nothing to do when there is no manifest", async () => {
     const container = makeTestContainer({ proc: makeProcFake() });
-    const report = await runUninstall(container);
+    const report = await new InstallService(container).uninstall();
     expect(report).toEqual({
       uninstalled: false,
       actionLines: ["no installed.json manifest found; nothing to do"],
@@ -314,19 +341,26 @@ describe("install/run.ts — runUninstall", () => {
     const installProc = makeProcFake();
     const container = makeTestContainer({ proc: installProc });
     await setUpBunResolution(container, installProc);
-    const installed = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
+    const installed = await new InstallService(container).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+    });
     expect(installed.ok).toBe(true);
 
     const uninstallProc = makeProcFake();
-    const report = await runUninstall(rerunContainer(container, uninstallProc));
+    const report = await new InstallService(
+      rerunContainer(container, uninstallProc),
+    ).uninstall();
 
     expect(report.uninstalled).toBe(true);
-    expect(await container.fs.exists(defaultShimPath(container.env.home()))).toBe(false);
-    expect(await container.fs.exists(defaultManifestPath(container.env.home()))).toBe(
+    expect(await container.fs.exists(ShimService.defaultPath(container.env.home()))).toBe(
       false,
     );
+    expect(
+      await container.fs.exists(ManifestService.defaultPath(container.env.home())),
+    ).toBe(false);
     const settingsContent = await container.fs.readFile(
-      defaultSettingsPath(container.env.home()),
+      SettingsService.defaultPath(container.env.home()),
     );
     expect(settingsContent).not.toContain("hook session-start");
   });
@@ -336,7 +370,7 @@ describe("install/run.ts — runUninstall", () => {
     const container = makeTestContainer({ proc: installProc });
     await setUpBunResolution(container, installProc);
     await container.fs.writeFile(
-      defaultSettingsPath(container.env.home()),
+      SettingsService.defaultPath(container.env.home()),
       JSON.stringify({
         hooks: {
           Stop: [
@@ -353,15 +387,20 @@ describe("install/run.ts — runUninstall", () => {
         },
       }),
     );
-    const installed = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
+    const installed = await new InstallService(container).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+    });
     expect(installed.ok).toBe(true);
 
     const uninstallProc = makeProcFake();
-    const report = await runUninstall(rerunContainer(container, uninstallProc));
+    const report = await new InstallService(
+      rerunContainer(container, uninstallProc),
+    ).uninstall();
     expect(report.uninstalled).toBe(true);
 
     const settingsContent = await container.fs.readFile(
-      defaultSettingsPath(container.env.home()),
+      SettingsService.defaultPath(container.env.home()),
     );
     expect(settingsContent).toContain("claude-plan-review");
   });
@@ -370,7 +409,7 @@ describe("install/run.ts — runUninstall", () => {
     const installProc = makeProcFake();
     const container = makeTestContainer({ proc: installProc });
     await setUpBunResolution(container, installProc);
-    const skillsTargetDir = defaultSkillsTargetDir(container.env.home());
+    const skillsTargetDir = SkillsService.defaultTargetDir(container.env.home());
     const targetPath = fixturePath(skillsTargetDir, "/remember");
     await container.fs.writeFile(
       fixturePath(targetPath, "/SKILL.md"),
@@ -378,7 +417,10 @@ describe("install/run.ts — runUninstall", () => {
     );
     await container.fs.mkdir(fixturePath(REPO_ROOT, "/src/skills/remember"));
 
-    const installed = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
+    const installed = await new InstallService(container).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+    });
     expect(installed.ok).toBe(true);
     expect(
       await container.fs.exists(
@@ -387,7 +429,9 @@ describe("install/run.ts — runUninstall", () => {
     ).toBe(true);
 
     const uninstallProc = makeProcFake();
-    const report = await runUninstall(rerunContainer(container, uninstallProc));
+    const report = await new InstallService(
+      rerunContainer(container, uninstallProc),
+    ).uninstall();
     expect(report.uninstalled).toBe(true);
     expect(await container.fs.exists(fixturePath(targetPath, "/SKILL.md"))).toBe(true);
     expect(await container.fs.readFile(fixturePath(targetPath, "/SKILL.md"))).toBe(

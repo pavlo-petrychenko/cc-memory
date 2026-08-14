@@ -1,10 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import {
-  defaultExampleRegistryPath,
-  seedRegistry,
-} from "@/install/steps/seed/seed.service.ts";
+import { SeedService } from "@/install/steps/seed/seed.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { defaultRegistryPath } from "@/workspace/index.ts";
 
@@ -14,12 +11,16 @@ const HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `HOME` above.
 const REPO_ROOT = "/repo" as AbsPath;
 
-describe("install/seed.ts — seeding registry.toml from registry.example.toml", () => {
+describe("SeedService — seeding registry.toml from registry.example.toml", () => {
   test("seeds the registry when none exists yet", async () => {
     const fs = makeFsMemoryFake();
-    fs.seedFile(defaultExampleRegistryPath(REPO_ROOT), '[[workspace]]\nid = "example"\n');
+    fs.seedFile(
+      SeedService.defaultExampleRegistryPath(REPO_ROOT),
+      '[[workspace]]\nid = "example"\n',
+    );
+    const service = new SeedService(fs);
 
-    const outcome = await seedRegistry(fs, REPO_ROOT, HOME);
+    const outcome = await service.seed(REPO_ROOT, HOME);
 
     expect(outcome.seeded).toBe(true);
     expect(outcome.actionLine).toContain("seeded registry ->");
@@ -29,10 +30,14 @@ describe("install/seed.ts — seeding registry.toml from registry.example.toml",
 
   test("leaves an existing registry untouched", async () => {
     const fs = makeFsMemoryFake();
-    fs.seedFile(defaultExampleRegistryPath(REPO_ROOT), '[[workspace]]\nid = "example"\n');
+    fs.seedFile(
+      SeedService.defaultExampleRegistryPath(REPO_ROOT),
+      '[[workspace]]\nid = "example"\n',
+    );
     fs.seedFile(defaultRegistryPath(HOME), '[[workspace]]\nid = "real"\n');
+    const service = new SeedService(fs);
 
-    const outcome = await seedRegistry(fs, REPO_ROOT, HOME);
+    const outcome = await service.seed(REPO_ROOT, HOME);
 
     expect(outcome.seeded).toBe(false);
     expect(outcome.actionLine).toBe("registry exists (left as-is)");

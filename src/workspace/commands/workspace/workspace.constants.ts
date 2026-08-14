@@ -1,3 +1,5 @@
+export const NO_WORKSPACES_MESSAGE = "(no workspaces)";
+
 export const DEFAULT_EXCLUDE = ["_Worklogs", "Archive", ".obsidian"];
 
 /** Written only when `<kb>/.gitignore` doesn't exist yet. */

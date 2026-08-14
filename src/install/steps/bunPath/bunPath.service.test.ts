@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { resolveBunPath } from "@/install/steps/bunPath/bunPath.service.ts";
+import { BunPathService } from "@/install/steps/bunPath/bunPath.service.ts";
 import { BunPathErrorKind } from "@/install/steps/bunPath/bunPath.typedefs.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
@@ -9,7 +9,7 @@ import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 // SAFETY: fixed test fixture, never a real filesystem lookup.
 const REAL_BUN_PATH = "/usr/local/Cellar/bun/1.3.14/bin/bun" as AbsPath;
 
-describe("install/bunPath.ts — readlink -f $(which bun), verified to exist", () => {
+describe("BunPathService — readlink -f $(which bun), verified to exist", () => {
   test("resolves and verifies the real binary when both which and readlink succeed", async () => {
     const proc = makeProcFake();
     proc.enqueue({
@@ -22,8 +22,9 @@ describe("install/bunPath.ts — readlink -f $(which bun), verified to exist", (
     });
     const fs = makeFsMemoryFake();
     fs.seedFile(REAL_BUN_PATH, "");
+    const service = new BunPathService(proc, fs);
 
-    const result = await resolveBunPath(proc, fs);
+    const result = await service.resolve();
 
     expect(result).toEqual({ ok: true, value: REAL_BUN_PATH });
     expect(proc.calls[0]).toMatchObject({ command: "which", args: ["bun"] });
@@ -37,8 +38,9 @@ describe("install/bunPath.ts — readlink -f $(which bun), verified to exist", (
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 1 } });
     const fs = makeFsMemoryFake();
+    const service = new BunPathService(proc, fs);
 
-    const result = await resolveBunPath(proc, fs);
+    const result = await service.resolve();
 
     expect(result).toEqual({ ok: false, error: { kind: BunPathErrorKind.NotFound } });
   });
@@ -50,8 +52,9 @@ describe("install/bunPath.ts — readlink -f $(which bun), verified to exist", (
       result: { stdout: "   \n", stderr: "", exitCode: 0 },
     });
     const fs = makeFsMemoryFake();
+    const service = new BunPathService(proc, fs);
 
-    const result = await resolveBunPath(proc, fs);
+    const result = await service.resolve();
 
     expect(result.ok).toBe(false);
   });
@@ -67,8 +70,9 @@ describe("install/bunPath.ts — readlink -f $(which bun), verified to exist", (
       result: { stdout: "", stderr: "broken", exitCode: 1 },
     });
     const fs = makeFsMemoryFake();
+    const service = new BunPathService(proc, fs);
 
-    const result = await resolveBunPath(proc, fs);
+    const result = await service.resolve();
 
     expect(result).toEqual({
       ok: false,
@@ -91,8 +95,9 @@ describe("install/bunPath.ts — readlink -f $(which bun), verified to exist", (
       },
     });
     const fs = makeFsMemoryFake(); // the "resolved" path was never seeded — doesn't exist
+    const service = new BunPathService(proc, fs);
 
-    const result = await resolveBunPath(proc, fs);
+    const result = await service.resolve();
 
     expect(result.ok).toBe(false);
     if (!result.ok) {

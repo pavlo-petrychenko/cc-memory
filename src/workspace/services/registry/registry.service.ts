@@ -6,7 +6,7 @@ import { expandPath, isUnder } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import type { RawWorkspace, Workspace } from "@/core/index.ts";
 import type { FileSystem } from "@/platform/index.ts";
-import { serializeRegistry } from "@/workspace/serializers/registryToml/index.ts";
+import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/index.ts";
 import { REGISTRY_HOME_RELATIVE_PATH } from "@/workspace/services/registry/registry.constants.ts";
 import {
   type RegistryConflict,
@@ -19,6 +19,10 @@ import {
  * Workspace registry: read/write/validate `~/.claude/memory/registry.toml`. A
  * workspace is stored with `~`-relative paths (portability); callers expand
  * via `expandWorkspace` before touching the filesystem for real.
+ *
+ * The free functions below are the canonical implementation; `RegistryService`
+ * is a constructor-injected facade over them for callers that hold an
+ * instance rather than threading `fs` through every call.
  */
 
 /** The registry file path, given a home directory. */
@@ -147,10 +151,10 @@ function parentDir(path: AbsPath): AbsPath {
 
 /**
  * Write the registry atomically: `<path>.tmp` then rename over it, so a
- * reader never observes a half-written file. Uses `serializeRegistry` rather
- * than a hand-rolled or `smol-toml`-stringified serialization, since this
- * file is user-owned and rewritten in place — `smol-toml`'s array formatting
- * would produce spurious diff churn.
+ * reader never observes a half-written file. Uses `RegistryTomlSerializer`
+ * rather than a hand-rolled or `smol-toml`-stringified serialization, since
+ * this file is user-owned and rewritten in place — `smol-toml`'s array
+ * formatting would produce spurious diff churn.
  */
 export async function saveRegistry(
   fs: FileSystem,
@@ -162,7 +166,7 @@ export async function saveRegistry(
   // SAFETY: appending a fixed `.tmp` suffix to an absolute, normalized path
   // cannot introduce a `~`, `.` or `..` segment.
   const tmpAbsPath = tmpPath as AbsPath;
-  await fs.writeFile(tmpAbsPath, serializeRegistry(workspaces));
+  await fs.writeFile(tmpAbsPath, new RegistryTomlSerializer().serialize(workspaces));
   await fs.rename(tmpAbsPath, path);
 }
 
@@ -273,4 +277,50 @@ export function validateNew(
   }
 
   return conflicts;
+}
+
+/**
+ * Constructor-injected facade over the free functions above, for callers
+ * (`commands/workspace`, `targetResolution`) that hold a `RegistryService`
+ * instance rather than threading `fs` through every call.
+ */
+export class RegistryService {
+  constructor(
+    private readonly fs: FileSystem,
+    private readonly tomlSerializer: RegistryTomlSerializer,
+  ) {}
+
+  defaultPath(home: AbsPath): AbsPath {
+    return defaultRegistryPath(home);
+  }
+
+  async load(path: AbsPath): Promise<Result<readonly RawWorkspace[], RegistryError>> {
+    return loadRegistry(this.fs, path);
+  }
+
+  async save(path: AbsPath, workspaces: readonly RawWorkspace[]): Promise<void> {
+    await this.fs.mkdir(parentDir(path));
+    const tmpPath = `${path}.tmp`;
+    // SAFETY: appending a fixed `.tmp` suffix to an absolute, normalized path
+    // cannot introduce a `~`, `.` or `..` segment.
+    const tmpAbsPath = tmpPath as AbsPath;
+    await this.fs.writeFile(tmpAbsPath, this.tomlSerializer.serialize(workspaces));
+    await this.fs.rename(tmpAbsPath, path);
+  }
+
+  find(raws: readonly RawWorkspace[], id: string): RawWorkspace | null {
+    return findWorkspace(raws, id);
+  }
+
+  expandWorkspace(raw: RawWorkspace, home: AbsPath): Workspace {
+    return expandWorkspace(raw, home);
+  }
+
+  validateNew(
+    candidate: RawWorkspace,
+    existing: readonly RawWorkspace[],
+    home: AbsPath,
+  ): readonly RegistryConflict[] {
+    return validateNew(candidate, existing, home);
+  }
 }

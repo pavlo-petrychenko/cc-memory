@@ -5,8 +5,8 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { notes } from "@/retrieval/commands/notes/notes.command.ts";
-import { buildIndex } from "@/retrieval/store/index.ts";
+import { NotesCommand } from "@/retrieval/commands/notes/notes.command.ts";
+import { IndexBuildService } from "@/retrieval/store/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake, type IoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
@@ -24,6 +24,9 @@ const PRIMARY: RawWorkspace = {
   exclude: [],
   indexDb: ":memory:",
 };
+
+const indexBuildService = new IndexBuildService();
+const notesCommand = new NotesCommand();
 
 function notesArgs(overrides: Partial<NotesArgs> = {}): NotesArgs {
   return {
@@ -50,15 +53,15 @@ async function seedIndexedWorkspace(): Promise<SeededFixture> {
   // SAFETY: fixed literal test fixture paths.
   fs.seedFile("/vault-primary/Loose.md" as AbsPath, "# Loose\nNo frontmatter.\n");
   await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
-  await buildIndex(container, expandWorkspace(PRIMARY, HOME));
+  await indexBuildService.build(container, expandWorkspace(PRIMARY, HOME));
   return { container, io };
 }
 
-describe("notes", () => {
+describe("NotesCommand.execute", () => {
   test("--json prints JSON.stringify(rows, null, 2), path/title/type/importance in order", async () => {
     const { container, io } = await seedIndexedWorkspace();
 
-    const outcome = await notes(container, notesArgs({ json: true }));
+    const outcome = await notesCommand.execute(container, notesArgs({ json: true }));
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
     const parsed: unknown = JSON.parse(io.written.join(""));
     expect(parsed).toEqual([
@@ -75,7 +78,7 @@ describe("notes", () => {
   test("plain listing pads importance and type", async () => {
     const { container, io } = await seedIndexedWorkspace();
 
-    const outcome = await notes(container, notesArgs());
+    const outcome = await notesCommand.execute(container, notesArgs());
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
     expect(io.written).toEqual([
       "[ 6] note   Alpha/Injection Hook.md  — Injection Hook",
@@ -86,7 +89,7 @@ describe("notes", () => {
   test("--folder restricts to a folder prefix", async () => {
     const { container, io } = await seedIndexedWorkspace();
 
-    const outcome = await notes(container, notesArgs({ folder: "Alpha" }));
+    const outcome = await notesCommand.execute(container, notesArgs({ folder: "Alpha" }));
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
     expect(io.written).toEqual(["[ 6] note   Alpha/Injection Hook.md  — Injection Hook"]);
   });
@@ -94,7 +97,7 @@ describe("notes", () => {
   test("no notes under an unmatched folder prints the exact (no notes) fallback", async () => {
     const { container, io } = await seedIndexedWorkspace();
 
-    const outcome = await notes(container, notesArgs({ folder: "Ghost" }));
+    const outcome = await notesCommand.execute(container, notesArgs({ folder: "Ghost" }));
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
     expect(io.written).toEqual(["(no notes) under Ghost"]);
   });
@@ -102,7 +105,10 @@ describe("notes", () => {
   test("an unknown --workspace fails with the exact 'no such workspace' message", async () => {
     const { container } = await seedIndexedWorkspace();
 
-    const outcome = await notes(container, notesArgs({ workspace: "ghost" }));
+    const outcome = await notesCommand.execute(
+      container,
+      notesArgs({ workspace: "ghost" }),
+    );
     expect(outcome).toEqual({ exitCode: 1, stderrMessage: "no such workspace: ghost" });
   });
 });

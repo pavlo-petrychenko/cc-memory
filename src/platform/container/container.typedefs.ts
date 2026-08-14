@@ -9,7 +9,7 @@ import type { Stdio } from "@/platform/stdio/index.ts";
 
 /**
  * Every port the codebase needs, bundled. `cli/main.ts` and `hooks/runtime.ts`
- * are the only places that build the real one (`makeRealContainer`); everything
+ * are the only places that build the real one (`AppContainer`); everything
  * else (services, domain) receives a `Container` as a parameter, so a test can
  * pass `tests/helpers/container.ts`'s `makeTestContainer` instead.
  *

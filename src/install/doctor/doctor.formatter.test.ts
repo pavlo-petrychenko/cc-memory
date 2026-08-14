@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import { renderDoctorReport } from "@/install/doctor/doctor.formatter.ts";
+import { DoctorFormatter } from "@/install/doctor/doctor.formatter.ts";
 import { WorkspaceIndexStatus } from "@/install/doctor/doctor.typedefs.ts";
 
-describe("doctor.formatter.ts — renderDoctorReport", () => {
+describe("DoctorFormatter — render", () => {
   test("renders a STALE hook line and an OVERSIZED log line", () => {
-    const lines = renderDoctorReport({
+    const lines = new DoctorFormatter().render({
       workspaces: [],
       hooks: [
         {
@@ -28,7 +28,7 @@ describe("doctor.formatter.ts — renderDoctorReport", () => {
   });
 
   test("renders an UNREACHABLE index line without a note count", () => {
-    const lines = renderDoctorReport({
+    const lines = new DoctorFormatter().render({
       workspaces: [
         {
           id: "primary",

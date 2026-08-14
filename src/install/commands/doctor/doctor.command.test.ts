@@ -4,7 +4,7 @@ import { CliCommand, type DoctorArgs } from "@/cli/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
-import { doctor } from "@/install/commands/doctor/doctor.command.ts";
+import { DoctorCommand } from "@/install/commands/doctor/doctor.command.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 import { saveRegistry } from "@/workspace/index.ts";
@@ -27,18 +27,20 @@ function doctorArgs(overrides: Partial<DoctorArgs> = {}): DoctorArgs {
 }
 
 /**
- * `doctor` (`src/install/commands/doctor/doctor.command.ts`) runs real
- * diagnostics — see `doctor/doctor.service.ts`'s doc comment for why this is a redesign rather than
- * spawning hooks to smoke-test them. The first two lines are the one thing
- * kept BYTE-IDENTICAL (they are the first thing a human reads, even
- * while skipped).
+ * `DoctorCommand` (`src/install/commands/doctor/doctor.command.ts`) runs
+ * real diagnostics — see `doctor/doctor.service.ts`'s doc comment for why
+ * this is a redesign rather than spawning hooks to smoke-test them. The
+ * first two lines are the one thing kept BYTE-IDENTICAL (they are the first
+ * thing a human reads, even while skipped).
  */
-describe("doctor (real diagnostics, replacing the exit-0 hook smoke test)", () => {
+describe("DoctorCommand (real diagnostics, replacing the exit-0 hook smoke test)", () => {
   test("an empty registry reports '(empty)' and 'no workspace'", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
 
-    const outcome = await doctor(container, doctorArgs({ cwd: "/repo/primary" }));
+    const outcome = await new DoctorCommand(container).execute(
+      doctorArgs({ cwd: "/repo/primary" }),
+    );
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
     expect(io.written[0]).toBe(
       "registry: /home/test/.claude/memory/registry.toml (empty)",
@@ -51,7 +53,9 @@ describe("doctor (real diagnostics, replacing the exit-0 hook smoke test)", () =
     const container = makeTestContainer({ stdio: io });
     await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
 
-    const outcome = await doctor(container, doctorArgs({ cwd: "/repo/primary/wt1" }));
+    const outcome = await new DoctorCommand(container).execute(
+      doctorArgs({ cwd: "/repo/primary/wt1" }),
+    );
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
     expect(io.written[0]).toBe("registry: /home/test/.claude/memory/registry.toml (ok)");
     expect(io.written[1]).toBe("cwd /repo/primary/wt1 -> primary");
@@ -62,7 +66,7 @@ describe("doctor (real diagnostics, replacing the exit-0 hook smoke test)", () =
     const container = makeTestContainer({ stdio: io });
     await container.fs.writeFile(REGISTRY_PATH, "not toml [[[");
 
-    const outcome = await doctor(container, doctorArgs());
+    const outcome = await new DoctorCommand(container).execute(doctorArgs());
     expect(outcome.exitCode).toBe(0);
     expect(io.written[0]).toContain("(empty)");
     expect(io.written.some((line) => line.startsWith("registry error:"))).toBe(true);
@@ -79,7 +83,7 @@ describe("doctor (real diagnostics, replacing the exit-0 hook smoke test)", () =
     await container.fs.mkdir(worklogsPath);
     await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
 
-    await doctor(container, doctorArgs());
+    await new DoctorCommand(container).execute(doctorArgs());
 
     expect(io.written).toContain("workspace primary:");
     expect(io.written).toContain("  kb: ok");
@@ -93,7 +97,7 @@ describe("doctor (real diagnostics, replacing the exit-0 hook smoke test)", () =
     await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
     // Neither `/vault-primary` nor its `_Worklogs` was ever created.
 
-    await doctor(container, doctorArgs());
+    await new DoctorCommand(container).execute(doctorArgs());
 
     expect(io.written).toContain("  kb: MISSING");
     expect(io.written).toContain("  worklogs: MISSING");
@@ -103,7 +107,7 @@ describe("doctor (real diagnostics, replacing the exit-0 hook smoke test)", () =
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
 
-    await doctor(container, doctorArgs());
+    await new DoctorCommand(container).execute(doctorArgs());
 
     expect(io.written).toContain(
       "install: not installed (no installed.json manifest found)",
@@ -114,7 +118,7 @@ describe("doctor (real diagnostics, replacing the exit-0 hook smoke test)", () =
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
 
-    await doctor(container, doctorArgs());
+    await new DoctorCommand(container).execute(doctorArgs());
 
     expect(io.written.some((line) => line.startsWith("ccmem.log: 0 bytes"))).toBe(true);
   });

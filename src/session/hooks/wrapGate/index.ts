@@ -1,1 +1,2 @@
-export { handleWrapGate } from "@/session/hooks/wrapGate/wrapGate.hook.ts";
+export { WrapGateFormatter } from "@/session/hooks/wrapGate/wrapGate.formatter.ts";
+export { WrapGateHook } from "@/session/hooks/wrapGate/wrapGate.hook.ts";

@@ -2,49 +2,52 @@ import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
 import { MANIFEST_SCHEMA_VERSION } from "@/install/steps/manifest/manifest.constants.ts";
-import {
-  defaultManifestPath,
-  loadManifest,
-  saveManifest,
-} from "@/install/steps/manifest/manifest.service.ts";
+import { ManifestService } from "@/install/steps/manifest/manifest.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 
 // SAFETY: fixed test fixture, never a real filesystem lookup — matches
 // `tests/helpers/container.ts`'s `DEFAULT_HOME`.
 const HOME = "/home/test" as AbsPath;
 
-describe("install/manifest.ts — ~/.claude/memory/installed.json", () => {
-  test("defaultManifestPath is under ~/.claude/memory/", () => {
+describe("ManifestService — ~/.claude/memory/installed.json", () => {
+  test("defaultPath is under ~/.claude/memory/", () => {
     // SAFETY: a fixed expected-value literal for a `toBe` assertion, not a
     // real path — same reasoning as `HOME` above.
     const expectedPath = "/home/test/.claude/memory/installed.json" as AbsPath;
-    expect(defaultManifestPath(HOME)).toBe(expectedPath);
+    expect(ManifestService.defaultPath(HOME)).toBe(expectedPath);
   });
 
-  test("loadManifest is null when the file does not exist (first run)", async () => {
+  test("load is null when the file does not exist (first run)", async () => {
     const fs = makeFsMemoryFake();
-    const manifest = await loadManifest(fs, defaultManifestPath(HOME));
+    const service = new ManifestService(fs);
+    const manifest = await service.load(ManifestService.defaultPath(HOME));
     expect(manifest).toBeNull();
   });
 
-  test("loadManifest is null for corrupt JSON (degrades to first-run, never throws)", async () => {
+  test("load is null for corrupt JSON (degrades to first-run, never throws)", async () => {
     const fs = makeFsMemoryFake();
-    fs.seedFile(defaultManifestPath(HOME), "not json {{{");
-    const manifest = await loadManifest(fs, defaultManifestPath(HOME));
+    fs.seedFile(ManifestService.defaultPath(HOME), "not json {{{");
+    const service = new ManifestService(fs);
+    const manifest = await service.load(ManifestService.defaultPath(HOME));
     expect(manifest).toBeNull();
   });
 
-  test("loadManifest is null for valid JSON that doesn't match the schema", async () => {
+  test("load is null for valid JSON that doesn't match the schema", async () => {
     const fs = makeFsMemoryFake();
-    fs.seedFile(defaultManifestPath(HOME), JSON.stringify({ unrelatedField: true }));
-    const manifest = await loadManifest(fs, defaultManifestPath(HOME));
+    fs.seedFile(
+      ManifestService.defaultPath(HOME),
+      JSON.stringify({ unrelatedField: true }),
+    );
+    const service = new ManifestService(fs);
+    const manifest = await service.load(ManifestService.defaultPath(HOME));
     expect(manifest).toBeNull();
   });
 
   test("save then load round-trips every field exactly", async () => {
     const fs = makeFsMemoryFake();
-    const path = defaultManifestPath(HOME);
-    await saveManifest(fs, path, {
+    const service = new ManifestService(fs);
+    const path = ManifestService.defaultPath(HOME);
+    await service.save(path, {
       schemaVersion: MANIFEST_SCHEMA_VERSION,
       repoRoot: "/repo",
       bunPath: "/usr/local/bin/bun",
@@ -58,7 +61,7 @@ describe("install/manifest.ts — ~/.claude/memory/installed.json", () => {
       legacyPurgeDone: true,
     });
 
-    const loaded = await loadManifest(fs, path);
+    const loaded = await service.load(path);
     expect(loaded).toEqual({
       schemaVersion: MANIFEST_SCHEMA_VERSION,
       repoRoot: "/repo",
@@ -76,8 +79,9 @@ describe("install/manifest.ts — ~/.claude/memory/installed.json", () => {
 
   test("save then load round-trips a null backup path and an empty skills list", async () => {
     const fs = makeFsMemoryFake();
-    const path = defaultManifestPath(HOME);
-    await saveManifest(fs, path, {
+    const service = new ManifestService(fs);
+    const path = ManifestService.defaultPath(HOME);
+    await service.save(path, {
       schemaVersion: MANIFEST_SCHEMA_VERSION,
       repoRoot: "/repo",
       bunPath: "/usr/local/bin/bun",
@@ -89,15 +93,16 @@ describe("install/manifest.ts — ~/.claude/memory/installed.json", () => {
       legacyPurgeDone: false,
     });
 
-    const loaded = await loadManifest(fs, path);
+    const loaded = await service.load(path);
     expect(loaded?.settingsBackupPath).toBeNull();
     expect(loaded?.skills).toEqual([]);
     expect(loaded?.legacyPurgeDone).toBe(false);
   });
 
-  test("loadManifest rejects a skills entry with the wrong shape", async () => {
+  test("load rejects a skills entry with the wrong shape", async () => {
     const fs = makeFsMemoryFake();
-    const path = defaultManifestPath(HOME);
+    const service = new ManifestService(fs);
+    const path = ManifestService.defaultPath(HOME);
     await fs.writeFile(
       path,
       JSON.stringify({
@@ -112,13 +117,14 @@ describe("install/manifest.ts — ~/.claude/memory/installed.json", () => {
         legacyPurgeDone: false,
       }),
     );
-    const manifest = await loadManifest(fs, path);
+    const manifest = await service.load(path);
     expect(manifest).toBeNull();
   });
 
-  test("loadManifest rejects a hookCommands value that isn't all strings", async () => {
+  test("load rejects a hookCommands value that isn't all strings", async () => {
     const fs = makeFsMemoryFake();
-    const path = defaultManifestPath(HOME);
+    const service = new ManifestService(fs);
+    const path = ManifestService.defaultPath(HOME);
     await fs.writeFile(
       path,
       JSON.stringify({
@@ -133,7 +139,7 @@ describe("install/manifest.ts — ~/.claude/memory/installed.json", () => {
         legacyPurgeDone: false,
       }),
     );
-    const manifest = await loadManifest(fs, path);
+    const manifest = await service.load(path);
     expect(manifest).toBeNull();
   });
 });

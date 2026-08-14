@@ -1,13 +1,13 @@
-export { notes } from "@/retrieval/commands/notes/index.ts";
-export { reindex } from "@/retrieval/commands/reindex/index.ts";
-export { search } from "@/retrieval/commands/search/index.ts";
-export { salientTokens } from "@/retrieval/query/index.ts";
+export { NotesCommand } from "@/retrieval/commands/notes/index.ts";
+export { ReindexCommand } from "@/retrieval/commands/reindex/index.ts";
+export { SearchCommand } from "@/retrieval/commands/search/index.ts";
+export { TokenizerParser } from "@/retrieval/query/index.ts";
 export type { FusedHit } from "@/retrieval/retrieval.typedefs.ts";
 export { SearchKind } from "@/retrieval/retrieval.typedefs.ts";
 export {
+  IndexBuildService,
+  IndexConnectionService,
   NOTES_SEARCH_SQL,
-  openIndexDb,
   SCHEMA,
-  searchFused,
-  buildIndex,
+  SearchService,
 } from "@/retrieval/store/index.ts";

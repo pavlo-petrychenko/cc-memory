@@ -1,30 +1,24 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-  cleanInline,
-  extractInlineTags,
-  extractTypedRelations,
-  extractWikilinks,
-  parseFrontmatter,
-  parseIndexNote,
-  parseNote,
-} from "@/knowledge/note/note.parser.ts";
+import { NoteParser } from "@/knowledge/note/note.parser.ts";
+
+const parser = new NoteParser();
 
 describe("parseFrontmatter", () => {
   test("no frontmatter -> empty fields, body is the whole text", () => {
-    const { frontmatter, body } = parseFrontmatter("# Just a note\n\nbody text");
+    const { frontmatter, body } = parser.parseFrontmatter("# Just a note\n\nbody text");
     expect(frontmatter.size).toBe(0);
     expect(body).toBe("# Just a note\n\nbody text");
   });
 
   test("the frontmatter regex is anchored: leading blank lines before --- do NOT count", () => {
     const text = "\n---\ntype: note\n---\n# Title\n";
-    const { frontmatter } = parseFrontmatter(text);
+    const { frontmatter } = parser.parseFrontmatter(text);
     expect(frontmatter.size).toBe(0);
   });
 
   test("simple YAML scalars parse as strings", () => {
-    const { frontmatter, body } = parseFrontmatter(
+    const { frontmatter, body } = parser.parseFrontmatter(
       "---\ntype: decision\nimportance: 7\n---\nbody\n",
     );
     expect(frontmatter.get("type")).toBe("decision");
@@ -33,26 +27,30 @@ describe("parseFrontmatter", () => {
   });
 
   test("a YAML flow list parses as a string array", () => {
-    const { frontmatter } = parseFrontmatter("---\ntags: [alpha, beta]\n---\nbody\n");
+    const { frontmatter } = parser.parseFrontmatter(
+      "---\ntags: [alpha, beta]\n---\nbody\n",
+    );
     expect(frontmatter.get("tags")).toEqual(["alpha", "beta"]);
   });
 
   test("a YAML block list (multiline) parses as a string array", () => {
-    const { frontmatter } = parseFrontmatter(
+    const { frontmatter } = parser.parseFrontmatter(
       "---\ntags:\n  - alpha\n  - beta\n---\nbody\n",
     );
     expect(frontmatter.get("tags")).toEqual(["alpha", "beta"]);
   });
 
   test("a quoted scalar has its quotes stripped by YAML itself", () => {
-    const { frontmatter } = parseFrontmatter('---\nepic: "roadmap-2"\n---\nbody\n');
+    const { frontmatter } = parser.parseFrontmatter(
+      '---\nepic: "roadmap-2"\n---\nbody\n',
+    );
     expect(frontmatter.get("epic")).toBe("roadmap-2");
   });
 
   test("malformed YAML falls back to the naive line-splitter, quotes stripped", () => {
     // Unbalanced quote and a tab character are enough to make this invalid
     // YAML while still being a perfectly parseable naive `key: value` line.
-    const { frontmatter, body } = parseFrontmatter(
+    const { frontmatter, body } = parser.parseFrontmatter(
       '---\ntype: "unterminated\nother: value\n---\nbody\n',
     );
     expect(frontmatter.get("type")).toBe("unterminated");
@@ -61,7 +59,7 @@ describe("parseFrontmatter", () => {
   });
 
   test("the fallback strips only single/double quotes, not brackets", () => {
-    const { frontmatter } = parseFrontmatter(
+    const { frontmatter } = parser.parseFrontmatter(
       '---\ntype: "unterminated\ntags: [a, b]\n---\nbody\n',
     );
     expect(frontmatter.get("tags")).toBe("[a, b]");
@@ -70,13 +68,13 @@ describe("parseFrontmatter", () => {
 
 describe("extractWikilinks / extractTypedRelations / extractInlineTags", () => {
   test("a plain wikilink's display label is stripped", () => {
-    expect(extractWikilinks("see [[Target Note|shown text]] for more")).toEqual([
+    expect(parser.extractWikilinks("see [[Target Note|shown text]] for more")).toEqual([
       "Target Note",
     ]);
   });
 
   test("a typed relation captures its type and cleaned target", () => {
-    const relations = extractTypedRelations(
+    const relations = parser.extractTypedRelations(
       "- depends_on [[Other Note|label]]\n- links_to [[Third]]",
     );
     expect(relations).toEqual([
@@ -86,52 +84,54 @@ describe("extractWikilinks / extractTypedRelations / extractInlineTags", () => {
   });
 
   test("inline tags are returned unfiltered and undeduplicated", () => {
-    expect(extractInlineTags("intro #alpha more text #alpha again #beta/gamma")).toEqual([
-      "alpha",
-      "alpha",
-      "beta/gamma",
-    ]);
+    expect(
+      parser.extractInlineTags("intro #alpha more text #alpha again #beta/gamma"),
+    ).toEqual(["alpha", "alpha", "beta/gamma"]);
   });
 
   test("a tag at the very start of the text (no preceding whitespace) is still found", () => {
-    expect(extractInlineTags("#leading tag then text")).toEqual(["leading"]);
+    expect(parser.extractInlineTags("#leading tag then text")).toEqual(["leading"]);
   });
 
   // Tag matching is Unicode-aware after the first character, so "café" is
   // captured whole rather than truncated to "caf". The first character stays
   // ASCII-only, so a fully non-Latin tag matches neither.
   test("a tag with non-ASCII letters after the first character is captured whole", () => {
-    expect(extractInlineTags("fix #café soon")).toEqual(["café"]);
-    expect(extractInlineTags("see #tag_ok/sub here")).toEqual(["tag_ok/sub"]);
-    expect(extractInlineTags("ru #привет x")).toEqual([]);
+    expect(parser.extractInlineTags("fix #café soon")).toEqual(["café"]);
+    expect(parser.extractInlineTags("see #tag_ok/sub here")).toEqual(["tag_ok/sub"]);
+    expect(parser.extractInlineTags("ru #привет x")).toEqual([]);
   });
 });
 
 describe("cleanInline", () => {
   test("collapses a piped wikilink to its display label", () => {
-    expect(cleanInline("see [[Target|the label]] here", 200)).toBe("see the label here");
+    expect(parser.cleanInline("see [[Target|the label]] here", 200)).toBe(
+      "see the label here",
+    );
   });
 
   test("collapses a plain wikilink to its target text", () => {
-    expect(cleanInline("see [[Target]] here", 200)).toBe("see Target here");
+    expect(parser.cleanInline("see [[Target]] here", 200)).toBe("see Target here");
   });
 
   test("drops ** and backticks, collapses whitespace", () => {
-    expect(cleanInline("**bold**   and `code`  text", 200)).toBe("bold and code text");
+    expect(parser.cleanInline("**bold**   and `code`  text", 200)).toBe(
+      "bold and code text",
+    );
   });
 
   test("truncates on the last space and appends an ellipsis", () => {
-    expect(cleanInline("one two three four five", 15)).toBe("one two three…");
+    expect(parser.cleanInline("one two three four five", 15)).toBe("one two three…");
   });
 
   test("text at or under the limit is untouched", () => {
-    expect(cleanInline("short", 15)).toBe("short");
+    expect(parser.cleanInline("short", 15)).toBe("short");
   });
 });
 
-describe("parseNote", () => {
+describe("parse", () => {
   test("title comes from the first H1 in the body, not the frontmatter", () => {
-    const note = parseNote(
+    const note = parser.parse(
       "---\ntype: note\n---\n# The Real Title\n\nbody\n",
       "fallback",
     );
@@ -139,36 +139,36 @@ describe("parseNote", () => {
   });
 
   test("falls back to the caller-supplied title when there is no H1", () => {
-    const note = parseNote("no heading here", "My Note");
+    const note = parser.parse("no heading here", "My Note");
     expect(note.title).toBe("My Note");
   });
 
   test("type defaults to 'note' when the frontmatter key is absent", () => {
-    expect(parseNote("body only", "t").type).toBe("note");
+    expect(parser.parse("body only", "t").type).toBe("note");
   });
 
   test("type is read verbatim from frontmatter when present", () => {
-    expect(parseNote("---\ntype: decision\n---\nbody", "t").type).toBe("decision");
+    expect(parser.parse("---\ntype: decision\n---\nbody", "t").type).toBe("decision");
   });
 
   test("importance parses a valid integer", () => {
-    expect(parseNote("---\nimportance: 8\n---\nbody", "t").importance).toBe(8);
+    expect(parser.parse("---\nimportance: 8\n---\nbody", "t").importance).toBe(8);
   });
 
   test("importance is null when the key is absent", () => {
-    expect(parseNote("body", "t").importance).toBeNull();
+    expect(parser.parse("body", "t").importance).toBeNull();
   });
 
   test("importance is null when the value isn't a plain integer (no lenient prefix parse)", () => {
-    expect(parseNote("---\nimportance: 5abc\n---\nbody", "t").importance).toBeNull();
+    expect(parser.parse("---\nimportance: 5abc\n---\nbody", "t").importance).toBeNull();
   });
 
   test("importance is null for an empty value, without even attempting to parse", () => {
-    expect(parseNote("---\nimportance:\n---\nbody", "t").importance).toBeNull();
+    expect(parser.parse("---\nimportance:\n---\nbody", "t").importance).toBeNull();
   });
 
   test("tags combine inline #tags and frontmatter tags, sorted and space-joined", () => {
-    const note = parseNote(
+    const note = parser.parse(
       "---\ntags: [zulu, alpha]\n---\nbody mentioning #bravo and #alpha again",
       "t",
     );
@@ -176,27 +176,30 @@ describe("parseNote", () => {
   });
 
   test("a scalar (non-list) frontmatter tags value is comma/whitespace-split", () => {
-    const note = parseNote('---\ntags: "alpha, beta"\n---\nbody', "t");
+    const note = parser.parse('---\ntags: "alpha, beta"\n---\nbody', "t");
     expect(note.tags).toBe("alpha beta");
   });
 
   test("a plain wikilink becomes a links_to relation", () => {
-    const note = parseNote("body [[Some Note]]", "t");
+    const note = parser.parse("body [[Some Note]]", "t");
     expect(note.rels).toEqual([{ relationType: "links_to", target: "Some Note" }]);
   });
 
   test("a wikilink already covered by a typed relation is not duplicated as links_to", () => {
-    const note = parseNote("- depends_on [[Some Note]]\n\nsee also [[Some Note]]", "t");
+    const note = parser.parse(
+      "- depends_on [[Some Note]]\n\nsee also [[Some Note]]",
+      "t",
+    );
     expect(note.rels).toEqual([{ relationType: "depends_on", target: "Some Note" }]);
   });
 
   test("the parsed body excludes the frontmatter block", () => {
-    const note = parseNote("---\ntype: note\n---\n# Title\nbody\n", "t");
+    const note = parser.parse("---\ntype: note\n---\n# Title\nbody\n", "t");
     expect(note.body).toBe("# Title\nbody\n");
   });
 });
 
-describe("parseIndexNote", () => {
+describe("parseIndex", () => {
   test("golden: title, description and epic all present", () => {
     const text =
       "---\nepic: roadmap-2\n---\n" +
@@ -204,7 +207,7 @@ describe("parseIndexNote", () => {
       "> Knowledge base for the **cc-memory** workspace.\n" +
       "> More detail on the next quoted line.\n\n" +
       "not a quote line\n";
-    const parsed = parseIndexNote(text);
+    const parsed = parser.parseIndex(text);
     expect(parsed.title).toBe("CC-memory");
     expect(parsed.description).toBe(
       "Knowledge base for the cc-memory workspace. More detail on the next quoted line.",
@@ -213,7 +216,7 @@ describe("parseIndexNote", () => {
   });
 
   test("no frontmatter, no quote -> empty description and epic", () => {
-    const parsed = parseIndexNote("# Just A Title\n\nsome prose, no blockquote\n");
+    const parsed = parser.parseIndex("# Just A Title\n\nsome prose, no blockquote\n");
     expect(parsed.title).toBe("Just A Title");
     expect(parsed.description).toBe("");
     expect(parsed.epic).toBe("");
@@ -224,7 +227,7 @@ describe("parseIndexNote", () => {
     // the title has been found yet — only the "# " line itself is title-gated.
     // A blockquote before the title is collected too, since nothing resets the
     // accumulated quote text between it and the title line.
-    const parsed = parseIndexNote(
+    const parsed = parser.parseIndex(
       "> too early, no title yet\n# Title\n> real description\n",
     );
     expect(parsed.title).toBe("Title");

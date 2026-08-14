@@ -2,11 +2,12 @@ import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { buildKbMapInput } from "@/knowledge/kbMap/kbMap.service.ts";
+import { KbMapService } from "@/knowledge/kbMap/kbMap.service.ts";
+import { NoteParser } from "@/knowledge/note/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 
 /**
- * `buildKbMapInput` — the filesystem-facing half of building the KB map
+ * `KbMapService` — the filesystem-facing half of building the KB map
  * that gets injected on session start. Not itself a hook (it has no
  * event/payload), but exercised only through `sessionStart.hook.ts`, so its
  * own edge cases live alongside the hook contract tests rather than
@@ -35,7 +36,7 @@ function makeWorkspace(overrides: Partial<Workspace> = {}): Workspace {
     exclude: ["_Worklogs", "Archive", ".obsidian"],
     // SAFETY: `bun:sqlite`'s own special literal for an in-memory database —
     // never touches a real `.claude/memory/**/index.db` file (CLAUDE.md's
-    // "never fake `SqlDatabase`" rule still applies, but `buildKbMapInput` never opens
+    // "never fake `SqlDatabase`" rule still applies, but `KbMapService.build` never opens
     // this path at all — it's unused by anything under test here).
     indexDb: ":memory:" as AbsPath,
     matchedPrefix: KB,
@@ -43,12 +44,12 @@ function makeWorkspace(overrides: Partial<Workspace> = {}): Workspace {
   };
 }
 
-describe("buildKbMapInput", () => {
+describe("KbMapService", () => {
   test("vault directory missing: null", async () => {
-    const fs = makeFsMemoryFake();
+    const service = new KbMapService(makeFsMemoryFake(), new NoteParser());
     const workspace = makeWorkspace();
 
-    expect(await buildKbMapInput(fs, workspace, HOME)).toBeNull();
+    expect(await service.build(workspace, HOME)).toBeNull();
   });
 
   test("a feature dir with a full index note: title/description/epic all present", async () => {
@@ -58,8 +59,9 @@ describe("buildKbMapInput", () => {
       "---\ntype: index\nepic: 'ENG-1'\n---\n# Alpha Feature\n> Index for Alpha.\n",
     );
     const workspace = makeWorkspace();
+    const service = new KbMapService(fs, new NoteParser());
 
-    const result = await buildKbMapInput(fs, workspace, HOME);
+    const result = await service.build(workspace, HOME);
     expect(result).not.toBeNull();
     expect(result?.vaultLabel).toBe("~/vault-primary");
     expect(result?.features).toEqual([
@@ -81,8 +83,9 @@ describe("buildKbMapInput", () => {
     fs.seedDir(KB);
     fs.seedDir(underKb("Beta"));
     const workspace = makeWorkspace();
+    const service = new KbMapService(fs, new NoteParser());
 
-    const result = await buildKbMapInput(fs, workspace, HOME);
+    const result = await service.build(workspace, HOME);
     expect(result?.features).toEqual([
       { name: "Beta", hasIndexNote: false, title: "", description: "", epic: "" },
     ]);
@@ -94,8 +97,9 @@ describe("buildKbMapInput", () => {
     fs.seedDir(underKb("_Worklogs"));
     fs.seedFile(underKb("Gamma/Gamma.md"), "# Gamma\n");
     const workspace = makeWorkspace();
+    const service = new KbMapService(fs, new NoteParser());
 
-    const result = await buildKbMapInput(fs, workspace, HOME);
+    const result = await service.build(workspace, HOME);
     expect(result?.features.map((feature) => feature.name)).toEqual(["Gamma"]);
   });
 
@@ -104,8 +108,9 @@ describe("buildKbMapInput", () => {
     fs.seedFile(underKb("Roadmap.md"), "# Roadmap\n");
     fs.seedFile(underKb("2026-01-01.md"), "## entry\n");
     const workspace = makeWorkspace();
+    const service = new KbMapService(fs, new NoteParser());
 
-    const result = await buildKbMapInput(fs, workspace, HOME);
+    const result = await service.build(workspace, HOME);
     expect(result?.looseNotes).toEqual(["Roadmap"]);
   });
 
@@ -115,8 +120,9 @@ describe("buildKbMapInput", () => {
     fs.seedDir(underKb("zebra"));
     fs.seedDir(underKb("Apple"));
     const workspace = makeWorkspace();
+    const service = new KbMapService(fs, new NoteParser());
 
-    const result = await buildKbMapInput(fs, workspace, HOME);
+    const result = await service.build(workspace, HOME);
     expect(result?.features.map((feature) => feature.name)).toEqual(["Apple", "zebra"]);
   });
 });

@@ -2,16 +2,16 @@ import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { gatherDoctorReport } from "@/install/doctor/doctor.service.ts";
+import { DoctorService } from "@/install/doctor/doctor.service.ts";
 import { WorkspaceIndexStatus } from "@/install/doctor/doctor.typedefs.ts";
-import { defaultManifestPath, saveManifest } from "@/install/steps/manifest/index.ts";
-import { defaultSettingsPath, hookCommand } from "@/install/steps/settings/index.ts";
+import { ManifestService } from "@/install/steps/manifest/index.ts";
+import { SettingsService } from "@/install/steps/settings/index.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 import { RegistryErrorKind } from "@/workspace/index.ts";
 
 /**
- * `doctor.service.ts` — real diagnostics. Every failure class gets its own
+ * `DoctorService` — real diagnostics. Every failure class gets its own
  * case: unparseable registry, missing kb, stale hook paths, missing bun,
  * oversized log.
  */
@@ -38,13 +38,13 @@ function workspaceFixture(overrides: Partial<Workspace> = {}): Workspace {
   };
 }
 
-describe("doctor.service.ts — per-workspace diagnostics", () => {
+describe("DoctorService — per-workspace diagnostics", () => {
   test("a fully healthy workspace reports ok kb/worklogs and an ok, empty index", async () => {
     const container = makeTestContainer({ proc: makeProcFake() });
     await container.fs.mkdir(workspaceFixture().kb);
     await container.fs.mkdir(workspaceFixture().worklogs);
 
-    const report = await gatherDoctorReport(container, [workspaceFixture()], {
+    const report = await new DoctorService(container).gatherReport([workspaceFixture()], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -66,7 +66,7 @@ describe("doctor.service.ts — per-workspace diagnostics", () => {
     const container = makeTestContainer({ proc: makeProcFake() });
     // Neither directory is created this time.
 
-    const report = await gatherDoctorReport(container, [workspaceFixture()], {
+    const report = await new DoctorService(container).gatherReport([workspaceFixture()], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -85,7 +85,7 @@ describe("doctor.service.ts — per-workspace diagnostics", () => {
       indexDb: fixturePath("/nonexistent-doctor-test-dir-xyz/index.db"),
     });
 
-    const report = await gatherDoctorReport(container, [brokenWorkspace], {
+    const report = await new DoctorService(container).gatherReport([brokenWorkspace], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -100,7 +100,7 @@ describe("doctor.service.ts — per-workspace diagnostics", () => {
     await container.fs.writeFile(fixturePath("/wsdir/inject.jsonl"), "one\ntwo\n");
     const workspace = workspaceFixture({ indexDb: fixturePath("/wsdir/index.db") });
 
-    const report = await gatherDoctorReport(container, [workspace], {
+    const report = await new DoctorService(container).gatherReport([workspace], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -110,11 +110,11 @@ describe("doctor.service.ts — per-workspace diagnostics", () => {
   });
 });
 
-describe("doctor.service.ts — install/hooks/bun diagnostics", () => {
+describe("DoctorService — install/hooks/bun diagnostics", () => {
   test("hooks is null (and bun unreported) when there is no installed.json manifest", async () => {
     const container = makeTestContainer({ proc: makeProcFake() });
 
-    const report = await gatherDoctorReport(container, [], {
+    const report = await new DoctorService(container).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -126,19 +126,22 @@ describe("doctor.service.ts — install/hooks/bun diagnostics", () => {
 
   test("reports the recorded bun path missing when the file no longer exists", async () => {
     const container = makeTestContainer({ proc: makeProcFake() });
-    await saveManifest(container.fs, defaultManifestPath(container.env.home()), {
-      schemaVersion: 1,
-      repoRoot: REPO_ROOT,
-      bunPath: "/usr/local/bin/bun-that-was-uninstalled",
-      distPath: `${REPO_ROOT}/dist/memory.js`,
-      hookCommands: {},
-      shimPath: "/home/test/.local/bin/memory",
-      skills: [],
-      settingsBackupPath: null,
-      legacyPurgeDone: true,
-    });
+    await new ManifestService(container.fs).save(
+      ManifestService.defaultPath(container.env.home()),
+      {
+        schemaVersion: 1,
+        repoRoot: REPO_ROOT,
+        bunPath: "/usr/local/bin/bun-that-was-uninstalled",
+        distPath: `${REPO_ROOT}/dist/memory.js`,
+        hookCommands: {},
+        shimPath: "/home/test/.local/bin/memory",
+        skills: [],
+        settingsBackupPath: null,
+        legacyPurgeDone: true,
+      },
+    );
 
-    const report = await gatherDoctorReport(container, [], {
+    const report = await new DoctorService(container).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -150,19 +153,22 @@ describe("doctor.service.ts — install/hooks/bun diagnostics", () => {
   test("reports a hook STALE when settings.json's dist path doesn't match the current repo root", async () => {
     const container = makeTestContainer({ proc: makeProcFake() });
     const bunPath = "/usr/local/bin/bun";
-    await saveManifest(container.fs, defaultManifestPath(container.env.home()), {
-      schemaVersion: 1,
-      repoRoot: "/old-repo",
-      bunPath,
-      distPath: "/old-repo/dist/memory.js",
-      hookCommands: {},
-      shimPath: "/home/test/.local/bin/memory",
-      skills: [],
-      settingsBackupPath: null,
-      legacyPurgeDone: true,
-    });
+    await new ManifestService(container.fs).save(
+      ManifestService.defaultPath(container.env.home()),
+      {
+        schemaVersion: 1,
+        repoRoot: "/old-repo",
+        bunPath,
+        distPath: "/old-repo/dist/memory.js",
+        hookCommands: {},
+        shimPath: "/home/test/.local/bin/memory",
+        skills: [],
+        settingsBackupPath: null,
+        legacyPurgeDone: true,
+      },
+    );
     await container.fs.writeFile(
-      defaultSettingsPath(container.env.home()),
+      SettingsService.defaultPath(container.env.home()),
       JSON.stringify({
         hooks: {
           SessionStart: [
@@ -170,7 +176,7 @@ describe("doctor.service.ts — install/hooks/bun diagnostics", () => {
               hooks: [
                 {
                   type: "command",
-                  command: hookCommand(
+                  command: SettingsService.hookCommand(
                     bunPath,
                     "/old-repo/dist/memory.js",
                     "session-start",
@@ -184,7 +190,7 @@ describe("doctor.service.ts — install/hooks/bun diagnostics", () => {
       }),
     );
 
-    const report = await gatherDoctorReport(container, [], {
+    const report = await new DoctorService(container).gatherReport([], {
       repoRoot: REPO_ROOT, // the CURRENT repo root — different from settings.json's
       registryError: null,
     });
@@ -198,19 +204,22 @@ describe("doctor.service.ts — install/hooks/bun diagnostics", () => {
     const container = makeTestContainer({ proc: makeProcFake() });
     const bunPath = "/usr/local/bin/bun";
     const distPath = `${REPO_ROOT}/dist/memory.js`;
-    await saveManifest(container.fs, defaultManifestPath(container.env.home()), {
-      schemaVersion: 1,
-      repoRoot: REPO_ROOT,
-      bunPath,
-      distPath,
-      hookCommands: {},
-      shimPath: "/home/test/.local/bin/memory",
-      skills: [],
-      settingsBackupPath: null,
-      legacyPurgeDone: true,
-    });
+    await new ManifestService(container.fs).save(
+      ManifestService.defaultPath(container.env.home()),
+      {
+        schemaVersion: 1,
+        repoRoot: REPO_ROOT,
+        bunPath,
+        distPath,
+        hookCommands: {},
+        shimPath: "/home/test/.local/bin/memory",
+        skills: [],
+        settingsBackupPath: null,
+        legacyPurgeDone: true,
+      },
+    );
     await container.fs.writeFile(
-      defaultSettingsPath(container.env.home()),
+      SettingsService.defaultPath(container.env.home()),
       JSON.stringify({
         hooks: {
           SessionStart: [
@@ -218,7 +227,11 @@ describe("doctor.service.ts — install/hooks/bun diagnostics", () => {
               hooks: [
                 {
                   type: "command",
-                  command: hookCommand(bunPath, distPath, "session-start"),
+                  command: SettingsService.hookCommand(
+                    bunPath,
+                    distPath,
+                    "session-start",
+                  ),
                   timeout: 10,
                 },
               ],
@@ -228,7 +241,7 @@ describe("doctor.service.ts — install/hooks/bun diagnostics", () => {
       }),
     );
 
-    const report = await gatherDoctorReport(container, [], {
+    const report = await new DoctorService(container).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -245,7 +258,7 @@ describe("doctor.service.ts — install/hooks/bun diagnostics", () => {
       oversizedContent,
     );
 
-    const report = await gatherDoctorReport(container, [], {
+    const report = await new DoctorService(container).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -256,7 +269,7 @@ describe("doctor.service.ts — install/hooks/bun diagnostics", () => {
   test("carries a registry parse error through for rendering", async () => {
     const container = makeTestContainer({ proc: makeProcFake() });
 
-    const report = await gatherDoctorReport(container, [], {
+    const report = await new DoctorService(container).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: { kind: RegistryErrorKind.ParseError, message: "bad toml" },
     });
