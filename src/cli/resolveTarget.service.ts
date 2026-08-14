@@ -26,7 +26,7 @@ export const NO_WORKSPACE_FOR_CWD_MESSAGE = "no workspace for cwd; pass --worksp
 
 /**
  * A single workspace by id, or every registered workspace, all expanded —
- * `reindex`, `commit` and `reflect` all loop over the result. `id === null`
+ * `reindex` and `commit` both loop over the result. `id === null`
  * means the positional `workspace` argument was omitted.
  */
 export function resolveTargetWorkspaces(

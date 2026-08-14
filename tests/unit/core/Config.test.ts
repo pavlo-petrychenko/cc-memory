@@ -11,7 +11,6 @@ describe("parseConfig defaults", () => {
     expect(config.blockAfter).toBe(2);
     expect(config.blockDrift).toBe(5);
     expect(config.gateDisabled).toBe(false);
-    expect(config.consolidateCmd).toBe("claude --dangerously-skip-permissions");
     expect(config.logLevel).toBe(LogLevel.Warn);
   });
 });
@@ -39,12 +38,6 @@ describe("parseConfig overrides", () => {
   test("CCMEM_GATE_DISABLE=1 disables the gate, any other value leaves it enabled", () => {
     expect(parseConfig({ CCMEM_GATE_DISABLE: "1" }).gateDisabled).toBe(true);
     expect(parseConfig({ CCMEM_GATE_DISABLE: "yes" }).gateDisabled).toBe(false);
-  });
-
-  test("CCMEM_CONSOLIDATE_CMD overrides the reflector's spawn command", () => {
-    expect(parseConfig({ CCMEM_CONSOLIDATE_CMD: "claude" }).consolidateCmd).toBe(
-      "claude",
-    );
   });
 
   test("CCMEM_LOG_LEVEL accepts every known level", () => {

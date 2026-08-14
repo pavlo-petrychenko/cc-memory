@@ -12,7 +12,7 @@ import { gatherDoctorReport, renderDoctorReport } from "./doctor.service.ts";
 /**
  * `memory doctor` runs real diagnostics against the state an install depends
  * on: registry, every workspace's vault + index, `settings.json`'s hook
- * registrations, the recorded `bun` binary, the launchd job, log sizes — see
+ * registrations, the recorded `bun` binary, log sizes — see
  * `doctor.service.ts`'s doc comment.
  *
  * The first two lines — registry status, cwd resolution — must stay

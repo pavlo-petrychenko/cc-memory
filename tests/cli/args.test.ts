@@ -180,42 +180,6 @@ const CASES: readonly Case[] = [
     expected: { command: CliCommand.Commit, workspace: null, message: "wip" },
   },
   {
-    name: "reflect — defaults",
-    argv: ["reflect"],
-    expected: {
-      command: CliCommand.Reflect,
-      workspace: null,
-      all: false,
-      ifDue: false,
-      thresholdHours: 20,
-      headless: false,
-      force: false,
-    },
-  },
-  {
-    name: "reflect — every flag",
-    argv: [
-      "reflect",
-      "--workspace",
-      "primary",
-      "--all",
-      "--if-due",
-      "--threshold-hours",
-      "5",
-      "--headless",
-      "--force",
-    ],
-    expected: {
-      command: CliCommand.Reflect,
-      workspace: "primary",
-      all: true,
-      ifDue: true,
-      thresholdHours: 5,
-      headless: true,
-      force: true,
-    },
-  },
-  {
     name: "doctor — defaults",
     argv: ["doctor"],
     expected: { command: CliCommand.Doctor, cwd: null, prompt: null },
@@ -295,11 +259,6 @@ describe("parseArgs — error paths", () => {
 
   test("search -k with a non-integer value fails", () => {
     const result = parseArgs(["search", "q", "-k", "not-a-number"]);
-    expect(result.ok).toBe(false);
-  });
-
-  test("reflect --threshold-hours with a non-integer value fails", () => {
-    const result = parseArgs(["reflect", "--threshold-hours", "soon"]);
     expect(result.ok).toBe(false);
   });
 

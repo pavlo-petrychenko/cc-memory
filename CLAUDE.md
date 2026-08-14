@@ -1,8 +1,8 @@
 # cc-memory — working agreement
 
 Persistent, layered, per-workspace memory for Claude Code: markdown vaults as the
-source of truth, a derived SQLite FTS5 index, five Claude Code hooks, six skills and
-a nightly reflector.
+source of truth, a derived SQLite FTS5 index, five Claude Code hooks and six skills.
+Entirely session-driven — there is no background process.
 
 **Right now this repo is mid-migration**: a reviewed Python PoC is being rewritten in
 TypeScript on Bun with full test coverage. Branch `ts-migration`, one PR at the end.
@@ -35,9 +35,9 @@ references live in the plan's *Frozen Contracts* and *Porting Reference* docs.
 | C1 | `~/.claude/memory/registry.toml` schema, `~` preserved on write |
 | C2 | Hook stdin/stdout JSON per event; **always exit 0** |
 | C3 | `memory` CLI surface and output shape — the six skills parse it |
-| C4 | Vault file formats: `STATE.md`, `<date>.md` entries, proposals, brief |
+| C4 | Vault file formats: `STATE.md` and `<date>.md` journal entries |
 | C5 | `CCMEM_*` env var names and defaults |
-| C6 | Installed surface: `~/.local/bin/memory`, launchd label, index location |
+| C6 | Installed surface: `~/.local/bin/memory`, index location |
 | C7 | Retrieval semantics: `porter unicode61`, bm25 weights 10/1/5 and 3/1/1, RRF k=60, compound-split tokens |
 
 `index.db`'s schema is explicitly **not** frozen — bump `SCHEMA_VERSION` and it
@@ -74,8 +74,7 @@ src/
   workspace/   the registry, cwd→workspace resolution, worktree slugs
   retrieval/   tokenizing, query building, ranking, the SQLite index, search
   knowledge/   vault notes: frontmatter/wikilink parsing and the KB map
-  worklog/     STATE.md + the dated journal, and promotion candidates
-  reflect/     the nightly consolidation reflector
+  worklog/     STATE.md + the dated journal
   install/     wiring into Claude Code, and doctor (which diagnoses an install)
   session/     the five Claude Code hooks and their shared fail-open runtime
   cli/         the composition shell: arg parsing, dispatch, output formatting
@@ -220,7 +219,7 @@ runtime or dependency traps, which save the next person hours.
 ## Never let a test touch the real machine
 
 This project installs itself into `~/.claude/settings.json`, `~/.local/bin/memory` and
-a launchd job, on a machine where cc-memory is live and in use. A test that reaches the
+on a machine where cc-memory is live and in use. A test that reaches the
 real HOME does not just fail — it can silently break the user's editor. This has
 happened once already; both root causes are non-obvious and worth knowing:
 
@@ -231,7 +230,7 @@ happened once already; both root causes are non-obvious and worth knowing:
   container — never by setting an environment variable.
 - **`dispatch()` in `cli/main.ts` calls `install(parsed)`/`uninstall()` with no
   container**, so those two build a REAL one. Calling them in-process from a test hits
-  the real filesystem and the real `launchctl`. Pass an explicit fake container, or use
+  the real filesystem. Pass an explicit fake container, or use
   `--dry-run`, which by construction writes nothing.
 
 Related trap in the same family: `Stdio`'s real adapter calls `process.exit()`. Any

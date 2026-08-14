@@ -20,9 +20,9 @@ import {
  * supplies `makeTestContainer(...)` explicitly (`proc: procFake`, `fs` seeded
  * under a faked `$HOME`) and never triggers the real default at all. This is
  * the seam that makes these two functions safe to exercise directly:
- * `runInstall`/`runUninstall` eventually call `launchctl bootout`/`bootstrap`
- * through `container.proc` (`install/launchd.ts`) — on the real container
- * that is a real mutation of this machine's launchd state, so every test
+ * `runInstall`/`runUninstall` write to the user's real home directory
+ * through `container.proc` — on the real container that is a real mutation of
+ * this machine's state, so every test
  * passes an explicit fake container instead.
  */
 

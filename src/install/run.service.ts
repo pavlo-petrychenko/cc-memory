@@ -17,14 +17,6 @@ import {
   stringifyJson,
 } from "./json.service.ts";
 import {
-  defaultPlistPath,
-  defaultPlistTemplatePath,
-  defaultReflectorLogPath,
-  installLaunchd,
-  launchdPathEnv,
-  uninstallLaunchd,
-} from "./launchd.service.ts";
-import {
   defaultManifestPath,
   type InstalledManifest,
   loadManifest,
@@ -56,7 +48,7 @@ import {
 /**
  * `install`/`uninstall`/`--dry-run` orchestration. Everything above this file
  * is deliberately small and independently testable; `run.ts` is the one place
- * that sequences them: CLI shim, skills, hooks, registry seed, launchd — in
+ * that sequences them: CLI shim, skills, hooks, registry seed — in
  * that order.
  */
 
@@ -150,7 +142,7 @@ async function gatherHomePaths(container: Container, repoRoot: AbsPath) {
 
 /** `install [--dry-run]` — resolve `bun`, compute the `settings.json` surgery,
  * then either report it (`dryRun`) or apply every write in order: CLI shim,
- * skills, hooks, registry seed, launchd. */
+ * skills, hooks, registry seed. */
 export async function runInstall(
   container: Container,
   options: InstallOptions,
@@ -203,8 +195,6 @@ export async function runInstall(
   const skillNames = await discoverSkillNames(fs, paths.skillsSourceDir);
   const previousSkills = previousManifest?.skills ?? [];
   const registryExists = await fs.exists(paths.registryPath);
-  const plistTemplatePath = defaultPlistTemplatePath(repoRoot);
-  const plistTemplateExists = await fs.exists(plistTemplatePath);
 
   if (options.dryRun) {
     for (const name of skillNames) actionLines.push(`skill ${name}`);
@@ -214,9 +204,6 @@ export async function runInstall(
         : `would seed registry -> ${paths.registryPath}`,
     );
     actionLines.push(`would write CLI shim -> ${paths.shimPath}`);
-    if (plistTemplateExists) {
-      actionLines.push(`would install launchd agent -> ${defaultPlistPath(paths.home)}`);
-    }
     return { ok: true, value: { dryRun: true, actionLines, settingsDiffLines } };
   }
 
@@ -244,14 +231,6 @@ export async function runInstall(
   const seedOutcome = await seedRegistry(fs, repoRoot, paths.home);
   actionLines.push(seedOutcome.actionLine);
 
-  const launchdOutcome = await installLaunchd(fs, proc, repoRoot, paths.home, {
-    bunPath,
-    distPath: paths.distPath,
-    pathEnv: launchdPathEnv(paths.home),
-    logPath: defaultReflectorLogPath(paths.home),
-  });
-  if (launchdOutcome !== null) actionLines.push(launchdOutcome.actionLine);
-
   const settingsBackupPathForManifest = resolveManifestBackupPath(
     alreadyBackedUpSettings,
     didBackupSettings,
@@ -267,10 +246,6 @@ export async function runInstall(
     hookCommands: surgery.hookCommands,
     shimPath: paths.shimPath,
     skills: skillsOutcome.skills,
-    launchdPlistPath:
-      launchdOutcome !== null
-        ? defaultPlistPath(paths.home)
-        : (previousManifest?.launchdPlistPath ?? null),
     settingsBackupPath: settingsBackupPathForManifest,
     legacyPurgeDone: true,
   };
@@ -288,12 +263,12 @@ export type UninstallReport = {
  * `uninstall` — reverses exactly what the manifest records: purge our hook
  * groups from `settings.json` (by exact former command, never the legacy
  * substring — uninstall never touches anything it didn't itself register),
- * remove the shim, remove/restore each skill, tear down the launchd job,
+ * remove the shim, remove/restore each skill,
  * then delete the manifest itself. Registry and vault content are never
  * touched — those are the user's data, not an installed artifact.
  */
 export async function runUninstall(container: Container): Promise<UninstallReport> {
-  const { fs, proc } = container;
+  const { fs } = container;
   const home = container.env.home();
   const manifestPath = defaultManifestPath(home);
   const manifest = await loadManifest(fs, manifestPath);
@@ -330,14 +305,6 @@ export async function runUninstall(container: Container): Promise<UninstallRepor
     manifest.skills.map((skill) => restoreOneSkill(fs, skillsTargetDir, skill)),
   );
   for (const skill of manifest.skills) actionLines.push(`removed skill ${skill.name}`);
-
-  if (manifest.launchdPlistPath !== null) {
-    // SAFETY: `manifest.launchdPlistPath` is only ever written by
-    // `defaultPlistPath` (an `AbsPath`), round-tripped through JSON as a
-    // plain string.
-    await uninstallLaunchd(fs, proc, manifest.launchdPlistPath as AbsPath);
-    actionLines.push(`removed launchd agent -> ${manifest.launchdPlistPath}`);
-  }
 
   await fs.remove(manifestPath);
   actionLines.push("removed installed.json manifest");

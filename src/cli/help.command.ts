@@ -20,8 +20,6 @@ Usage:
   memory search <query> [--workspace ID] [--cwd PATH] [-k N] [--worklog]
   memory notes [--workspace ID] [--cwd PATH] [--folder F] [--json]
   memory commit [workspace] [-m MSG]         MANUAL git snapshot of a KB (local; no push)
-  memory reflect [--workspace ID] [--all] [--if-due] [--threshold-hours N]
-                 [--headless] [--force]
   memory doctor [--cwd PATH] [--prompt TEXT] self-test hooks and diagnose the install
   memory install [--dry-run] | uninstall     wire into (or out of) Claude Code
 
@@ -34,7 +32,6 @@ Environment:
   CCMEM_BLOCK_AFTER       nudges before the wrap-gate may block (default 2)
   CCMEM_BLOCK_DRIFT       dirty files before the wrap-gate may block (default 5)
   CCMEM_GATE_DISABLE      set to 1 to disable wrap-gate blocking entirely
-  CCMEM_CONSOLIDATE_CMD   command the reflector runs in tmux
   CCMEM_LOG_LEVEL         debug | info | warn | error (default warn)
 `;
 

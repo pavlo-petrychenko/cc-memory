@@ -12,9 +12,9 @@ import { makeProcFake } from "../../helpers/fakes/procFake.fake.ts";
 /**
  * `install`/`uninstall` (`src/install/install.command.ts`) ALWAYS take
  * an explicit fake `Container` here — never the real default `main.ts` uses
- * in production. `runInstall`/`runUninstall` call `launchctl bootout`/
- * `bootstrap` through `container.proc` (`install/launchd.ts`); on the real
- * container that is a REAL mutation of this machine's launchd state, which
+ * in production. `runInstall`/`runUninstall` write to real paths
+ * through the injected ports; on the real
+ * container that is a REAL mutation of this machine, which
  * a test must never trigger. `procFake` records every call instead of
  * spawning anything, so every assertion below is about what THIS command
  * decided to do, not about the real OS.
@@ -89,8 +89,6 @@ describe("install command (fake container — never the real default)", () => {
     expect(outcome.exitCode).toBe(0);
     const shimPath = shimPathFor(container);
     expect(await container.fs.exists(shimPath)).toBe(false);
-    // Never even asks `launchctl` anything under `--dry-run`.
-    expect(proc.calls.some((call) => call.command === "launchctl")).toBe(false);
   });
 
   test("install fails loudly (never writes anything) when bun can't be found", async () => {

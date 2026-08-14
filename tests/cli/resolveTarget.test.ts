@@ -30,7 +30,7 @@ const PRIMARY = raw("primary", "/repo/primary");
 const SECONDARY = raw("secondary", "/repo/secondary");
 const RAWS: readonly RawWorkspace[] = [PRIMARY, SECONDARY];
 
-describe("resolveTargetWorkspaces (reindex/commit/reflect)", () => {
+describe("resolveTargetWorkspaces (reindex/commit)", () => {
   test("id === null resolves every registered workspace, expanded, in registry order", () => {
     const result = resolveTargetWorkspaces(RAWS, HOME, null);
     expect(result.ok).toBe(true);

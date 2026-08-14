@@ -55,7 +55,6 @@ export type InstalledManifest = {
   readonly hookCommands: Readonly<Record<string, string>>;
   readonly shimPath: string;
   readonly skills: readonly SkillManifestEntry[];
-  readonly launchdPlistPath: string | null;
   /** The ONE pristine `settings.json` backup this installer ever makes,
    * before its first write. */
   readonly settingsBackupPath: string | null;
@@ -102,7 +101,6 @@ function parseManifest(value: JsonObject): InstalledManifest | null {
   const hookCommands = value["hookCommands"];
   const shimPath = value["shimPath"];
   const skills = value["skills"];
-  const launchdPlistPath = value["launchdPlistPath"];
   const settingsBackupPath = value["settingsBackupPath"];
   const legacyPurgeDone = value["legacyPurgeDone"];
 
@@ -138,7 +136,6 @@ function parseManifest(value: JsonObject): InstalledManifest | null {
     shimPath,
     // SAFETY: every element passed the `entry === null` check above.
     skills: parsedSkills as readonly SkillManifestEntry[],
-    launchdPlistPath: parseNullableString(launchdPlistPath),
     settingsBackupPath: parseNullableString(settingsBackupPath),
     legacyPurgeDone,
   };
@@ -171,7 +168,6 @@ export function serializeManifest(manifest: InstalledManifest): JsonObject {
     hookCommands: manifest.hookCommands,
     shimPath: manifest.shimPath,
     skills: manifest.skills.map(skillEntryToJson),
-    launchdPlistPath: manifest.launchdPlistPath,
     settingsBackupPath: manifest.settingsBackupPath,
     legacyPurgeDone: manifest.legacyPurgeDone,
   };

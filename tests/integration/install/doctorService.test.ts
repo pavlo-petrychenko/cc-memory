@@ -117,7 +117,7 @@ describe("doctor.service.ts — per-workspace diagnostics", () => {
   });
 });
 
-describe("doctor.service.ts — install/hooks/bun/launchd diagnostics", () => {
+describe("doctor.service.ts — install/hooks/bun diagnostics", () => {
   test("hooks is null (and bun unreported) when there is no installed.json manifest", async () => {
     const container = makeTestContainer({ proc: makeProcFake() });
 
@@ -141,7 +141,6 @@ describe("doctor.service.ts — install/hooks/bun/launchd diagnostics", () => {
       hookCommands: {},
       shimPath: "/home/test/.local/bin/memory",
       skills: [],
-      launchdPlistPath: null,
       settingsBackupPath: null,
       legacyPurgeDone: true,
     });
@@ -166,7 +165,6 @@ describe("doctor.service.ts — install/hooks/bun/launchd diagnostics", () => {
       hookCommands: {},
       shimPath: "/home/test/.local/bin/memory",
       skills: [],
-      launchdPlistPath: null,
       settingsBackupPath: null,
       legacyPurgeDone: true,
     });
@@ -215,7 +213,6 @@ describe("doctor.service.ts — install/hooks/bun/launchd diagnostics", () => {
       hookCommands: {},
       shimPath: "/home/test/.local/bin/memory",
       skills: [],
-      launchdPlistPath: null,
       settingsBackupPath: null,
       legacyPurgeDone: true,
     });
@@ -245,26 +242,6 @@ describe("doctor.service.ts — install/hooks/bun/launchd diagnostics", () => {
 
     const sessionStart = report.hooks?.find((hook) => hook.event === "SessionStart");
     expect(sessionStart?.upToDate).toBe(true);
-  });
-
-  test("reports launchd loaded/not-loaded from the real (procFake-scripted) launchctl", async () => {
-    const proc = makeProcFake();
-    proc.enqueue({
-      kind: "resolve",
-      result: { stdout: "501\n", stderr: "", exitCode: 0 },
-    });
-    proc.enqueue({
-      kind: "resolve",
-      result: { stdout: "", stderr: "not found", exitCode: 1 },
-    });
-    const container = makeTestContainer({ proc });
-
-    const report = await gatherDoctorReport(container, [], {
-      repoRoot: REPO_ROOT,
-      registryError: null,
-    });
-
-    expect(report.launchdLoaded).toBe(false);
   });
 
   test("flags an oversized ccmem.log", async () => {
@@ -310,7 +287,6 @@ describe("doctor.service.ts — renderDoctorReport", () => {
       ],
       recordedBunPath: "/usr/local/bin/bun",
       bunPathExists: true,
-      launchdLoaded: true,
       logSizeBytes: 2_000_000,
       logOversized: true,
       registryErrorMessage: null,
@@ -336,7 +312,6 @@ describe("doctor.service.ts — renderDoctorReport", () => {
       hooks: null,
       recordedBunPath: null,
       bunPathExists: false,
-      launchdLoaded: false,
       logSizeBytes: 0,
       logOversized: false,
       registryErrorMessage: null,

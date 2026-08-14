@@ -4,9 +4,12 @@ import type { FileSystem } from "../platform/fileSystem.port.ts";
 
 /**
  * `~/.local/bin/memory` — a 2-line `sh` shim with ABSOLUTE paths baked in.
+ *
  * A symlink to a `.js` file isn't executable on its own, and
- * `#!/usr/bin/env bun` would break under launchd's minimal `PATH` (the
- * reflector invokes `memory reflect` the same way this shim does).
+ * `#!/usr/bin/env bun` would only resolve when `bun` happens to be on the
+ * caller's `PATH` — which is not guaranteed for a process spawned by another
+ * tool. Baking in the absolute interpreter path makes the shim work from any
+ * environment.
  */
 
 const SHIM_HOME_RELATIVE_PATH = "~/.local/bin/memory";

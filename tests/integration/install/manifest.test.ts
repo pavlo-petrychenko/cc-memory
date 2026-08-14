@@ -54,7 +54,6 @@ describe("install/manifest.ts — ~/.claude/memory/installed.json", () => {
       },
       shimPath: "/home/test/.local/bin/memory",
       skills: [{ name: "remember", backedUp: true }],
-      launchdPlistPath: "/home/test/Library/LaunchAgents/dev.ccmemory.reflector.plist",
       settingsBackupPath: "/home/test/.claude/settings.json.pre-ccmemory.bak",
       legacyPurgeDone: true,
     });
@@ -70,13 +69,12 @@ describe("install/manifest.ts — ~/.claude/memory/installed.json", () => {
       },
       shimPath: "/home/test/.local/bin/memory",
       skills: [{ name: "remember", backedUp: true }],
-      launchdPlistPath: "/home/test/Library/LaunchAgents/dev.ccmemory.reflector.plist",
       settingsBackupPath: "/home/test/.claude/settings.json.pre-ccmemory.bak",
       legacyPurgeDone: true,
     });
   });
 
-  test("save then load round-trips null launchd/backup paths and an empty skills list", async () => {
+  test("save then load round-trips a null backup path and an empty skills list", async () => {
     const fs = makeFsMemoryFake();
     const path = defaultManifestPath(HOME);
     await saveManifest(fs, path, {
@@ -87,13 +85,11 @@ describe("install/manifest.ts — ~/.claude/memory/installed.json", () => {
       hookCommands: {},
       shimPath: "/home/test/.local/bin/memory",
       skills: [],
-      launchdPlistPath: null,
       settingsBackupPath: null,
       legacyPurgeDone: false,
     });
 
     const loaded = await loadManifest(fs, path);
-    expect(loaded?.launchdPlistPath).toBeNull();
     expect(loaded?.settingsBackupPath).toBeNull();
     expect(loaded?.skills).toEqual([]);
     expect(loaded?.legacyPurgeDone).toBe(false);
@@ -112,7 +108,6 @@ describe("install/manifest.ts — ~/.claude/memory/installed.json", () => {
         hookCommands: {},
         shimPath: "/shim",
         skills: [{ name: "x" }], // missing `backedUp`
-        launchdPlistPath: null,
         settingsBackupPath: null,
         legacyPurgeDone: false,
       }),
@@ -134,7 +129,6 @@ describe("install/manifest.ts — ~/.claude/memory/installed.json", () => {
         hookCommands: { SessionStart: 42 },
         shimPath: "/shim",
         skills: [],
-        launchdPlistPath: null,
         settingsBackupPath: null,
         legacyPurgeDone: false,
       }),

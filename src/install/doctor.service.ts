@@ -5,7 +5,6 @@ import type { Container } from "../platform/container.ts";
 import { buildIndex } from "../retrieval/build.service.ts";
 import type { RegistryError } from "../workspace/registry.service.ts";
 import { isJsonArray, isJsonObject, type JsonObject } from "./json.service.ts";
-import { isLaunchdLoaded } from "./launchd.service.ts";
 import { defaultManifestPath, loadManifest } from "./manifest.service.ts";
 import { defaultDistPath } from "./run.service.ts";
 import {
@@ -19,7 +18,7 @@ import {
 /**
  * `memory doctor` checks the state a healthy install actually depends on: the
  * registry, every workspace's vault + index, `settings.json`'s hook
- * registrations, the recorded `bun` binary, the launchd job, and file sizes
+ * registrations, the recorded `bun` binary, and file sizes
  * that tend to grow unbounded.
  *
  * `doctor.command.ts` keeps printing the original two lines (registry status,
@@ -155,7 +154,6 @@ export type DoctorReport = {
   readonly hooks: readonly HookRegistrationDiagnostic[] | null;
   readonly recordedBunPath: string | null;
   readonly bunPathExists: boolean;
-  readonly launchdLoaded: boolean;
   readonly logSizeBytes: number;
   readonly logOversized: boolean;
   readonly registryErrorMessage: string | null;
@@ -215,7 +213,6 @@ export async function gatherDoctorReport(
     });
   }
 
-  const launchdLoaded = await isLaunchdLoaded(container.proc);
   const logPath = expandPath(CCMEM_LOG_HOME_RELATIVE_PATH, home);
   const logSizeBytes = await fileSizeOrZero(container, logPath);
 
@@ -224,7 +221,6 @@ export async function gatherDoctorReport(
     hooks,
     recordedBunPath,
     bunPathExists,
-    launchdLoaded,
     logSizeBytes,
     logOversized: logSizeBytes > LOG_SIZE_WARNING_BYTES,
     registryErrorMessage:
@@ -264,9 +260,7 @@ export function renderDoctorReport(report: DoctorReport): readonly string[] {
     for (const hook of report.hooks) {
       lines.push(`hook ${hook.event}: ${hook.upToDate ? "ok" : "STALE"}`);
     }
-    lines.push(
-      `launchd (dev.ccmemory.reflector): ${report.launchdLoaded ? "loaded" : "NOT LOADED"}`,
-    );
+    lines.push();
   }
 
   lines.push(

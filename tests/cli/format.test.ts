@@ -12,7 +12,6 @@ import {
   formatNoNotes,
   formatNoteLine,
   formatNoWorkspaceForCwd,
-  formatReflectNotImplemented,
   formatRegistryStatus,
   formatReindexLine,
   formatResolveLines,
@@ -153,12 +152,6 @@ describe("format.ts", () => {
   test("formatHookNotImplemented", () => {
     expect(formatHookNotImplemented("session-start")).toBe(
       "  session-start: (not implemented yet)",
-    );
-  });
-
-  test("formatReflectNotImplemented", () => {
-    expect(formatReflectNotImplemented("primary")).toBe(
-      "primary: reflect not implemented yet (P8)",
     );
   });
 });

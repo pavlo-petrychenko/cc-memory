@@ -9,7 +9,7 @@ export type ProcResult = {
 
 /**
  * Options for one `Proc.run` call. All optional: `input` (text piped to
- * stdin — used by the reflector's `claude -p` call), `timeoutMs` (every call
+ * stdin), `timeoutMs` (every call
  * site in this project sets one explicitly; see `git.port.ts`'s per-method
  * timeouts), `cwd` (`-C cwd` is passed as an argv element for git, but other
  * commands rely on process cwd), `env` (additive to the process environment,
@@ -26,7 +26,7 @@ export type ProcRunOptions = {
  * Spawn one child process and capture its output. The sole seam between the
  * codebase and `child_process`/`Bun.spawn` — `Git` is implemented over this
  * (never `child_process` directly) so git interactions are assertable, and the
- * reflector's `claude -p` and tmux calls go through it too.
+ * every subprocess this project runs goes through it.
  *
  * **Timeout is a rejection, not a result field**: a non-zero exit is NOT a
  * rejection here, only a `ProcResult.exitCode !== 0`, but a timeout or missing

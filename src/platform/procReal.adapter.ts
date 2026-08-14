@@ -30,12 +30,12 @@ export function makeProcRealAdapter(): Proc {
         spawnOptions.env = { ...process.env, ...options.env };
 
       // `Bun.spawn` THROWS when the binary does not exist, rather than resolving
-      // with a failure, but a missing optional tool is normal here: `launchctl`
-      // does not exist off macOS, and `tmux`/`claude` may not be installed.
-      // Catching the throw and reporting it as a normal non-zero exit lets
-      // `memory doctor` report "launchd: not loaded" instead of crashing. 127
-      // is the shell's conventional "command not found" code, so callers that
-      // already check `exitCode !== 0` handle it without knowing anything new.
+      // with a failure — but a missing tool is a normal condition here, not an
+      // exceptional one: `git` need not be installed, and every caller already
+      // treats a non-zero exit as "this did not work". Catching the throw and
+      // reporting exit code 127, the shell's conventional "command not found",
+      // lets those callers handle it without knowing anything new, and keeps a
+      // missing binary from crashing a command mid-run.
       let child: Bun.Subprocess<"ignore" | "pipe", "pipe", "pipe">;
       try {
         child = Bun.spawn([command, ...args], spawnOptions);

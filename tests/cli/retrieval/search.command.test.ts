@@ -26,7 +26,6 @@ const CONFIG = {
   blockAfter: 2,
   blockDrift: 5,
   gateDisabled: false,
-  consolidateCmd: "claude --dangerously-skip-permissions",
   logLevel: LogLevel.Warn,
 };
 

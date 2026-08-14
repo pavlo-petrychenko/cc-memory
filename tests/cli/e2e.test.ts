@@ -205,26 +205,6 @@ describe("CLI e2e against the built dist/memory.js", () => {
     }
   });
 
-  test("reflect runs the real reflector against the built binary", async () => {
-    const { tempDir, fixture } = setUpFixture();
-    try {
-      const result = await runBuiltCli(
-        ["reflect", "--workspace", "primary", "--headless"],
-        {
-          env: fixture.env,
-          cwd: primaryCwd(fixture),
-        },
-      );
-      expect(result.exitCode).toBe(0);
-      // The fixture's worklogs hold only `STATE.md` (gather.ts skips it),
-      // so there is nothing to promote — the real, honest outcome, never a
-      // fake consolidation.
-      expect(result.stdout).toBe("primary: no candidates since last run\n");
-    } finally {
-      tempDir.remove();
-    }
-  });
-
   test("hook session-start runs for real against the built artifact (fail-open: exit 0)", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
@@ -266,15 +246,15 @@ describe("CLI e2e against the built dist/memory.js", () => {
 
   /**
    * `install` (no `--dry-run`) is DELIBERATELY never spawned here, even
-   * against a faked `env.HOME`: `install/launchd.ts` calls
-   * `launchctl bootout`/`bootstrap gui/<uid>/…`, and launchd's domain is
+   * against a faked `env.HOME`: the installer writes to real paths:
+   * settings.json, the CLI shim and the skills directory, and those are
    * keyed by the REAL system user id, not by `$HOME` — a faked home only
    * protects file writes, not this one. Spawning the real built binary here
    * (rather than calling `install()` in-process with an injected
    * `procFake`, as `tests/cli/commands/install.command.test.ts` does) would
-   * genuinely register/replace a launchd job on whatever machine runs this
+   * genuinely rewrite the real configuration of whatever machine runs this
    * suite. `--dry-run` returns before any of `settings.json`/shim/skills/
-   * registry/launchd ever get touched, which is what makes it the one
+   * registry ever get touched, which is what makes it the one
    * `install` invocation this file may safely spawn.
    */
   test("install --dry-run reports success without writing anything", async () => {

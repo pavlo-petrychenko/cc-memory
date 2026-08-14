@@ -27,8 +27,6 @@ export type Config = {
   readonly blockDrift: number;
   /** `CCMEM_GATE_DISABLE` — true only when set to exactly `"1"`. */
   readonly gateDisabled: boolean;
-  /** `CCMEM_CONSOLIDATE_CMD` — the `claude` invocation the reflector spawns in tmux. */
-  readonly consolidateCmd: string;
   /** `CCMEM_LOG_LEVEL` — controls the rotating log's verbosity. */
   readonly logLevel: LogLevel;
 };
@@ -37,7 +35,6 @@ const INJECT_MIN_SCORE_DEFAULT = 0.2;
 const LINK_BOOST_DEFAULT = 0.003;
 const BLOCK_AFTER_DEFAULT = 2;
 const BLOCK_DRIFT_DEFAULT = 5;
-const CONSOLIDATE_CMD_DEFAULT = "claude --dangerously-skip-permissions";
 
 /**
  * A malformed numeric env var falls back to its default rather than propagating
@@ -72,7 +69,6 @@ export function parseConfig(env: EnvSnapshot): Config {
     blockAfter: parseNumber(env["CCMEM_BLOCK_AFTER"], BLOCK_AFTER_DEFAULT),
     blockDrift: parseNumber(env["CCMEM_BLOCK_DRIFT"], BLOCK_DRIFT_DEFAULT),
     gateDisabled: env["CCMEM_GATE_DISABLE"] === "1",
-    consolidateCmd: env["CCMEM_CONSOLIDATE_CMD"] ?? CONSOLIDATE_CMD_DEFAULT,
     logLevel: parseLogLevel(env["CCMEM_LOG_LEVEL"]),
   };
 }

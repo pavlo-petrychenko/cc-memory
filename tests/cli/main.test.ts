@@ -34,7 +34,6 @@ const CONFIG = {
   blockAfter: 2,
   blockDrift: 5,
   gateDisabled: false,
-  consolidateCmd: "claude --dangerously-skip-permissions",
   logLevel: LogLevel.Warn,
 };
 
@@ -125,12 +124,6 @@ describe("runCli dispatch", () => {
     expect(outcome).toEqual({ exitCode: 1, stderrMessage: "no such workspace: ghost" });
   });
 
-  test("reflect with an unknown workspace dispatches to reflect", async () => {
-    const container = makeTestContainer({ stdio: makeIoFake() });
-    const outcome = await runCli(["reflect", "--workspace", "ghost"], container, CONFIG);
-    expect(outcome).toEqual({ exitCode: 1, stderrMessage: "no such workspace: ghost" });
-  });
-
   test("doctor dispatches to doctor", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
@@ -168,7 +161,7 @@ describe("runCli dispatch", () => {
    * observe a later reassignment in the same process, so doing so would
    * turn this test into a real, unwanted `memory install`/`uninstall` run
    * against this machine's actual `~/.claude/settings.json`,
-   * `~/.local/bin/memory` and launchd state.
+   * `~/.local/bin/memory`.
    *
    * So each case below is picked because it is safe REGARDLESS of that
    * limitation: `install --dry-run` structurally never writes anything
@@ -177,7 +170,7 @@ describe("runCli dispatch", () => {
    * deciding what to do — so the second test asserts that file does NOT
    * exist first and refuses to run otherwise, rather than silently trusting
    * that assumption forever. Full behavioral coverage of both functions —
-   * including every unsafe path (a real write, a real `launchctl` call) —
+   * including every unsafe path (a real write to the user home) —
    * lives in `tests/cli/commands/install.command.test.ts`, entirely against
    * an explicit fake `Container` (`procFake`), never the real default.
    */

@@ -2,10 +2,6 @@ import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "../../../src/core/AbsPath.ts";
 import {
-  defaultPlistPath,
-  defaultPlistTemplatePath,
-} from "../../../src/install/launchd.service.ts";
-import {
   defaultManifestPath,
   loadManifest,
 } from "../../../src/install/manifest.service.ts";
@@ -26,7 +22,7 @@ import { makeProcFake, type ProcFake } from "../../helpers/fakes/procFake.fake.t
 /**
  * `run.ts`'s `runInstall`/`runUninstall` orchestration — every scenario here
  * runs against `makeTestContainer`'s in-memory `fs` and a `procFake`, NEVER
- * a real `bun`/`launchctl`. See `tests/cli/commands/install.command.test.ts`'s
+ * a real `bun`. See `tests/cli/install/install.command.test.ts`'s
  * doc comment for why that distinction matters on THIS machine specifically.
  */
 
@@ -37,7 +33,6 @@ const REPO_ROOT = "/repo" as AbsPath;
 const OLD_REPO_ROOT = "/old-repo" as AbsPath;
 // SAFETY: same reasoning as `REPO_ROOT` above.
 const REAL_BUN_PATH = "/usr/local/bin/bun" as AbsPath;
-const PLIST_TEMPLATE = "<plist><string>@BUN@</string><string>@DIST@</string></plist>";
 
 /** Join fixed test literals into an `AbsPath` — every call site below
  * concatenates already-fixed fixtures, never a real filesystem path. */
@@ -67,25 +62,12 @@ async function setUpBunResolution(container: Container, proc: ProcFake): Promise
   await container.fs.writeFile(defaultRegistryPath(container.env.home()), "");
 }
 
-function launchdResponses(proc: ProcFake, bootstrapExitCode = 0): void {
-  proc.enqueue({ kind: "resolve", result: { stdout: "501\n", stderr: "", exitCode: 0 } }); // id -u
-  proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } }); // bootout
-  proc.enqueue({
-    kind: "resolve",
-    result: { stdout: "", stderr: "", exitCode: bootstrapExitCode },
-  }); // bootstrap
-}
-
 /** A full, real install run against `fs`/`env` already seeded on `base` —
  * used to build a second "rerun" container that shares filesystem + home but
  * gets its OWN scripted `proc`, since a `ProcFake`'s queue is consumed by
  * the run it was built for. */
 function rerunContainer(base: Container, proc: ProcFake): Container {
   return makeTestContainer({ fs: base.fs, env: base.env, proc });
-}
-
-async function seedPlistTemplate(container: Container, repoRoot: AbsPath): Promise<void> {
-  await container.fs.writeFile(defaultPlistTemplatePath(repoRoot), PLIST_TEMPLATE);
 }
 
 describe("install/run.ts — runInstall error paths", () => {
@@ -136,11 +118,10 @@ describe("install/run.ts — runInstall error paths", () => {
 });
 
 describe("install/run.ts — runInstall --dry-run", () => {
-  test("writes nothing at all and never calls launchctl", async () => {
+  test("writes nothing at all", async () => {
     const proc = makeProcFake();
     const container = makeTestContainer({ proc });
     await setUpBunResolution(container, proc);
-    await seedPlistTemplate(container, REPO_ROOT);
 
     const result = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: true });
 
@@ -148,7 +129,7 @@ describe("install/run.ts — runInstall --dry-run", () => {
     if (!result.ok) return;
     expect(result.value.dryRun).toBe(true);
     expect(result.value.actionLines).toContain(
-      `would install launchd agent -> ${defaultPlistPath(container.env.home())}`,
+      `would write CLI shim -> ${defaultShimPath(container.env.home())}`,
     );
     expect(await container.fs.exists(defaultSettingsPath(container.env.home()))).toBe(
       false,
@@ -157,7 +138,6 @@ describe("install/run.ts — runInstall --dry-run", () => {
     expect(await container.fs.exists(defaultManifestPath(container.env.home()))).toBe(
       false,
     );
-    expect(proc.calls.some((call) => call.command === "launchctl")).toBe(false);
   });
 });
 
@@ -166,8 +146,6 @@ describe("install/run.ts — runInstall full apply", () => {
     const proc = makeProcFake();
     const container = makeTestContainer({ proc });
     await setUpBunResolution(container, proc);
-    launchdResponses(proc);
-    await seedPlistTemplate(container, REPO_ROOT);
 
     const result = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
 
@@ -190,8 +168,6 @@ describe("install/run.ts — runInstall full apply", () => {
     const firstProc = makeProcFake();
     const container = makeTestContainer({ proc: firstProc });
     await setUpBunResolution(container, firstProc);
-    launchdResponses(firstProc);
-    await seedPlistTemplate(container, REPO_ROOT);
 
     const first = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
     expect(first.ok).toBe(true);
@@ -202,7 +178,6 @@ describe("install/run.ts — runInstall full apply", () => {
     const secondProc = makeProcFake();
     const secondContainer = rerunContainer(container, secondProc);
     await setUpBunResolution(secondContainer, secondProc);
-    launchdResponses(secondProc);
     const second = await runInstall(secondContainer, {
       repoRoot: REPO_ROOT,
       dryRun: false,
@@ -226,8 +201,6 @@ describe("install/run.ts — runInstall full apply", () => {
     const proc = makeProcFake();
     const container = makeTestContainer({ proc });
     await setUpBunResolution(container, proc);
-    launchdResponses(proc);
-    await seedPlistTemplate(container, REPO_ROOT);
     await container.fs.writeFile(
       defaultSettingsPath(container.env.home()),
       JSON.stringify({
@@ -260,8 +233,6 @@ describe("install/run.ts — runInstall full apply", () => {
     const firstProc = makeProcFake();
     const container = makeTestContainer({ proc: firstProc });
     await setUpBunResolution(container, firstProc);
-    launchdResponses(firstProc);
-    await seedPlistTemplate(container, OLD_REPO_ROOT);
     const firstInstall = await runInstall(container, {
       repoRoot: OLD_REPO_ROOT,
       dryRun: false,
@@ -271,8 +242,6 @@ describe("install/run.ts — runInstall full apply", () => {
     const secondProc = makeProcFake();
     const movedContainer = rerunContainer(container, secondProc);
     await setUpBunResolution(movedContainer, secondProc);
-    launchdResponses(secondProc);
-    await seedPlistTemplate(movedContainer, REPO_ROOT);
     const secondInstall = await runInstall(movedContainer, {
       repoRoot: REPO_ROOT,
       dryRun: false,
@@ -295,8 +264,6 @@ describe("install/run.ts — runInstall full apply", () => {
     const firstProc = makeProcFake();
     const container = makeTestContainer({ proc: firstProc });
     await setUpBunResolution(container, firstProc);
-    launchdResponses(firstProc);
-    await seedPlistTemplate(container, REPO_ROOT);
     await container.fs.writeFile(
       defaultSettingsPath(container.env.home()),
       JSON.stringify({
@@ -325,7 +292,6 @@ describe("install/run.ts — runInstall full apply", () => {
     const secondProc = makeProcFake();
     const secondContainer = rerunContainer(container, secondProc);
     await setUpBunResolution(secondContainer, secondProc);
-    launchdResponses(secondProc);
     const second = await runInstall(secondContainer, {
       repoRoot: REPO_ROOT,
       dryRun: false,
@@ -354,7 +320,6 @@ describe("install/run.ts — runUninstall", () => {
     const installProc = makeProcFake();
     const container = makeTestContainer({ proc: installProc });
     await setUpBunResolution(container, installProc);
-    launchdResponses(installProc);
     const installed = await runInstall(container, { repoRoot: REPO_ROOT, dryRun: false });
     expect(installed.ok).toBe(true);
 
@@ -376,7 +341,6 @@ describe("install/run.ts — runUninstall", () => {
     const installProc = makeProcFake();
     const container = makeTestContainer({ proc: installProc });
     await setUpBunResolution(container, installProc);
-    launchdResponses(installProc);
     await container.fs.writeFile(
       defaultSettingsPath(container.env.home()),
       JSON.stringify({

@@ -55,7 +55,6 @@ describe("help output", () => {
       "memory search",
       "memory notes",
       "memory commit",
-      "memory reflect",
       "memory doctor",
       "memory install",
     ]) {
@@ -74,7 +73,6 @@ describe("help output", () => {
       "CCMEM_BLOCK_AFTER",
       "CCMEM_BLOCK_DRIFT",
       "CCMEM_GATE_DISABLE",
-      "CCMEM_CONSOLIDATE_CMD",
       "CCMEM_LOG_LEVEL",
     ]) {
       expect(written).toContain(variable);

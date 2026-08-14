@@ -136,9 +136,3 @@ export function formatCwdResolution(
 export function formatHookNotImplemented(name: string): string {
   return `  ${name}: (not implemented yet)`;
 }
-
-/** The reflect stub's honest per-workspace line — never claims a
- * consolidation ran. */
-export function formatReflectNotImplemented(id: string): string {
-  return `${id}: reflect not implemented yet (P8)`;
-}

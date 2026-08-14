@@ -63,10 +63,10 @@ describe("procReal adapter", () => {
 });
 
 /**
- * A missing binary must be a RESULT, not an exception. `launchctl` does not exist
+ * A missing binary must be a RESULT, not an exception: a tool this project shells
  * off macOS and `tmux`/`claude` may not be installed, so a spawn failure must
  * surface as an exit code rather than crash the caller — `memory doctor` needs to
- * be able to report "launchd: not loaded" instead of crashing on Linux.
+ * keep working instead of crashing mid-command.
  */
 describe("a missing binary", () => {
   test("resolves with exit code 127 instead of throwing", async () => {

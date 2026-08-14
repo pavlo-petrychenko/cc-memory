@@ -21,7 +21,6 @@ export enum CliCommand {
   Search = "search",
   Notes = "notes",
   Commit = "commit",
-  Reflect = "reflect",
   Doctor = "doctor",
   Hook = "hook",
   Install = "install",
@@ -82,16 +81,6 @@ export type CommitArgs = {
   readonly message: string | null;
 };
 
-export type ReflectArgs = {
-  readonly command: CliCommand.Reflect;
-  readonly workspace: string | null;
-  readonly all: boolean;
-  readonly ifDue: boolean;
-  readonly thresholdHours: number;
-  readonly headless: boolean;
-  readonly force: boolean;
-};
-
 export type DoctorArgs = {
   readonly command: CliCommand.Doctor;
   readonly cwd: string | null;
@@ -120,7 +109,6 @@ export type ParsedArgs =
   | SearchArgs
   | NotesArgs
   | CommitArgs
-  | ReflectArgs
   | DoctorArgs
   | HookArgs
   | InstallArgs
@@ -293,20 +281,6 @@ function parseCommit(tokens: readonly string[]): Result<ParsedArgs, ArgsError> {
   });
 }
 
-function parseReflect(tokens: readonly string[]): Result<ParsedArgs, ArgsError> {
-  const thresholdResult = parseIntFlag(tokens, "--threshold-hours", 20);
-  if (!thresholdResult.ok) return fail(thresholdResult.error);
-  return ok({
-    command: CliCommand.Reflect,
-    workspace: findFlagValue(tokens, "--workspace"),
-    all: hasFlag(tokens, "--all"),
-    ifDue: hasFlag(tokens, "--if-due"),
-    thresholdHours: thresholdResult.value,
-    headless: hasFlag(tokens, "--headless"),
-    force: hasFlag(tokens, "--force"),
-  });
-}
-
 function parseDoctor(tokens: readonly string[]): Result<ParsedArgs, ArgsError> {
   return ok({
     command: CliCommand.Doctor,
@@ -345,8 +319,6 @@ export function parseArgs(argv: readonly string[]): Result<ParsedArgs, ArgsError
       return parseNotes(rest);
     case "commit":
       return parseCommit(rest);
-    case "reflect":
-      return parseReflect(rest);
     case "doctor":
       return parseDoctor(rest);
     case "hook":

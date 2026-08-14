@@ -4,7 +4,6 @@ import { doctor } from "../install/doctor.command.ts";
 import { install, uninstall } from "../install/install.command.ts";
 import type { Container } from "../platform/container.ts";
 import { makeRealContainer } from "../platform/container.ts";
-import { reflect } from "../reflect/reflect.command.ts";
 import { notes } from "../retrieval/notes.command.ts";
 import { reindex } from "../retrieval/reindex.command.ts";
 import { search } from "../retrieval/search.command.ts";
@@ -48,8 +47,6 @@ async function dispatch(
       return notes(container, parsed);
     case CliCommand.Commit:
       return commit(container, parsed);
-    case CliCommand.Reflect:
-      return reflect(container, parsed);
     case CliCommand.Doctor:
       return doctor(container, parsed);
     case CliCommand.Hook:
