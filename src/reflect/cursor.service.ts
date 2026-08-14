@@ -4,32 +4,25 @@ import type { FileSystem } from "../platform/fileSystem.port.ts";
 import { proposalsDir } from "../worklog/worklog.service.ts";
 
 /**
- * The reflector's due-check and candidate-gathering cursors
- * (`bin/reflector.py:30-49`, reworked per bugfix #3). Python kept ONE
- * timestamp (`.last-reflect`) driving both `--if-due` and `gather`'s `since`
- * window, and stamped it the moment a tmux consolidation session SPAWNED —
- * not when anyone actually looked at it. An unattended night therefore
- * advanced `since` past every candidate in that session's brief, and the
- * live `reflector.log` shows exactly that ("replaced stale consolidation
- * session" night after night, 43 candidates lost on 2026-08-07).
- *
- * This splits the single cursor in two: `lastRun` drives `--if-due` and
- * advances on every completed invocation (mirroring every one of Python's
- * `stamp()` call sites except the buggy one); `lastConsolidated` drives
- * `gather`'s `since` and advances ONLY when candidates were actually durably
- * recorded somewhere a human can act on them — a headless proposals file, or
- * a previous brief observed fully marked `[x]`/`[~]`. Net effect: an
- * unattended tmux session re-offers the same candidates tomorrow instead of
- * silently dropping them.
+ * The reflector's due-check and candidate-gathering cursors. Two separate
+ * timestamps rather than one: `lastRun` drives `--if-due` and advances on
+ * every completed invocation; `lastConsolidated` drives `gather`'s `since`
+ * window and advances ONLY when candidates were actually durably recorded
+ * somewhere a human can act on them — a headless proposals file, or a
+ * previous brief observed fully marked `[x]`/`[~]`. If both cursors advanced
+ * together on every spawn, an unattended tmux session that merely handed off
+ * a brief (without anyone reviewing it) would silently drop every candidate
+ * in it the next time `gather` runs; keeping them separate means such a
+ * session re-offers the same candidates tomorrow instead.
  */
 
-const LEGACY_CURSOR_FILENAME = ".last-reflect"; // bin/reflector.py:31 — pre-fix single timestamp, in SECONDS
-const LAST_RUN_FILENAME = ".reflect-last-run"; // bugfix #3
-const LAST_CONSOLIDATED_FILENAME = ".reflect-last-consolidated"; // bugfix #3
+const LEGACY_CURSOR_FILENAME = ".last-reflect"; // pre-split single timestamp, in SECONDS
+const LAST_RUN_FILENAME = ".reflect-last-run";
+const LAST_CONSOLIDATED_FILENAME = ".reflect-last-consolidated";
 const MS_PER_HOUR = 3_600_000;
 const SECONDS_PER_MS = 1000;
 
-const CANDIDATES_HEADING = "## Candidates"; // renderBrief, proposals.renderer.ts
+const CANDIDATES_HEADING = "## Candidates"; // matches renderBrief's own heading
 const HEADING_PREFIX = "## ";
 const CHECKED_CANDIDATE_LINE = /^-\s*\[[xX~]\]\s/;
 const BRIEF_FILENAME_PREFIX = "_brief-";
@@ -49,9 +42,7 @@ function parentDirectory(path: AbsPath): AbsPath {
 
 function cursorPath(workspace: Workspace, filename: string): AbsPath {
   // SAFETY: `parentDirectory(...)` is already an absolute, normalized
-  // `AbsPath`; appending a fixed literal filename keeps it that way — the
-  // same reasoning `bin/reflector.py:31`'s original `last_reflect_path` join
-  // relied on.
+  // `AbsPath`; appending a fixed literal filename keeps it that way.
   return `${parentDirectory(workspace.indexDb)}/${filename}` as AbsPath;
 }
 
@@ -74,8 +65,8 @@ async function writeTimestampFile(
   await fs.writeFile(path, String(valueMs));
 }
 
-/** The legacy cursor's value, converted from Python's `time.time()` seconds
- * to this codebase's millisecond convention (`Clock.nowMs`). */
+/** The legacy cursor's value, converted from seconds to this codebase's
+ * millisecond convention (`Clock.nowMs`). */
 async function readLegacyCursorMs(
   fs: FileSystem,
   workspace: Workspace,
@@ -89,11 +80,11 @@ async function readLegacyCursorMs(
 
 /**
  * One-time migration off the single `.last-reflect` timestamp: if neither new
- * cursor has been written yet but a Python install left one, seed BOTH
- * `lastRun` and `lastConsolidated` from it, so the very first TS run behaves
- * exactly like the last Python run would have. A no-op on a genuinely fresh
- * workspace (no legacy file) or one already migrated (either new file
- * present).
+ * cursor has been written yet but a legacy install left one, seed BOTH
+ * `lastRun` and `lastConsolidated` from it, so the first run under the split
+ * cursors behaves exactly like the last run under the single cursor would
+ * have. A no-op on a genuinely fresh workspace (no legacy file) or one
+ * already migrated (either new file present).
  */
 export async function migrateLegacyCursor(
   fs: FileSystem,
@@ -113,8 +104,8 @@ export async function migrateLegacyCursor(
   );
 }
 
-/** `is_due` (`bin/reflector.py:34-43`): due when there's no `lastRun` cursor
- * yet, or the elapsed time since it is at least `thresholdHours`. */
+/** Due when there's no `lastRun` cursor yet, or the elapsed time since it is
+ * at least `thresholdHours`. */
 export async function isDue(
   fs: FileSystem,
   workspace: Workspace,
@@ -126,9 +117,9 @@ export async function isDue(
   return nowMs - lastRunMs >= thresholdHours * MS_PER_HOUR;
 }
 
-/** Advances on every completed run (bugfix #3) — every call site of Python's
- * old `stamp()` except the one that caused the bug (a fresh tmux spawn no
- * longer stamps `lastConsolidated`, only this). */
+/** Advances on every completed run, regardless of whether candidates were
+ * durably recorded — a fresh tmux spawn stamps only this, never
+ * `lastConsolidated`. */
 export async function stampLastRun(
   fs: FileSystem,
   workspace: Workspace,
@@ -137,8 +128,8 @@ export async function stampLastRun(
   await writeTimestampFile(fs, cursorPath(workspace, LAST_RUN_FILENAME), nowMs);
 }
 
-/** `gather`'s `since` (`bin/reflector.py:275-281`): `null` (the caller's `0`,
- * "everything") when no candidates have ever been consolidated yet. */
+/** `gather`'s `since`: `null` (the caller's `0`, "everything") when no
+ * candidates have ever been consolidated yet. */
 export async function readLastConsolidatedMs(
   fs: FileSystem,
   workspace: Workspace,
@@ -147,7 +138,7 @@ export async function readLastConsolidatedMs(
 }
 
 /** Advances only when candidates were actually durably recorded somewhere a
- * human can act on them (bugfix #3) — see the module doc comment. */
+ * human can act on them — see the module doc comment. */
 export async function stampLastConsolidated(
   fs: FileSystem,
   workspace: Workspace,
@@ -159,12 +150,11 @@ export async function stampLastConsolidated(
 /**
  * Whether every candidate bullet in a brief (`renderBrief`,
  * `proposals.renderer.ts`) has been marked done by hand: `[x]` (applied) or
- * `[~]` (rejected) — the same two markers `consolidate-review/SKILL.md` step
- * 4 uses for the proposals file, adopted here as the signal that an
- * unattended interactive session was in fact attended and worked through.
- * `renderBrief`'s own bullets carry no checkbox (frozen, C4) — an untouched
- * brief is therefore always "unprocessed"; only manual editing can make this
- * true.
+ * `[~]` (rejected) — the same two markers the proposals file uses, adopted
+ * here as the signal that an unattended interactive session was in fact
+ * attended and worked through. `renderBrief`'s own bullets carry no
+ * checkbox — an untouched brief is therefore always "unprocessed"; only
+ * manual editing can make this true.
  */
 export function isBriefFullyProcessed(briefContent: string): boolean {
   const lines = briefContent.split("\n");

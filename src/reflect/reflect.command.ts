@@ -8,17 +8,12 @@ import type { Container } from "../platform/container.ts";
 import { runReflect } from "./run.service.ts";
 
 /**
- * `cmd_reflect` (`bin/memory:195-207`): resolve targets exactly like
- * `reindex`/`commit` (`resolveTargetWorkspaces`), then run the reflector
- * (`reflect/run.ts`'s `runReflect`, P8) for each. Python's own
- * `cmd_reflect` spawns `reflector.py` as a subprocess per target and never
- * inspects its exit code — `subprocess.run(argv)`'s result is discarded — so
- * this mirrors that: every resolved workspace always yields `CLI_SUCCESS`
- * regardless of what the reflector itself printed. `--all` is accepted
- * (`ReflectArgs.all`) but never consulted, matching Python's own parser: the
- * flag exists in `bin/memory:285` but `_targets` already defaults to every
- * workspace when `--workspace` is omitted, so `--all` has always been a
- * no-op there too.
+ * Resolves targets exactly like `reindex`/`commit`
+ * (`resolveTargetWorkspaces`), then runs the reflector (`runReflect`) for
+ * each. Every resolved workspace always yields `CLI_SUCCESS` regardless of
+ * what the reflector itself printed. `--all` is accepted (`ReflectArgs.all`)
+ * but never consulted: `_targets` already defaults to every workspace when
+ * `--workspace` is omitted, so `--all` is a no-op.
  */
 export async function reflect(
   container: Container,

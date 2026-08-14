@@ -4,20 +4,20 @@ import type { RelatedNote, ReflectorDecision } from "./Reflector.ts";
 import { ReflectorAction } from "./Reflector.ts";
 
 /**
- * Renders the reflector's consolidation prompt, proposals file and brief —
- * `bin/reflector.py:99-125,147-198`. Agent-visible text (C4/C2-adjacent): the
- * `PROMPT` template and both file formats are copied verbatim, including the
- * `%s` substitution order (candidates, then related notes).
+ * Renders the reflector's consolidation prompt, proposals file and brief.
+ * This text is agent-visible and vault-persisted, so its exact wording and
+ * substitution order (candidates, then related notes) must stay stable.
  */
 
-const IMPORTANCE_MIN = 4; // bin/reflector.py:27
+const IMPORTANCE_MIN = 4;
 
 /**
- * Python's `str.splitlines()` treats a trailing line break as ending the last
- * line rather than starting an empty one, and returns `[]` for `""` — unlike
- * `String.prototype.split` on a line-break regex, which would emit a spurious
- * trailing (or sole) empty string. Only matters where that phantom line would
- * be visible in the rendered output, as it is inside the proposals' body fence.
+ * Splits `text` into lines the way `str.splitlines()` does: a trailing line
+ * break ends the last line rather than starting an empty one, and `""`
+ * yields `[]` — unlike a plain `String.prototype.split` on a line-break
+ * regex, which would emit a spurious trailing (or sole) empty string. Only
+ * matters where that phantom line would be visible in the rendered output,
+ * as it is inside the proposals' body fence.
  */
 function pythonSplitlines(text: string): readonly string[] {
   if (text === "") return [];
@@ -35,7 +35,7 @@ function formatRelatedNoteLine(note: RelatedNote): string {
   return `- ${note.title} [${note.path}]: ${note.snippet}`;
 }
 
-/** `decide_with_llm`'s prompt construction (`bin/reflector.py:99-125,128-131`). */
+/** Builds the prompt sent to the LLM decision step. */
 export function decisionPrompt(
   candidates: readonly Candidate[],
   related: readonly RelatedNote[],
@@ -75,8 +75,9 @@ export type ProposalsInput = {
   readonly workspaceId: string;
   readonly date: string;
   readonly candidates: readonly Candidate[];
-  /** `null` when the LLM decision step ran; a message when it didn't (`decide_with_llm`
-   * returning an error) and raw candidates are listed for manual triage instead. */
+  /** `null` when the LLM decision step ran; a message when it didn't (an
+   * error came back instead) and raw candidates are listed for manual
+   * triage instead. */
   readonly error: string | null;
   readonly decisions: readonly ReflectorDecision[];
 };
@@ -84,7 +85,7 @@ export type ProposalsInput = {
 export type RenderedProposals = {
   readonly content: string;
   /** Kept-proposal count (or, in the error path, the raw candidate count) — what
-   * the CLI reports back to the user (`bin/reflector.py:159,176`). */
+   * the CLI reports back to the user. */
   readonly count: number;
 };
 
@@ -122,9 +123,9 @@ function renderKeptDecision(decision: ReflectorDecision): readonly string[] {
 }
 
 /**
- * `write_proposals` (`bin/reflector.py:147-176`). When `error` is set, the LLM
- * decision step didn't run at all — every raw candidate is listed as an
- * unchecked triage item instead of a decision-driven proposal.
+ * Renders the proposals file. When `error` is set, the LLM decision step
+ * didn't run at all — every raw candidate is listed as an unchecked triage
+ * item instead of a decision-driven proposal.
  */
 export function renderProposals(input: ProposalsInput): RenderedProposals {
   const lines = [
@@ -168,7 +169,7 @@ export type BriefInput = {
   readonly related: readonly RelatedNote[];
 };
 
-/** The consolidation brief the interactive tmux session reads (`write_brief`, `bin/reflector.py:184-198`). */
+/** The consolidation brief the interactive tmux session reads. */
 export function renderBrief(input: BriefInput): string {
   const lines = [
     `# Consolidation brief — ${input.workspaceId} — ${input.date}`,

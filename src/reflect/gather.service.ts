@@ -5,12 +5,11 @@ import type { Candidate } from "../worklog/Candidate.ts";
 import { dedupeCandidates, extractCandidates } from "../worklog/worklogFormat.ts";
 
 /**
- * Walk the worklogs tree for promotion candidates (`gather_candidates`,
- * `bin/reflector.py:52-88`). Every actual line-level rule (`#promote`, the
- * `**Learned:**`/`**Decided:**` field lines, dedup) is already ported to
- * `domain/worklogFormat.ts`'s `extractCandidates`/`dedupeCandidates` — this
- * file only owns the filesystem walk: which slugs/files are eligible, and the
- * `since` mtime filter.
+ * Walk the worklogs tree for promotion candidates. Every actual line-level
+ * rule (`#promote`, the `**Learned:**`/`**Decided:**` field lines, dedup)
+ * lives in `domain/worklogFormat.ts`'s `extractCandidates`/`dedupeCandidates`
+ * — this file only owns the filesystem walk: which slugs/files are eligible,
+ * and the `since` mtime filter.
  */
 
 const STATE_FILENAME = "STATE.md";
@@ -21,7 +20,7 @@ async function isDirectory(fs: FileSystem, path: AbsPath): Promise<boolean> {
   try {
     return (await fs.stat(path)).isDirectory;
   } catch {
-    return false; // matches `os.path.isdir` returning False for a missing path
+    return false; // a missing path is simply "not a directory"
   }
 }
 
@@ -35,9 +34,8 @@ function joinUnderDir(dir: AbsPath, name: string): AbsPath {
 }
 
 /** One dated journal file's candidates, or `[]` if it's `STATE.md`, unreadable,
- * or older than `sinceMs` (`bin/reflector.py:61-66`). `sinceMs <= 0` means
- * "no filter" — Python's `if since:` is falsy for a never-yet-run `since = 0`,
- * so every file counts regardless of mtime. */
+ * or older than `sinceMs`. `sinceMs <= 0` means "no filter" — a never-yet-run
+ * cursor is `0`, so every file counts regardless of mtime. */
 async function gatherFileCandidates(
   fs: FileSystem,
   slugDir: AbsPath,
@@ -53,14 +51,14 @@ async function gatherFileCandidates(
   try {
     text = await fs.readFile(filePath);
   } catch {
-    return []; // bin/reflector.py:69-70 — an unreadable file is skipped, not fatal
+    return []; // an unreadable file is skipped, not fatal
   }
   return extractCandidates(text, `${slug}/${fileName}`);
 }
 
-/** One worktree slug directory's candidates across every eligible dated file
- * (`bin/reflector.py:57-80`). A slug that isn't a directory (or has vanished
- * between the outer listing and this check) contributes nothing. */
+/** One worktree slug directory's candidates across every eligible dated file.
+ * A slug that isn't a directory (or has vanished between the outer listing
+ * and this check) contributes nothing. */
 async function gatherSlugCandidates(
   fs: FileSystem,
   worklogsRoot: AbsPath,
@@ -79,12 +77,11 @@ async function gatherSlugCandidates(
 }
 
 /**
- * `gather_candidates` (`bin/reflector.py:52-88`): every `#promote`/
- * `**Learned:**`/`**Decided:**` candidate line across worklog files modified
- * at or after `sinceMs`, skipping `STATE.md`, dot-prefixed directories and
- * `_proposals`, de-duplicated case-insensitively by text (first occurrence
- * wins). A missing `worklogs` directory yields `[]`, matching Python's
- * `if not os.path.isdir(root): return out`.
+ * Every `#promote`/`**Learned:**`/`**Decided:**` candidate line across
+ * worklog files modified at or after `sinceMs`, skipping `STATE.md`,
+ * dot-prefixed directories and `_proposals`, de-duplicated
+ * case-insensitively by text (first occurrence wins). A missing `worklogs`
+ * directory yields `[]`.
  */
 export async function gatherCandidates(
   fs: FileSystem,
