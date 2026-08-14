@@ -13,36 +13,35 @@ import {
 } from "./json.service.ts";
 
 /**
- * `~/.claude/memory/installed.json` — NEW, replacing the Python installer's
- * substring test (`"cc-memory" in command`, [[bugfixes]] #4) with a record of
- * exactly what THIS installer wrote last time. Read before every
+ * `~/.claude/memory/installed.json` — a record of exactly what THIS
+ * installer wrote last time, rather than an installer having to guess by
+ * matching a substring in an existing command string. Read before every
  * install/uninstall so:
  *   - hook groups get purged by their EXACT former command string, not a
  *     substring — a moved/renamed repo still gets cleaned up (no orphans);
  *   - `uninstall` reverses exactly these artifacts, nothing guessed;
- *   - the one-time legacy substring purge (for entries left by the Python-era
- *     installer, which never wrote a manifest at all) runs exactly once.
+ *   - the one-time legacy substring purge (for entries left by an install
+ *     that predates this manifest) runs exactly once.
  */
 
 // A literal `~/`-prefix — `expandPath` only expands a LEADING `~`, matching
 // `registry.service.ts`'s `REGISTRY_HOME_RELATIVE_PATH` pattern.
 const MANIFEST_HOME_RELATIVE_PATH = "~/.claude/memory/installed.json";
 
-/** Bumped only if this manifest's own shape changes — unrelated to the index's
- * `SCHEMA_VERSION` ([[reference]]) or `registry.toml`'s C1 schema. */
+/** Bumped only if this manifest's own shape changes — unrelated to the
+ * index's schema version or the registry's schema. */
 export const MANIFEST_SCHEMA_VERSION = 1;
 
-/** `tools/install.py:59`'s `dst + ".pre-ccmemory.bak"` suffix, shared by
- * `skills.ts` (a pre-existing real skill directory) and `settings.ts` (the
- * one-time pristine `settings.json` backup this installer makes before its
- * first write — the Python installer never backed anything up at all). */
+/** The `.pre-ccmemory.bak` suffix, shared by `skills.ts` (a pre-existing real
+ * skill directory) and `settings.ts` (the one-time pristine `settings.json`
+ * backup this installer makes before its first write). */
 export const PRE_CCMEMORY_BACKUP_SUFFIX = ".pre-ccmemory.bak";
 
 export type SkillManifestEntry = {
   readonly name: string;
   /** True when installing this skill moved a pre-existing REAL directory to
-   * `<name>.pre-ccmemory.bak` (`tools/install.py:57-62`) — `uninstall` only
-   * restores a backup that exists. */
+   * `<name>.pre-ccmemory.bak` — `uninstall` only restores a backup that
+   * exists. */
   readonly backedUp: boolean;
 };
 
@@ -58,10 +57,10 @@ export type InstalledManifest = {
   readonly skills: readonly SkillManifestEntry[];
   readonly launchdPlistPath: string | null;
   /** The ONE pristine `settings.json` backup this installer ever makes,
-   * before its first write (`tools/install.py` never backed anything up). */
+   * before its first write. */
   readonly settingsBackupPath: string | null;
   /** True once the one-time legacy substring purge has run — see the doc
-   * comment above and [[bugfixes]] #4's "keep it as a one-time fallback". */
+   * comment above. */
   readonly legacyPurgeDone: boolean;
 };
 

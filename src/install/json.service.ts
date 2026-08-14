@@ -4,10 +4,10 @@ import type { FileSystem } from "../platform/fileSystem.port.ts";
 
 /**
  * A generic JSON value, used for `~/.claude/settings.json` and
- * `~/.claude/memory/installed.json` — both files this packet reads and writes
+ * `~/.claude/memory/installed.json` — both files are read and written
  * without needing to understand every field (`settings.json` in particular
- * carries foreign top-level keys — `permissions`, buddy-reroll/plan-review
- * config, … — that must round-trip untouched). Mirrors `domain/note.ts`'s
+ * carries foreign top-level keys — `permissions`, other tools' config, … —
+ * that must round-trip untouched). Mirrors `domain/note.ts`'s
  * `YamlValue`/`YamlMapping` pair, the established pattern in this codebase for
  * "parse untrusted structured data without a `Record<string, unknown>` bag."
  */
@@ -50,7 +50,7 @@ export function isJsonBoolean(value: JsonValue): value is boolean {
   return Object.prototype.toString.call(value) === "[object Boolean]";
 }
 
-/** The closed set of ways reading one of this packet's JSON files can fail. */
+/** The closed set of ways reading one of these JSON files can fail. */
 export enum JsonFileErrorKind {
   ParseError = "parse_error",
   NotAnObject = "not_an_object",
@@ -62,10 +62,10 @@ export type JsonFileError =
 
 /**
  * Read a JSON file expected to hold a top-level object — `settings.json` and
- * `installed.json` both are. A MISSING file yields `{}` (matching
- * `tools/install.py:112-115`'s `settings = {}` when the file doesn't exist
- * yet); a PRESENT file that fails to parse, or parses to something other than
- * an object, is a typed error instead of an uncaught exception.
+ * `installed.json` both are. A MISSING file yields `{}` (treated the same as
+ * "nothing configured yet"); a PRESENT file that fails to parse, or parses to
+ * something other than an object, is a typed error instead of an uncaught
+ * exception.
  */
 export async function readJsonObjectFile(
   fs: FileSystem,
@@ -86,10 +86,10 @@ export async function readJsonObjectFile(
   return { ok: true, value: parsed };
 }
 
-/** `json.dump(settings, fh, indent=2)` + a trailing newline
- * (`tools/install.py:141-142`) — the exact serialization shape for every JSON
- * file this packet writes, so a byte-for-byte diff against a hand-edited
- * `settings.json` stays quiet on everything this installer didn't touch. */
+/** Two-space-indented JSON plus a trailing newline — the exact serialization
+ * shape for every JSON file this installer writes, so a byte-for-byte diff
+ * against a hand-edited `settings.json` stays quiet on everything this
+ * installer didn't touch. */
 export function stringifyJson(value: JsonValue): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
@@ -106,9 +106,9 @@ function parentDirectory(path: AbsPath): AbsPath {
 }
 
 /** Write a JSON file atomically: `<path>.tmp` then rename over it — the same
- * pattern `registry.service.ts`'s `saveRegistry` uses for `registry.toml`
- * (C1), applied here to `settings.json`/`installed.json` so a reader never
- * observes a half-written file (`tools/install.py:139-143`'s `os.replace`). */
+ * pattern `registry.service.ts`'s `saveRegistry` uses for `registry.toml`,
+ * applied here to `settings.json`/`installed.json` so a reader never
+ * observes a half-written file. */
 export async function writeJsonObjectAtomic(
   fs: FileSystem,
   path: AbsPath,

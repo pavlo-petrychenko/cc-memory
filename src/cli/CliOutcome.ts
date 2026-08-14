@@ -1,16 +1,14 @@
 /**
- * A command's result, before `main.ts` maps it to a process exit. Every command
+ * A command's result, before `main.ts` maps it to a process exit. Every
  * command function returns one of these instead of calling
  * `process.exit`/throwing itself — `main.ts` is the single place that turns it
  * into `stdio.exit(...)` plus (optionally) one line on stderr.
  *
- * This is the TypeScript shape of Python's two exit idioms in `bin/memory`:
- * a bare `return` after printing to stdout (`exitCode: 0, stderrMessage: null`),
- * and `sys.exit("msg")` — which prints `msg` to STDERR and exits 1
- * (`{ exitCode: 1, stderrMessage: "msg" }`). `cliOutcome` covers the one case
- * neither idiom needs on its own: a diagnostic on stderr with a **0** exit, used
- * by the `hook` stub (P7 not landed yet) to stay fail-open (CLAUDE.md invariant
- * #3) while still not pretending to have run a real handler.
+ * Two shapes cover most cases: success with no message
+ * (`exitCode: 0, stderrMessage: null`), and a failure message printed to
+ * stderr with a non-zero exit. `cliOutcome` covers the remaining case: a
+ * diagnostic on stderr paired with an exit code of **0**, used by commands
+ * that must stay fail-open while still not pretending to have run cleanly.
  */
 export type CliOutcome = {
   readonly exitCode: number;
@@ -19,7 +17,7 @@ export type CliOutcome = {
 
 export const CLI_SUCCESS: CliOutcome = { exitCode: 0, stderrMessage: null };
 
-/** `sys.exit("msg")` (prints to stderr, exits 1 by default). */
+/** A failure message printed to stderr, exiting 1 by default. */
 export function cliFailure(message: string, exitCode: number = 1): CliOutcome {
   return { exitCode, stderrMessage: message };
 }

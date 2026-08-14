@@ -4,13 +4,9 @@ import type { FileSystem } from "../platform/fileSystem.port.ts";
 import type { Proc } from "../platform/proc.port.ts";
 
 /**
- * The launchd reflector agent (`tools/install.py:156-180`) — template fill +
- * `bootout` then `bootstrap` (idempotent: a `bootout` on a job that isn't
- * loaded just fails silently, matching Python's `capture_output=True` with no
- * return-code check on that call). `dev.ccmemory.reflector` and
- * `StartCalendarInterval 21:00`/`RunAtLoad` are unchanged (C6); only the
- * `ProgramArguments` template placeholders move from `@PYTHON@`/`@MEMORYSCRIPT@`
- * to `@BUN@`/`@DIST@` (`runners/dev.ccmemory.reflector.plist`).
+ * The launchd reflector agent — template fill + `bootout` then `bootstrap`.
+ * This is idempotent: a `bootout` on a job that isn't loaded just fails
+ * silently, and its exit code is never checked.
  */
 
 export const LAUNCHD_LABEL = "dev.ccmemory.reflector";
@@ -36,9 +32,9 @@ export function defaultReflectorLogPath(home: AbsPath): AbsPath {
   return expandPath(REFLECTOR_LOG_HOME_RELATIVE_PATH, home);
 }
 
-/** `tools/install.py:162-163`'s `path_env` — launchd's own `PATH` is minimal,
- * so the reflector needs `~/.local/bin` (for `claude`/`memory`) plus every
- * common `git` install location spelled out explicitly. */
+/** launchd's own `PATH` is minimal, so the reflector needs `~/.local/bin`
+ * (for `claude`/`memory`) plus every common `git` install location spelled
+ * out explicitly. */
 export function launchdPathEnv(home: AbsPath): string {
   const localBin = expandPath(LOCAL_BIN_HOME_RELATIVE_PATH, home);
   return [
@@ -59,8 +55,7 @@ export type PlistTemplateValues = {
   readonly logPath: string;
 };
 
-/** `tools/install.py:164-172`'s placeholder substitution, ported onto the
- * `@BUN@`/`@DIST@` template (see this file's doc comment). */
+/** Placeholder substitution over the `@BUN@`/`@DIST@` plist template. */
 export function renderPlist(template: string, values: PlistTemplateValues): string {
   return template
     .replaceAll("@BUN@", values.bunPath)
@@ -77,10 +72,9 @@ export function defaultPlistTemplatePath(repoRoot: AbsPath): AbsPath {
   return `${repoRoot}/runners/${LAUNCHD_LABEL}.bun.plist` as AbsPath;
 }
 
-/** `id -u` via `Proc` — `os.getuid()` (`tools/install.py:177`) has no direct
- * port equivalent (every real OS call in this codebase goes through `Proc`
- * or `FileSystem`), so this shells out the same way `Git`'s adapter does for
- * every other OS fact. */
+/** `id -u` via `Proc` — every real OS call in this codebase goes through
+ * `Proc` or `FileSystem`, so this shells out the same way `Git`'s adapter
+ * does for every other OS fact. */
 export async function currentUid(proc: Proc): Promise<string> {
   const result = await proc.run("id", ["-u"], { timeoutMs: UID_TIMEOUT_MS });
   return result.stdout.trim();
@@ -92,16 +86,13 @@ function launchctlTarget(uid: string): string {
 
 export type LaunchdInstallOutcome = {
   readonly loaded: boolean;
-  /** `tools/install.py:180`'s log line. */
   readonly actionLine: string;
 };
 
 /**
  * Write the rendered plist, then `bootout` (ignoring its result — there may
- * be nothing loaded yet) followed by `bootstrap`
- * (`tools/install.py:173-180`). Returns `null`, doing nothing, when the
- * template file itself is missing — matches `tools/install.py:158-159`'s
- * `if not os.path.isfile(tmpl): return`.
+ * be nothing loaded yet) followed by `bootstrap`. Returns `null`, doing
+ * nothing, when the template file itself is missing.
  */
 export async function installLaunchd(
   fs: FileSystem,

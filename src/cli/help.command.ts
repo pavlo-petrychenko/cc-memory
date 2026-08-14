@@ -5,12 +5,9 @@ import { CLI_SUCCESS, type CliOutcome } from "./CliOutcome.ts";
 /**
  * `-h`/`--help` (and a bare `memory` with no arguments), plus `--version`.
  *
- * The Python got both from `argparse` for free, so there is no usage text in
- * `bin/memory` to port verbatim — argparse GENERATED it. That means this text is
- * NOT a frozen contract (no skill invokes `--help`), and reproducing argparse's
- * exact layout would be imitation for its own sake. What IS required is that
- * `memory --help` succeeds and lists the real command surface: it exits 0 like
- * argparse did, and the invocations below are exactly the C3 table.
+ * This text is not parsed by any skill, so its exact wording is free to
+ * change; what's required is that `memory --help` exits 0 and lists the real
+ * command surface below.
  */
 const USAGE = `memory — per-workspace memory for Claude Code
 

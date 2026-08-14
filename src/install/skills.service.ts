@@ -7,18 +7,16 @@ import {
 } from "./manifest.service.ts";
 
 /**
- * Symlink every skill under `<repo>/src/skills` into `~/.claude/skills`
- * (`tools/install.py:51-67,78-87`), backing up a pre-existing REAL directory
- * to `<name>.pre-ccmemory.bak` once.
+ * Symlink every skill under `<repo>/src/skills` into `~/.claude/skills`,
+ * backing up a pre-existing REAL directory to `<name>.pre-ccmemory.bak` once.
  *
  * The `FileSystem` port has no `readlink`/`lstat` (see `fileSystem.port.ts`
- * — it is frozen, P9 does not add to it), so there is no portable way to ask
- * "is `linkPath` already a symlink pointing at `sourcePath`?" the way
- * Python's `os.path.realpath(dst) == os.path.realpath(src)` can. Idempotency
- * is decided from the MANIFEST instead: a skill already recorded from a
- * previous install run is trusted to be ours and left alone (re-created only
- * if it has since vanished); a skill with no prior record gets the
- * back-up-if-real-directory treatment before its first link.
+ * — it is frozen), so there is no portable way to ask "is `linkPath` already
+ * a symlink pointing at `sourcePath`?". Idempotency is decided from the
+ * MANIFEST instead: a skill already recorded from a previous install run is
+ * trusted to be ours and left alone (re-created only if it has since
+ * vanished); a skill with no prior record gets the back-up-if-real-directory
+ * treatment before its first link.
  */
 
 const SKILLS_TARGET_HOME_RELATIVE_PATH = "~/.claude/skills";
@@ -42,9 +40,7 @@ function backupPathFor(targetPath: AbsPath): AbsPath {
   return `${targetPath}${PRE_CCMEMORY_BACKUP_SUFFIX}` as AbsPath;
 }
 
-/** Every directory name directly under `skillsSourceDir`, sorted — matches
- * `tools/install.py:83`'s `sorted(os.listdir(sk))` filtered to directories
- * (`os.path.isdir(s)`). */
+/** Every directory name directly under `skillsSourceDir`, sorted. */
 export async function discoverSkillNames(
   fs: FileSystem,
   skillsSourceDir: AbsPath,
@@ -62,7 +58,7 @@ export async function discoverSkillNames(
 
 export type SkillInstallOutcome = {
   readonly skills: readonly SkillManifestEntry[];
-  /** `tools/install.py:87`'s `log(f"skill {name}")`, one per skill. */
+  /** One `skill <name>` log line per skill. */
   readonly actionLines: readonly string[];
 };
 

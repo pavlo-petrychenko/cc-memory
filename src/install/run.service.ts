@@ -54,11 +54,10 @@ import {
 } from "./skills.service.ts";
 
 /**
- * `install`/`uninstall`/`--dry-run` orchestration (`tools/install.py:183-191`,
- * plus the two additive modes Python never had). Everything above this file
+ * `install`/`uninstall`/`--dry-run` orchestration. Everything above this file
  * is deliberately small and independently testable; `run.ts` is the one place
- * that sequences them the way `tools/install.py:main()` does: CLI, skills,
- * hooks, registry seed, launchd — in that order.
+ * that sequences them: CLI shim, skills, hooks, registry seed, launchd — in
+ * that order.
  */
 
 const DIST_RELATIVE_PATH = "dist/memory.js";
@@ -122,8 +121,8 @@ function settingsFileErrorMessage(error: JsonFileError): string {
 export type InstallReport = {
   readonly dryRun: boolean;
   /** Human-readable lines describing what was (or, under `--dry-run`, would
-   * be) done — `tools/install.py`'s interleaved `log(...)` calls, collected
-   * instead of printed inline so `install.command.ts` renders them. */
+   * be) done — collected instead of printed inline so `install.command.ts`
+   * renders them. */
   readonly actionLines: readonly string[];
   /** Only non-empty when `settings.json` actually changes. */
   readonly settingsDiffLines: readonly string[];
@@ -150,8 +149,8 @@ async function gatherHomePaths(container: Container, repoRoot: AbsPath) {
 }
 
 /** `install [--dry-run]` — resolve `bun`, compute the `settings.json` surgery,
- * then either report it (`dryRun`) or apply every write in Python's original
- * order (CLI shim, skills, hooks, registry seed, launchd). */
+ * then either report it (`dryRun`) or apply every write in order: CLI shim,
+ * skills, hooks, registry seed, launchd. */
 export async function runInstall(
   container: Container,
   options: InstallOptions,
@@ -286,13 +285,12 @@ export type UninstallReport = {
 };
 
 /**
- * `uninstall` — new, additive (Python has no equivalent). Reverses exactly
- * what the manifest records: purge our hook groups from `settings.json` (by
- * exact former command, never the legacy substring — uninstall never touches
- * anything it didn't itself register), remove the shim, remove/restore each
- * skill, tear down the launchd job, then delete the manifest itself. Registry
- * and vault content are never touched — those are the user's data, not an
- * installed artifact.
+ * `uninstall` — reverses exactly what the manifest records: purge our hook
+ * groups from `settings.json` (by exact former command, never the legacy
+ * substring — uninstall never touches anything it didn't itself register),
+ * remove the shim, remove/restore each skill, tear down the launchd job,
+ * then delete the manifest itself. Registry and vault content are never
+ * touched — those are the user's data, not an installed artifact.
  */
 export async function runUninstall(container: Container): Promise<UninstallReport> {
   const { fs, proc } = container;

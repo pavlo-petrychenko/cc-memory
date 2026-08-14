@@ -21,11 +21,10 @@ import { type CliOutcome, cliFailure } from "./CliOutcome.ts";
 import { help, version } from "./help.command.ts";
 
 /**
- * `bin/memory:294-295`'s `a.func(a)` — dispatch a successfully-parsed
- * `ParsedArgs` to its command function and return the resulting `CliOutcome`.
- * Exhaustive over `CliCommand` so adding a subcommand without wiring it here
- * is a compile error (`noFallthroughCasesInSwitch`/a `never` check would
- * catch a missing case; the switch itself already covers every member).
+ * Dispatch a successfully-parsed `ParsedArgs` to its command function and
+ * return the resulting `CliOutcome`. Exhaustive over `CliCommand` so adding a
+ * subcommand without wiring it here is a compile error (the switch already
+ * covers every member, so a missing case fails to type-check).
  */
 async function dispatch(
   container: Container,
@@ -67,13 +66,13 @@ async function dispatch(
 }
 
 /**
- * `bin/memory:main` (`253-299`): build the real `Container`, parse `argv`,
- * dispatch, map the result to a `CliOutcome`. Kept as an exported, container-
- * injected function (rather than living inside the `import.meta.main` guard)
- * so it's testable in-process with a fake `Container` — the guard below only
- * does the two things that genuinely need the real process: reading
- * `process.argv`/`process.env`, and writing to real stderr (`Stdio` has no
- * stderr method — see `CliOutcome`'s doc comment).
+ * Build the real `Container`, parse `argv`, dispatch, map the result to a
+ * `CliOutcome`. Kept as an exported, container-injected function (rather than
+ * living inside the `import.meta.main` guard) so it's testable in-process
+ * with a fake `Container` — the guard below only does the two things that
+ * genuinely need the real process: reading `process.argv`/`process.env`, and
+ * writing to real stderr (`Stdio` has no stderr method — see `CliOutcome`'s
+ * doc comment).
  */
 export async function runCli(
   argv: readonly string[],
@@ -85,9 +84,9 @@ export async function runCli(
   return dispatch(container, config, parsed.value);
 }
 
-// No work at import time (CLAUDE.md) — everything below only runs when this
-// module IS the entrypoint, which `tests/unit/coverageSurface.test.ts`
-// importing every module does not trigger.
+// No work at import time — everything below only runs when this module IS
+// the entrypoint, which `tests/unit/coverageSurface.test.ts` importing every
+// module does not trigger.
 if (import.meta.main) {
   const envSnapshot = process.env;
   const container = makeRealContainer(envSnapshot);

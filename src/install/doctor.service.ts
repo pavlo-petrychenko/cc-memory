@@ -17,19 +17,14 @@ import {
 } from "./settings.service.ts";
 
 /**
- * `memory doctor`, upgraded from Python's "did the 5 hook scripts exit 0"
- * smoke test (`bin/memory:212-250`) into real diagnostics — this packet's
- * command doesn't have a TypeScript hook to spawn yet (P7 lands the 5
- * handlers separately), so instead of faking a smoke test against nothing,
- * doctor now checks the state a healthy install actually depends on: the
+ * `memory doctor` checks the state a healthy install actually depends on: the
  * registry, every workspace's vault + index, `settings.json`'s hook
  * registrations, the recorded `bun` binary, the launchd job, and file sizes
- * that tend to grow unbounded ([[bugfixes]] #1, #2).
+ * that tend to grow unbounded.
  *
- * `doctor.command.ts` keeps printing the ORIGINAL two lines (registry status,
+ * `doctor.command.ts` keeps printing the original two lines (registry status,
  * cwd resolution) byte-for-byte via `format.ts`'s existing renderers before
- * calling into this file — those two lines are what the (currently pending)
- * `cli/doctor-*` parity cases anchor on.
+ * calling into this file — those two lines are anchored by tests.
  */
 
 // Matches `adapters/loggerFile.adapter.ts`'s private `MAX_LOG_BYTES` — that
@@ -238,8 +233,8 @@ export async function gatherDoctorReport(
 }
 
 /** Pure formatting — every line below `doctor.command.ts`'s two byte-frozen
- * lines. Not part of any frozen contract (C2/C4): the wording here is free
- * to change; only the two lines this file never touches are pinned. */
+ * lines. The wording here is free to change; only the two lines this file
+ * never touches are pinned. */
 export function renderDoctorReport(report: DoctorReport): readonly string[] {
   const lines: string[] = [];
 
