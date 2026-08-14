@@ -8,8 +8,8 @@
   <!-- Run the reflector for all workspaces, but only if a run is overdue. -->
   <key>ProgramArguments</key>
   <array>
-    <string>@PYTHON@</string>
-    <string>@MEMORYSCRIPT@</string>
+    <string>@BUN@</string>
+    <string>@DIST@</string>
     <string>reflect</string>
     <string>--all</string>
     <string>--if-due</string>

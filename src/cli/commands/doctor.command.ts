@@ -1,37 +1,31 @@
 import type { Container } from "../../container.ts";
+import type { AbsPath } from "../../domain/AbsPath.ts";
 import { expandPath } from "../../domain/paths.ts";
-import { defaultRegistryPath } from "../../services/registry.service.ts";
+import { gatherDoctorReport, renderDoctorReport } from "../../services/doctor.service.ts";
+import { defaultRegistryPath, loadRegistry } from "../../services/registry.service.ts";
 import { resolveWorkspace } from "../../services/resolver.service.ts";
 import type { DoctorArgs } from "../args.ts";
 import { CLI_SUCCESS, type CliOutcome } from "../CliOutcome.ts";
-import {
-  formatCwdResolution,
-  formatHookNotImplemented,
-  formatRegistryStatus,
-} from "../format.ts";
-import { loadRegistryForCli } from "../resolveTarget.ts";
-
-/** The 5 hooks, in `bin/memory:222-226,237`'s order (`session-start`,
- * `memory-inject`, `wrap-gate` — the 3 given a valid read-only payload — then
- * `worklog-floor`, `compact-checkpoint`, the 2 write hooks). Named without the
- * `.py` suffix, matching the `memory hook <name>` dispatch this project adds
- * (see [[entrypoints]]), since P7 hasn't landed a TypeScript equivalent yet. */
-const DOCTOR_HOOK_NAMES = [
-  "session-start",
-  "memory-inject",
-  "wrap-gate",
-  "worklog-floor",
-  "compact-checkpoint",
-];
+import { formatCwdResolution, formatRegistryStatus } from "../format.ts";
+import { resolveTargetWorkspaces } from "../resolveTarget.ts";
 
 /**
- * `cmd_doctor` (`bin/memory:212-250`), BASIC version (P9 owns the full one).
- * Reproduces the two lines that don't depend on the 5 hooks existing yet
- * (registry status, cwd resolution) byte-for-byte; the per-hook report is
- * honestly "(not implemented yet)" rather than fabricating an exit code or
- * output a hook this packet never wrote could have produced — Python's real
- * doctor spawns each hook script and reports its actual exit/output, which is
- * P7's (and P9's "expands it") job, not this stub's.
+ * `cmd_doctor` (`bin/memory:212-250`), REPLACED (not merely ported) per
+ * [[services]]/packet-9-install: Python's version spawns the 5 real hook
+ * scripts and reports their exit codes — a smoke test this repo can no
+ * longer run as-is (P7's TypeScript hook handlers land in a parallel packet
+ * and don't exist in this worktree), so `bin/memory:212-250` is not usable
+ * as a line-by-line port target here. Rather than fabricate a fake spawn
+ * against a script this packet never wrote, doctor now does what the plan's
+ * `[[services]]` doc actually asks for: real diagnostics against the state
+ * an install depends on (registry, every workspace's vault + index,
+ * `settings.json`'s hook registrations, the recorded `bun` binary, the
+ * launchd job, log sizes) — see `doctor.service.ts`'s doc comment.
+ *
+ * The first two lines — registry status, cwd resolution — stay
+ * BYTE-IDENTICAL to Python (and to this file's own former stub), because the
+ * `cli/doctor-*` parity cases anchor on exactly those two lines even while
+ * skipped ([[testing]]).
  */
 export async function doctor(
   container: Container,
@@ -39,7 +33,7 @@ export async function doctor(
 ): Promise<CliOutcome> {
   const home = container.env.home();
   const registryPath = defaultRegistryPath(home);
-  const registryResult = await loadRegistryForCli(container.fs, home);
+  const registryResult = await loadRegistry(container.fs, registryPath);
   const registryStatus =
     registryResult.ok && registryResult.value.length > 0 ? "(ok)" : "(empty)";
   container.stdio.write(formatRegistryStatus(registryPath, registryStatus));
@@ -51,8 +45,32 @@ export async function doctor(
     formatCwdResolution(cwd, workspace !== null ? workspace.id : "no workspace"),
   );
 
-  for (const hookName of DOCTOR_HOOK_NAMES) {
-    container.stdio.write(formatHookNotImplemented(hookName));
-  }
+  const targets = resolveTargetWorkspaces(raws, home, null);
+  const workspaces = targets.ok ? targets.value : [];
+  const report = await gatherDoctorReport(container, workspaces, {
+    repoRoot: repoRootFromRunningFile(),
+    registryError: registryResult.ok ? null : registryResult.error,
+  });
+  for (const line of renderDoctorReport(report)) container.stdio.write(line);
+
   return CLI_SUCCESS;
+}
+
+/**
+ * `<repoRoot>/dist/memory.js` is exactly two path segments below the repo
+ * root, and `import.meta.url` resolves to the URL of the FINAL bundle at
+ * runtime regardless of which original source file references it (verified
+ * against `bun build`'s actual output — a single-file bundle has exactly one
+ * real module, so every `import.meta.url` inside it agrees). Duplicated in
+ * `install.command.ts` rather than shared, matching this codebase's own
+ * convention for a tiny path-only helper (see `workspace.command.ts`'s
+ * `parentDirectory` doc comment).
+ */
+function repoRootFromRunningFile(): AbsPath {
+  const runningFilePath = new URL(import.meta.url).pathname;
+  const distDir = runningFilePath.slice(0, runningFilePath.lastIndexOf("/"));
+  const repoRoot = distDir.slice(0, distDir.lastIndexOf("/"));
+  // SAFETY: `dist/memory.js` is always written two path segments below the
+  // repo root by `bun run build` — see the doc comment above.
+  return repoRoot as AbsPath;
 }

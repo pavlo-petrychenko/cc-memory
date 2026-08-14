@@ -1,4 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 import { makeDbBunSqliteAdapter } from "../../src/adapters/dbBunSqlite.adapter.ts";
 import { runCli } from "../../src/cli/main.ts";
@@ -154,16 +157,56 @@ describe("runCli dispatch", () => {
   // dispatch logic `hook()` delegates to — is fully covered in-process with
   // fakes by `tests/cli/commands/hook.command.test.ts`.
 
-  test("install dispatches to install (fails loudly)", async () => {
+  /**
+   * `dispatch`'s `case CliCommand.Install`/`Uninstall` (`src/cli/main.ts`,
+   * frozen — outside this packet) call `install(parsed)`/`uninstall()` with
+   * NO `container` argument, unlike every other case here — so the
+   * `container` this test builds via `makeTestContainer` is NEVER what
+   * `install`/`uninstall` actually run against; they always build their OWN
+   * container from the real `process.env` (`install.command.ts`'s doc
+   * comment explains why). Faking that by mutating `process.env.HOME`
+   * mid-process does NOT work under Bun — `os.homedir()` resolves `$HOME`
+   * once and does not observe a later reassignment in the same process
+   * (verified directly: `bun -e 'process.env.HOME = "/tmp/x";
+   * require("node:os").homedir()'` still prints the real path) — the very
+   * bug that turned an earlier draft of this test into a real, unwanted
+   * `memory install`/`uninstall` run against this machine's actual
+   * `~/.claude/settings.json`, `~/.local/bin/memory` and launchd state
+   * during this packet's development.
+   *
+   * So each case below is picked because it is safe REGARDLESS of that
+   * limitation: `install --dry-run` structurally never writes anything
+   * (`runInstall` returns before any mutation — see `run.ts`), and
+   * `uninstall` only ever reads `~/.claude/memory/installed.json` before
+   * deciding what to do — so the second test asserts that file does NOT
+   * exist first and refuses to run otherwise, rather than silently trusting
+   * that assumption forever (it stops being true the moment this machine is
+   * actually cut over for real, per the plan's "execution" doc — a separate,
+   * human-run step). Full behavioral coverage of both functions — including
+   * every unsafe path (a real write, a real `launchctl` call) — lives in
+   * `tests/cli/commands/install.command.test.ts`, entirely against an
+   * explicit fake `Container` (`procFake`), never the real default.
+   */
+  test("install --dry-run dispatches to install (always safe: dry-run never writes)", async () => {
     const container = makeTestContainer({ stdio: makeIoFake() });
-    const outcome = await runCli(["install"], container, CONFIG);
-    expect(outcome.exitCode).toBe(1);
+    const outcome = await runCli(["install", "--dry-run"], container, CONFIG);
+    expect(outcome.exitCode).toBe(0);
   });
 
-  test("uninstall dispatches to uninstall (fails loudly)", async () => {
+  test("uninstall dispatches to uninstall (guarded: refuses to run for real if this machine has ever been cut over)", async () => {
+    const realManifestPath = join(homedir(), ".claude", "memory", "installed.json");
+    if (existsSync(realManifestPath)) {
+      throw new Error(
+        "Refusing to run this test: a REAL ~/.claude/memory/installed.json exists on " +
+          "this machine, meaning cc-memory has actually been cut over. Calling the real " +
+          "`uninstall()` here (main.ts's dispatch passes no container, so it always uses " +
+          "the real one) would reverse that real install. Remove or rewrite this test " +
+          "instead of letting it run.",
+      );
+    }
     const container = makeTestContainer({ stdio: makeIoFake() });
     const outcome = await runCli(["uninstall"], container, CONFIG);
-    expect(outcome.exitCode).toBe(1);
+    expect(outcome.exitCode).toBe(0);
   });
 
   test("--help dispatches to help and exits 0", async () => {

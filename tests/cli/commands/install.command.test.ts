@@ -2,22 +2,134 @@ import { describe, expect, test } from "bun:test";
 
 import { CliCommand } from "../../../src/cli/args.ts";
 import { install, uninstall } from "../../../src/cli/commands/install.command.ts";
+import type { Container } from "../../../src/container.ts";
+import type { AbsPath } from "../../../src/domain/AbsPath.ts";
+import { defaultRegistryPath } from "../../../src/services/registry.service.ts";
+import { makeTestContainer } from "../../helpers/container.ts";
+import type { ProcFake } from "../../helpers/fakes/procFake.fake.ts";
+import { makeProcFake } from "../../helpers/fakes/procFake.fake.ts";
 
-describe("install/uninstall stubs (bin/memory has no equivalent — P9 owns tools/install.py's port)", () => {
-  test("install fails loudly rather than claiming to have touched settings.json", () => {
-    const outcome = install({ command: CliCommand.Install, dryRun: false });
-    expect(outcome.exitCode).toBe(1);
-    expect(outcome.stderrMessage).toContain("not implemented yet (P9)");
+/**
+ * `install`/`uninstall` (`src/cli/commands/install.command.ts`) ALWAYS take
+ * an explicit fake `Container` here — never the real default `main.ts` uses
+ * in production. `runInstall`/`runUninstall` call `launchctl bootout`/
+ * `bootstrap` through `container.proc` (`services/install/launchd.ts`); on
+ * the real container that is a REAL mutation of this machine's launchd
+ * state, which this packet must never trigger from a test (see this file's
+ * and `install.command.ts`'s doc comments, and the packet's safety
+ * directive). `procFake` records every call instead of spawning anything, so
+ * every assertion below is about what THIS command decided to do, not about
+ * the real OS.
+ */
+
+// SAFETY: fixed test fixtures, never a real filesystem lookup — same
+// reasoning `tests/helpers/container.ts`'s `DEFAULT_HOME` documents.
+const REAL_BUN_PATH = "/usr/local/bin/bun" as AbsPath;
+
+/** The shim path install/uninstall write, under a test container's fake
+ * `$HOME`. */
+function shimPathFor(container: Container): AbsPath {
+  // SAFETY: same reasoning as `REAL_BUN_PATH` above — built from a fixed
+  // fake `$HOME`, never a real path.
+  return `${container.env.home()}/.local/bin/memory` as AbsPath;
+}
+
+/**
+ * `runInstall` seeds `registry.toml` from `<repoRoot>/registry.example.toml`
+ * when absent (`seed.ts`) — under `bun test` (unbundled), `install.command.ts`'s
+ * `repoRootFromRunningFile()` resolves to a path with no such example file at
+ * all (see that function's doc comment: it is only correct for the BUNDLED
+ * artifact). Pre-seeding a registry here takes that codepath's "already
+ * exists, left as-is" branch instead, matching what a real second install
+ * run looks like anyway.
+ */
+async function seedExistingRegistry(container: Container): Promise<void> {
+  await container.fs.writeFile(defaultRegistryPath(container.env.home()), "");
+}
+
+function scriptedBunProc(): ProcFake {
+  const proc = makeProcFake();
+  proc.enqueue({
+    kind: "resolve",
+    result: { stdout: "/usr/bin/bun\n", stderr: "", exitCode: 0 },
+  });
+  proc.enqueue({
+    kind: "resolve",
+    result: { stdout: `${REAL_BUN_PATH}\n`, stderr: "", exitCode: 0 },
+  });
+  return proc;
+}
+
+describe("install command (fake container — never the real default)", () => {
+  test("install writes the shim and reports success", async () => {
+    const proc = scriptedBunProc();
+    const container = makeTestContainer({ proc });
+    await container.fs.writeFile(REAL_BUN_PATH, "");
+    await seedExistingRegistry(container);
+
+    const outcome = await install(
+      { command: CliCommand.Install, dryRun: false },
+      container,
+    );
+
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stderrMessage).toBeNull();
+    const shimPath = shimPathFor(container);
+    expect(await container.fs.exists(shimPath)).toBe(true);
   });
 
-  test("install --dry-run is parsed the same way but still fails loudly", () => {
-    const outcome = install({ command: CliCommand.Install, dryRun: true });
-    expect(outcome.exitCode).toBe(1);
+  test("install --dry-run writes nothing", async () => {
+    const proc = scriptedBunProc();
+    const container = makeTestContainer({ proc });
+    await container.fs.writeFile(REAL_BUN_PATH, "");
+
+    const outcome = await install(
+      { command: CliCommand.Install, dryRun: true },
+      container,
+    );
+
+    expect(outcome.exitCode).toBe(0);
+    const shimPath = shimPathFor(container);
+    expect(await container.fs.exists(shimPath)).toBe(false);
+    // Never even asks `launchctl` anything under `--dry-run`.
+    expect(proc.calls.some((call) => call.command === "launchctl")).toBe(false);
   });
 
-  test("uninstall fails loudly rather than claiming to have reversed anything", () => {
-    const outcome = uninstall();
+  test("install fails loudly (never writes anything) when bun can't be found", async () => {
+    const proc = makeProcFake();
+    proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 1 } });
+    const container = makeTestContainer({ proc });
+
+    const outcome = await install(
+      { command: CliCommand.Install, dryRun: false },
+      container,
+    );
+
     expect(outcome.exitCode).toBe(1);
-    expect(outcome.stderrMessage).toContain("not implemented yet (P9)");
+    expect(outcome.stderrMessage).toContain("bun not found");
+    const shimPath = shimPathFor(container);
+    expect(await container.fs.exists(shimPath)).toBe(false);
+  });
+
+  test("uninstall with no prior install reports nothing to do", async () => {
+    const container = makeTestContainer({ proc: makeProcFake() });
+    const outcome = await uninstall(container);
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stderrMessage).toBeNull();
+  });
+
+  test("install then uninstall removes the shim it wrote", async () => {
+    const proc = scriptedBunProc();
+    const container = makeTestContainer({ proc });
+    await container.fs.writeFile(REAL_BUN_PATH, "");
+    await seedExistingRegistry(container);
+    await install({ command: CliCommand.Install, dryRun: false }, container);
+    const shimPath = shimPathFor(container);
+    expect(await container.fs.exists(shimPath)).toBe(true);
+
+    const outcome = await uninstall(container);
+
+    expect(outcome.exitCode).toBe(0);
+    expect(await container.fs.exists(shimPath)).toBe(false);
   });
 });
