@@ -1,7 +1,4 @@
-/**
- * Renders the compaction checkpoint block persisted on `PostCompact` —
- * `hooks/compact-checkpoint.py:34-35`. Agent-visible/C4.
- */
+/** Renders the compaction checkpoint block persisted on `PostCompact`. */
 
 export type CompactBlockInput = {
   readonly trigger: string;

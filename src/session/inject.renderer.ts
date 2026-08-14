@@ -1,14 +1,10 @@
-/**
- * Renders the auto-retrieved memory injected on `UserPromptSubmit` —
- * `hooks/memory-inject.py:84-91`. Agent-visible text (C4): copied verbatim,
- * including the note vs. worklog bullet formats.
- */
+/** Renders the auto-retrieved memory injected on `UserPromptSubmit`. */
 
 export type InjectedHit = {
   readonly title: string;
   readonly snippet: string;
   /** Path relative to the workspace's `kb`/`worklogs` root, already computed by
-   * the caller (`os.path.relpath(h["path"], ws["kb"])`, `memory-inject.py:87,90`). */
+   * the caller. */
   readonly relativePath: string;
 };
 

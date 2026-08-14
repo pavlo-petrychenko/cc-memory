@@ -1,5 +1,5 @@
 /**
- * The 5 Claude Code hook events this project handles (C2). Values are the exact
+ * The 5 Claude Code hook events this project handles. Values are the exact
  * `hookEventName` strings the protocol expects — copy verbatim, never re-derive.
  */
 export enum HookEvent {
@@ -18,9 +18,8 @@ export enum HookResultKind {
 }
 
 /**
- * What a hook handler decides to do, decoupled from the stdin/stdout JSON protocol
- * (C2) that `hookResult.renderer.ts` encodes it into. Replaces the
- * `print(json.dumps(...))` calls duplicated across all 5 `*.py` hooks.
+ * What a hook handler decides to do, decoupled from the stdin/stdout JSON
+ * protocol that `hookResult.renderer.ts` encodes it into.
  *
  *   silent  -> print nothing (the common case: cwd matched no workspace, etc.)
  *   context -> `{"hookSpecificOutput": {"hookEventName": event, "additionalContext": text}}`

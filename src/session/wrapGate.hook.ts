@@ -9,19 +9,19 @@ import { parseTolerantJson } from "./payload.ts";
 import { renderBlockReason, renderNudge } from "./wrapGate.renderer.ts";
 
 /**
- * `Stop` (`hooks/wrap-gate.py:46-108`): the wrap-gate. Nudges (non-blocking)
- * on the first stop(s) with uncommitted work, escalating to a hard block only
- * after repeated stops with sustained drift. State that used to be 142 leaked
- * `.wrap-<session_id>` marker FILES ([[bugfixes]] #1) is now one
- * `wrap-state.json` per workspace, keyed by session id and pruned of entries
- * older than 7 days on every write.
+ * `Stop`: the wrap-gate. Nudges (non-blocking) on the first stop(s) with
+ * uncommitted work, escalating to a hard block only after repeated stops
+ * with sustained drift. State lives in one `wrap-state.json` per workspace,
+ * keyed by session id and pruned of entries older than 7 days on every
+ * write, rather than one marker file per session — a shared file with
+ * pruning can't accumulate unboundedly the way per-session marker files did.
  */
 
-const DEFAULT_SESSION_ID = "nosession"; // `payload.get("session_id") or "nosession"`, wrap-gate.py:55
-const HEAD_LENGTH = 12; // wrap-gate.py:62
+const DEFAULT_SESSION_ID = "nosession";
+const HEAD_LENGTH = 12;
 const NO_GIT_HEAD = "nogit";
-const WRAP_STATE_FILENAME = "wrap-state.json"; // [[bugfixes]] #1
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000; // [[bugfixes]] #1 — new pruning window
+const WRAP_STATE_FILENAME = "wrap-state.json";
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 type WrapStateEntry = {
   readonly sig: string;
@@ -83,9 +83,7 @@ function parseWrapStateEntry(value: JsonValue | undefined): WrapStateEntry | nul
   return { sig, ts, nudges };
 }
 
-/** `prev = json.load(fh)` / `except Exception: prev = {}`
- * (`wrap-gate.py:78-83`) generalized to a shared, multi-session file: a
- * missing or unreadable file reads as `{}`, same as before. */
+/** A missing or unreadable state file reads as `{}`. */
 async function readWrapStateMap(fs: FileSystem, path: AbsPath): Promise<WrapStateMap> {
   let text: string;
   try {
@@ -102,8 +100,8 @@ async function readWrapStateMap(fs: FileSystem, path: AbsPath): Promise<WrapStat
   return map;
 }
 
-/** [[bugfixes]] #1 — prune entries older than 7 days on every write, so a
- * shared file never grows the way 142 individual marker files did. */
+/** Prune entries older than 7 days on every write, so the shared state file
+ * never grows unboundedly. */
 function pruneStaleEntries(map: WrapStateMap, nowMs: number): WrapStateMap {
   return Object.fromEntries(
     Object.entries(map).filter(([, entry]) => nowMs - entry.ts <= SEVEN_DAYS_MS),
@@ -151,7 +149,7 @@ export const handleWrapGate: HookHandler<WrapGatePayload> = async (context, payl
         );
       }
     } catch {
-      // wrap-gate.py:66-69 — best-effort cleanup only.
+      // best-effort cleanup only.
     }
     return { kind: HookResultKind.Silent }; // nothing uncommitted to capture
   }
@@ -189,7 +187,7 @@ export const handleWrapGate: HookHandler<WrapGatePayload> = async (context, payl
       nowMs,
     );
   } catch {
-    // wrap-gate.py:90-95 — best-effort persistence only.
+    // best-effort persistence only.
   }
 
   const gateInput = { slug, dirtyCount };

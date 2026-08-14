@@ -10,31 +10,28 @@ import { type InjectedHit, renderInjectContext } from "./inject.renderer.ts";
 import type { MemoryInjectPayload } from "./payload.ts";
 
 /**
- * `UserPromptSubmit` (`hooks/memory-inject.py:53-95`): auto-retrieve relevant
- * memory for the prompt via a fused BM25 search, gated by prompt length,
- * salient-token count and a score floor. `inject.jsonl` records the full
- * candidate pool on EVERY call that reaches it — even one that ends up
- * injecting nothing — which is why the log write happens before the
- * emptiness check below (`memory-inject.py:80-82`).
+ * `UserPromptSubmit`: auto-retrieve relevant memory for the prompt via a
+ * fused BM25 search, gated by prompt length, salient-token count and a score
+ * floor. `inject.jsonl` records the full candidate pool on EVERY call that
+ * reaches it — even one that ends up injecting nothing — which is why the
+ * log write happens before the emptiness check below.
  */
 
-const MIN_PROMPT_LENGTH = 12; // memory-inject.py:61
-const MIN_SALIENT_TOKENS = 2; // MIN_TOKENS, memory-inject.py:20
-const NOTES_POOL_SIZE = 8; // POOL, memory-inject.py:21
-const MAX_INJECTED_NOTES = 4; // MAX_NOTES, memory-inject.py:18
-const MAX_INJECTED_WORKLOGS = 1; // MAX_WORKLOG, memory-inject.py:19
-const MAX_LOGGED_PROMPT_LENGTH = 500; // memory-inject.py:39
-const MAX_LOGGED_TOKENS = 40; // memory-inject.py:40
+const MIN_PROMPT_LENGTH = 12;
+const MIN_SALIENT_TOKENS = 2;
+const NOTES_POOL_SIZE = 8;
+const MAX_INJECTED_NOTES = 4;
+const MAX_INJECTED_WORKLOGS = 1;
+const MAX_LOGGED_PROMPT_LENGTH = 500;
+const MAX_LOGGED_TOKENS = 40;
 
-// New, additive: size-capped rotation for `inject.jsonl` ([[bugfixes]] #2 —
-// the real file reached 1.6 MB / 1,137 rows with no rotation at all). Same
-// 1 MiB / keep-2 policy as `adapters/loggerFile.adapter.ts`'s
-// `appendWithRotation`, reimplemented over the `FileSystem` port instead of
-// reusing that function directly: `appendWithRotation` goes around the port
-// (real node:fs) specifically so `Logger` diagnostics can never be blocked by
-// the very seam they're meant to observe — but this hook's own I/O should
-// stay fake-testable like everything else in `tests/contract/hooks/**`, so
-// it goes through `FileSystem` like every other read/write here.
+// Size-capped rotation for `inject.jsonl`, same 1 MiB / keep-2 policy as
+// `adapters/loggerFile.adapter.ts`'s `appendWithRotation`, reimplemented over
+// the `FileSystem` port instead of reusing that function directly:
+// `appendWithRotation` goes around the port (real node:fs) specifically so
+// `Logger` diagnostics can never be blocked by the very seam they're meant to
+// observe — but this hook's own I/O should stay fake-testable like every
+// other read/write here, so it goes through `FileSystem` instead.
 const MAX_INJECT_LOG_BYTES = 1_048_576;
 const KEPT_LOG_GENERATIONS = 2;
 const INJECT_LOG_FILENAME = "inject.jsonl";
@@ -60,17 +57,15 @@ function joinAbsPath(base: AbsPath, name: string): AbsPath {
   return joined as AbsPath;
 }
 
-/** `os.path.relpath(h["path"], base) if h["path"].startswith(base) else
- * h["path"]` (`memory-inject.py:27-28`, `_relto`) — every indexed path is
- * always under `ws.kb`/`ws.worklogs`, so this is prefix-stripping, not full
- * relpath resolution, the same duplication `cli/commands/search.command.ts`'s
- * `relativeToKb` documents. */
+/** Every indexed path is always under `ws.kb`/`ws.worklogs`, so this is
+ * prefix-stripping, not full relpath resolution — the same duplication
+ * `cli/commands/search.command.ts`'s `relativeToKb` documents. */
 function relativeOrAbsolute(path: AbsPath, base: AbsPath): string {
   const prefix = `${base}/`;
   return path.startsWith(prefix) ? path.slice(prefix.length) : path;
 }
 
-/** `round(h["score"], 4)` (`memory-inject.py:41-42`). */
+/** Rounds a score to 4 decimal places for the log entry. */
 function round4(value: number): number {
   return Number(value.toFixed(4));
 }
@@ -173,7 +168,7 @@ async function logInjectCandidates(
     );
     await appendInjectLogLine(context.container.fs, logPath, JSON.stringify(record));
   } catch {
-    // memory-inject.py:49-50 — logging failures never propagate.
+    // logging failures never propagate.
   }
 }
 
@@ -201,8 +196,7 @@ export const handleMemoryInject: HookHandler<MemoryInjectPayload> = async (
       linkBoost: context.config.linkBoost,
     });
   } catch {
-    // memory-inject.py:71-75 — a search failure returns silently, before any
-    // logging happens (the log call sits AFTER this try/except in Python).
+    // a search failure returns silently, before any logging happens.
     return { kind: HookResultKind.Silent };
   }
 
@@ -213,7 +207,7 @@ export const handleMemoryInject: HookHandler<MemoryInjectPayload> = async (
     .filter((hit) => -hit.score >= context.config.injectMinScore)
     .slice(0, MAX_INJECTED_WORKLOGS);
 
-  // memory-inject.py:80-82 — logged even when nothing gets injected.
+  // logged even when nothing gets injected.
   await logInjectCandidates(
     context,
     prompt,

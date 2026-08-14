@@ -20,15 +20,11 @@ import { handleWorklogFloor } from "./worklogFloor.hook.ts";
 import { handleWrapGate } from "./wrapGate.hook.ts";
 
 /**
- * `memory hook <name>` — one of C3's two additive subcommands
- * ([[contracts]]), dispatching to the 5 real handlers (`src/hooks/*.hook.ts`).
- * The CLI names below (`session-start`, `memory-inject`, `wrap-gate`,
- * `worklog-floor`, `compact-checkpoint`) are what P9's installer registers as
- * each hook's command in `settings.json`
- * (`<abs-bun> <repo>/dist/memory.js hook <name>`) — new strings with no
- * Python precedent (`tools/install.py`'s own `HOOKS` map keys events to
- * `.py` filenames, not CLI names), chosen to match those filenames minus the
- * extension.
+ * `memory hook <name>` — dispatches to the 5 real handlers
+ * (`src/hooks/*.hook.ts`). The CLI names below (`session-start`,
+ * `memory-inject`, `wrap-gate`, `worklog-floor`, `compact-checkpoint`) are
+ * what the installer registers as each hook's command in `settings.json`
+ * (`<abs-bun> <repo>/dist/memory.js hook <name>`).
  */
 
 /** Every name `parseHookName` accepts — exported so a test can pin it against the
@@ -54,14 +50,13 @@ function parseHookName(raw: string): HookName | null {
 
 /**
  * The container-injected core of `hook()`, split out so it's testable
- * in-process with `tests/helpers/container.ts`'s fakes — `hook()` itself
- * (below) is the one place that supplies a REAL container, and is exercised
- * as a black box by `tests/contract/failopen.test.ts`'s spawn tests instead.
+ * in-process with fakes — `hook()` itself (below) is the one place that
+ * supplies a REAL container.
  *
  * An unknown `name` stays fail-open exactly like the rest of this
- * subcommand — invariant #3 applies here too, since this same CLI path is
- * what `settings.json` invokes as a real hook: a typo'd hook name must never
- * turn into a non-zero exit that breaks a session.
+ * subcommand: this same CLI path is what `settings.json` invokes as a real
+ * hook, so a typo'd hook name must never turn into a non-zero exit that
+ * breaks a session.
  */
 export async function dispatchHook(
   container: Container,
@@ -118,11 +113,9 @@ export async function dispatchHook(
 }
 
 /**
- * The real entrypoint `main.ts`'s dispatch calls (`case CliCommand.Hook:
- * return hook(parsed);`, `cli/main.ts`) — unlike every other command, this
- * one is never handed a `Container`/`Config` by `main.ts`, so it builds the
- * real ones itself, the same way `main.ts`'s own `import.meta.main` guard
- * does for every other command.
+ * The real entrypoint `main.ts`'s dispatch calls — unlike every other
+ * command, this one is never handed a `Container`/`Config` by `main.ts`, so
+ * it builds the real ones itself.
  */
 export async function hook(args: HookArgs): Promise<CliOutcome> {
   const container = makeRealContainer(process.env);
