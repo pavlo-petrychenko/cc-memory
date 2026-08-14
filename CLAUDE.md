@@ -160,8 +160,45 @@ the change visible in every diff and import that references it.
   `core/paths.ts`.
 - **No module mocking** (anti-slop `no-module-mocking`). Inject a fake from
   `tests/helpers/fakes/`.
-- Comment density matches the Python being replaced: explain *why* a quirk exists,
-  never restate the code.
+- Comments follow the rules in **§ Comments** below.
+
+## Comments
+
+A comment describes **the code**: what it does when the name isn't enough, or why a
+non-obvious choice holds. Nothing else belongs in one.
+
+**Never reference local development context.** A comment is read by someone looking at
+the finished code, who has no idea what our plan documents, branches, packets or
+review conversations were. Specifically, never commit a comment that mentions:
+
+- a plan, a work packet, a numbered bug-fix list, or a contract identifier
+- a file, line number or symbol that no longer exists (or is about to be deleted)
+- how the code was produced or checked — "verified by diffing", "CI caught this",
+  "the reviewer asked for", "written in parallel by", "found during review"
+- migration or task status — "for now", "until X lands", "temporary", "revisit later"
+
+If a comment only makes sense to someone who was in the room, delete it.
+
+**Keep the substance, drop the provenance.** When a citation explains a real
+constraint, restate the constraint as a fact about this code:
+
+```ts
+// bad  — cites a file being deleted, and a contract only we know about
+/** Serializes the registry (C1) — a port of lib/registry.py:60-85. Python's `_arr`
+ *  emits no inner spaces, and C1 requires byte-identical output. */
+
+// good — the reader learns the actual requirement
+/** Emits arrays without spaces inside the brackets. This file is user-owned and
+ *  rewritten in place by `memory workspace add|rm`, so its formatting has to stay
+ *  stable or every write shows up as spurious churn in the user's registry. */
+```
+
+**Prefer deleting over rewriting.** A redundant comment is worse than none — it rots
+and it lies. But don't strip genuinely subtle logic down to zero explanation.
+
+**Always keep**: `// SAFETY:` comments justifying a type assertion (the linter requires
+them — state the invariant that makes the assertion sound), and warnings about real
+runtime or dependency traps, which save the next person hours.
 
 ## Testing
 
