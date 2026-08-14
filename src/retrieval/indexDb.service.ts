@@ -17,24 +17,22 @@ function parentDirectory(path: AbsPath): AbsPath {
 
 export type IndexDbHandle = {
   readonly db: Db;
-  /** True when opening this handle just performed the one-time full rebuild
-   * (`lib/index.py:131-135`) — the stored `PRAGMA user_version` was behind
-   * `SCHEMA_VERSION`, so every existing row was wiped and `build.ts` must treat
-   * the whole vault as new regardless of what `incremental` was asked for. */
+  /** True when opening this handle just performed the one-time full
+   * rebuild — the stored `PRAGMA user_version` was behind `SCHEMA_VERSION`,
+   * so every existing row was wiped and `build.service.ts` must treat the
+   * whole vault as new regardless of what `incremental` was asked for. */
   readonly forcedFullRebuild: boolean;
 };
 
 /**
- * Open (or reuse — [[bugfixes]] #6, one handle per process via
- * `container.openDb`'s memoization) the index database for one workspace:
- * ensure its parent directory exists (`lib/index.py:46-52`'s
- * `os.makedirs(..., exist_ok=True)`), create any table that's missing, and
- * decide whether the stored schema version forces a full rebuild
- * (`lib/index.py:131-135`).
+ * Open (or reuse, one handle per process via `container.openDb`'s
+ * memoization) the index database for one workspace: ensure its parent
+ * directory exists, create any table that's missing, and decide whether the
+ * stored schema version forces a full rebuild.
  *
  * Idempotent: once a full rebuild has run, `PRAGMA user_version` reads back as
  * `SCHEMA_VERSION`, so every subsequent open of the same handle sees
- * `forcedFullRebuild: false` — matching `build.ts` and `Db`'s
+ * `forcedFullRebuild: false` — matching `build.service.ts` and `Db`'s
  * once-per-process-per-path pattern.
  */
 export async function openIndexDb(

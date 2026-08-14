@@ -3,13 +3,10 @@ import { parse as parseYaml } from "yaml";
 import { stripChars } from "../core/paths.ts";
 
 /**
- * Unifies the PoC's two divergent, hand-rolled frontmatter parsers
- * (`index.py:69-104`'s `_parse_frontmatter`/`parse_note`, and
- * `session-start.py:31-60`'s `parse_main_note`) into one YAML-based parser with a
- * tolerant fallback — [[bugfixes]] #5. The fallback reproduces the old
- * naive-line-splitter behavior verbatim so a malformed vault file degrades
- * identically; the YAML path is a real behavior change (list/multiline
- * frontmatter now parses correctly), registered as an allowlisted divergence.
+ * One YAML-based frontmatter parser with a tolerant fallback: a note whose
+ * frontmatter block isn't valid YAML falls back to a naive line-splitter so
+ * a malformed vault file still parses (just without list/multiline field
+ * support).
  *
  * The note-domain types (`Frontmatter`, `ParsedNote`, ...) live in this same file
  * rather than a separate `Note.ts`: this project's filesystem is case-insensitive
@@ -35,18 +32,15 @@ export type ParsedFrontmatter = {
 
 /**
  * One relation extracted from a note body: a typed relation (`- depends_on
- * [[Other Note]]`, `index.py:13`) or a plain wikilink filed under the implicit
- * `links_to` type (`index.py:92-95`).
+ * [[Other Note]]`) or a plain wikilink filed under the implicit `links_to`
+ * type.
  */
 export type NoteRelation = {
   readonly relationType: string;
   readonly target: string;
 };
 
-/**
- * The unified shape of a fully parsed vault note — what `parseNote` returns.
- * Replaces `index.parse_note`'s dict (`index.py:81-104`).
- */
+/** The unified shape of a fully parsed vault note — what `parseNote` returns. */
 export type ParsedNote = {
   readonly title: string;
   readonly type: string;
@@ -63,22 +57,20 @@ export type ParsedNote = {
 type YamlValue = string | number | boolean | null | readonly YamlValue[] | YamlMapping;
 type YamlMapping = { readonly [key: string]: YamlValue };
 
-// Anchored (JS's non-multiline `^` matches only true string-start, mirroring
-// Python's `.match` vs `.search`), DOTALL via `[\s\S]` (`index.py:11`).
+// Anchored to true string-start (not just line-start), with DOTALL via
+// `[\s\S]` so the block can span multiple lines.
 const FRONTMATTER = /^---\s*\n([\s\S]*?)\n---\s*\n/;
 const WIKILINK = /\[\[([^\]]+)\]\]/g;
 const TYPED_RELATION = /^\s*-\s+([a-z_]+)\s+\[\[([^\]]+)\]\]/gm;
-// Python's `\w` on `str` is UNICODE-aware, so `index.py:14`'s `[\w/-]` accepts
-// non-ASCII letters after the first character: `#café` captures "café" there. JS's
-// `\w` is always ASCII, which would truncate it to "caf" — so the continuation class
-// is spelled out with Unicode property escapes to match Python exactly. (The FIRST
-// character is `[A-Za-z]` in both, so `#привет` matches in neither.) Verified against
-// the Python regex on `#café`, `#tag_ok/sub`, `#привет` and `#promote`.
+// `\w` in JS is always ASCII, which would truncate `#café` to "caf" — so the
+// continuation class is spelled out with Unicode property escapes to accept
+// non-ASCII letters after the first character. The first character stays
+// `[A-Za-z]`, so `#привет` doesn't match at all.
 const INLINE_TAG = /(?:^|\s)#([A-Za-z][\p{L}\p{N}_/-]*)/gu;
 const TITLE = /^#\s+(.+?)\s*$/m;
 const KB_INDEX_TITLE_SUFFIX = /\s*[—-]\s*Knowledge Base Index\s*$/;
 
-const INDEX_NOTE_DESCRIPTION_MAX_LENGTH = 200; // session-start.py:18 (MAX_DESC)
+const INDEX_NOTE_DESCRIPTION_MAX_LENGTH = 200;
 
 function isYamlMapping(value: YamlValue): value is YamlMapping {
   return value !== null && Object.prototype.toString.call(value) === "[object Object]";
@@ -108,10 +100,8 @@ function frontmatterFromYaml(parsed: YamlValue): Frontmatter {
 }
 
 /**
- * The naive line-splitter every `.py` frontmatter parser used before the port
- * (`index.py:74-77`): one `key: value` pair per line, quotes stripped. Used only
- * when the block isn't valid YAML, so a malformed vault file behaves exactly as
- * it did before.
+ * A naive frontmatter fallback: one `key: value` pair per line, quotes
+ * stripped. Used only when the block isn't valid YAML.
  */
 function frontmatterFromLines(block: string): Frontmatter {
   const fields = new Map<string, FrontmatterValue>();
@@ -141,10 +131,9 @@ function frontmatterScalar(value: FrontmatterValue | undefined): string | undefi
 }
 
 /**
- * Python's bare `int(s)` accepts only an optional sign followed by digits
- * (whitespace-trimmed) — unlike `Number.parseInt`, it does NOT lenient-parse a
- * numeric prefix off a trailing-garbage string ("5abc" raises `ValueError`, so
- * the note's importance becomes `None`, not `5`).
+ * Accepts only an optional sign followed by digits (whitespace-trimmed).
+ * Unlike `Number.parseInt`, a numeric prefix followed by trailing garbage
+ * (e.g. `"5abc"`) is rejected outright rather than parsed as `5`.
  */
 function parsePythonInt(raw: string): number | null {
   const trimmed = raw.trim();
@@ -155,16 +144,15 @@ function parsePythonInt(raw: string): number | null {
 
 function frontmatterImportance(value: FrontmatterValue | undefined): number | null {
   const raw = frontmatterScalar(value);
-  // `int(fm.get("importance", "")) if fm.get("importance") else None` — an absent
-  // or empty value skips the parse attempt entirely (`index.py:96-99`).
+  // An absent or empty value skips the parse attempt entirely.
   if (raw === undefined || raw === "") return null;
   return parsePythonInt(raw);
 }
 
 /**
- * `fm["tags"]` may now be a YAML list, or (from the fallback parser, or a
- * single-line flow scalar) a string like `"[a, b, c]"` needing the old
- * comma/whitespace split (`index.py:88-89`).
+ * A `tags` frontmatter value may be a YAML list, or (from the fallback
+ * parser, or a single-line flow scalar) a string like `"[a, b, c]"` needing
+ * a comma/whitespace split.
  */
 function frontmatterTags(value: FrontmatterValue | undefined): readonly string[] {
   if (value === undefined) return [];
@@ -183,9 +171,9 @@ function beforePipe(raw: string): string {
 }
 
 /**
- * Split a note's text into its frontmatter fields and body. The regex match is
- * anchored at the true start of the string (`index.py:11,69-70`): a file that
- * doesn't open with `---` has no frontmatter at all, and the whole text is body.
+ * Split a note's text into its frontmatter fields and body. The regex match
+ * is anchored at the true start of the string: a file that doesn't open with
+ * `---` has no frontmatter at all, and the whole text is body.
  */
 export function parseFrontmatter(text: string): ParsedFrontmatter {
   const match = FRONTMATTER.exec(text);
@@ -202,7 +190,7 @@ export function parseFrontmatter(text: string): ParsedFrontmatter {
   }
 }
 
-/** Wikilink targets in a note body, with any `|display` label stripped (`index.py:12,92-95`). */
+/** Wikilink targets in a note body, with any `|display` label stripped. */
 export function extractWikilinks(body: string): readonly string[] {
   const targets: string[] = [];
   for (const match of body.matchAll(WIKILINK)) {
@@ -211,7 +199,7 @@ export function extractWikilinks(body: string): readonly string[] {
   return targets;
 }
 
-/** `- rel_type [[Target]]` lines (`index.py:13,90`), target cleaned the same way as `extractWikilinks`. */
+/** `- rel_type [[Target]]` lines, target cleaned the same way as `extractWikilinks`. */
 export function extractTypedRelations(body: string): readonly NoteRelation[] {
   const relations: NoteRelation[] = [];
   for (const match of body.matchAll(TYPED_RELATION)) {
@@ -220,7 +208,7 @@ export function extractTypedRelations(body: string): readonly NoteRelation[] {
   return relations;
 }
 
-/** Inline `#tag` occurrences (`index.py:14`), unfiltered and undeduplicated — callers combine as needed. */
+/** Inline `#tag` occurrences, unfiltered and undeduplicated — callers combine as needed. */
 export function extractInlineTags(body: string): readonly string[] {
   const tags: string[] = [];
   for (const match of body.matchAll(INLINE_TAG)) {
@@ -231,8 +219,8 @@ export function extractInlineTags(body: string): readonly string[] {
 
 /**
  * Strip wikilinks down to display text, drop `**`/backticks, collapse
- * whitespace, and truncate at `maxLen` on the last space (`session-start.py:21-28`).
- * Used for the KB-map feature descriptions pulled from a note's blockquote.
+ * whitespace, and truncate at `maxLen` on the last space. Used for the
+ * KB-map feature descriptions pulled from a note's blockquote.
  */
 export function cleanInline(text: string, maxLen: number): string {
   let cleaned = text.replace(/\[\[[^\]|]*\|([^\]]*)\]\]/g, "$1");
@@ -249,9 +237,9 @@ export function cleanInline(text: string, maxLen: number): string {
 }
 
 /**
- * Full note parse: frontmatter + title + tags (frontmatter ∪ inline) + typed and
- * plain-wikilink relations + importance (`index.py:81-104`). `fallbackTitle`
- * replaces `os.path.splitext(os.path.basename(path))[0]` — domain code has no
+ * Full note parse: frontmatter + title + tags (frontmatter ∪ inline) + typed
+ * and plain-wikilink relations + importance. `fallbackTitle` is the note's
+ * filename stem, used when no `# ` heading is present; domain code has no
  * path, so the caller (which does) supplies it.
  */
 export function parseNote(text: string, fallbackTitle: string): ParsedNote {
@@ -292,9 +280,8 @@ function stripLeadingBlockquoteMarkers(line: string): string {
 }
 
 /**
- * Unifies `session-start.py:31-60`'s `parse_main_note` onto the shared
- * `parseFrontmatter` for the `epic:` field, keeping its body-scanning quirks
- * verbatim: the title is the first `# ` heading (with the KB-index home-note
+ * Parses a feature's index note: `epic:` comes from the shared frontmatter
+ * parser; the title is the first `# ` heading (with the KB-index home-note
  * suffix stripped), and the description is every contiguous blockquote line
  * starting right after it, joined and cleaned.
  */

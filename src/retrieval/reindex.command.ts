@@ -8,9 +8,9 @@ import {
 import type { Container } from "../platform/container.ts";
 import { buildIndex } from "./build.service.ts";
 
-/** `cmd_reindex` (`bin/memory:132-136`) — one line per target workspace,
- * printed in registry order (`Promise.all` over `_targets(a)` preserves that
- * order in its result array even though the builds run concurrently). */
+/** One line per target workspace, printed in registry order (`Promise.all`
+ * preserves that order in its result array even though the builds run
+ * concurrently). */
 export async function reindex(
   container: Container,
   args: ReindexArgs,

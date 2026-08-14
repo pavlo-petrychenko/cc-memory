@@ -9,16 +9,13 @@ import { expandPath } from "../core/paths.ts";
 import type { Container } from "../platform/container.ts";
 import { listNotes } from "./notes.service.ts";
 
-/** `a.folder` treated as falsy for both `None` and `""` (`bin/memory:172,45`
- * in `list_notes`) — an explicit empty `--folder ""` behaves like omitting
- * the flag entirely. */
+/** An explicit empty `--folder ""` behaves like omitting the flag entirely. */
 function normalizedFolder(folder: string | null): string | null {
   return folder === null || folder === "" ? null : folder;
 }
 
-/** `cmd_notes` (`bin/memory:165-176`). `--json` is checked BEFORE the
- * "no notes" fallback, matching Python's `if a.json: ...; return` running
- * before the plain-text branch — an empty `--json` result still prints `[]`. */
+/** `--json` is checked BEFORE the "no notes" fallback: an empty `--json`
+ * result still prints `[]` rather than the plain-text "no notes" message. */
 export async function notes(container: Container, args: NotesArgs): Promise<CliOutcome> {
   const home = container.env.home();
   const registryResult = await loadRegistryForCli(container.fs, home);

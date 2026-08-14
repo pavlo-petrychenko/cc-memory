@@ -8,8 +8,8 @@ import type { FileSystem } from "../platform/fileSystem.port.ts";
 import { openIndexDb } from "./indexDb.service.ts";
 
 /**
- * `{added, updated, removed, total}` — the CLI's `memory reindex` prints these
- * verbatim (**C3**), matching `build()`'s return dict (`lib/index.py:178`).
+ * `{added, updated, removed, total}` — the CLI's `memory reindex` prints
+ * these fields verbatim, so their names and shape are part of that output.
  */
 export type BuildStats = {
   readonly added: number;
@@ -19,8 +19,8 @@ export type BuildStats = {
 };
 
 export type BuildOptions = {
-  /** Skip a file whose stored mtime hasn't moved (`lib/index.py:144`). Forced
-   * to `false` by a schema-version bump regardless of what's passed here. */
+  /** Skip a file whose stored mtime hasn't moved. Forced to `false` by a
+   * schema-version bump regardless of what's passed here. */
   readonly incremental?: boolean;
 };
 
@@ -38,17 +38,16 @@ async function isDirectory(fs: FileSystem, path: AbsPath): Promise<boolean> {
   try {
     return (await fs.stat(path)).isDirectory;
   } catch {
-    return false; // matches `os.path.isdir` returning False for a missing path
+    return false; // a missing path is not a directory
   }
 }
 
 /**
- * Any path segment starting with `.` is excluded, plus an exact-or-prefix match
- * against a workspace's `exclude` entries with slashes stripped
- * (`lib/index.py:107-115`, `_excluded`). Applied only to DIRECTORY names during
- * the walk (`walkMarkdownFiles` below) — a `.md` FILE is never itself checked
- * against this, only the directories it's nested under, a quirk preserved
- * verbatim from the Python (`_walk_md` filters `dirnames`, not `filenames`).
+ * Any path segment starting with `.` is excluded, plus an exact-or-prefix
+ * match against a workspace's `exclude` entries with slashes stripped.
+ * Applied only to DIRECTORY names during the walk (`walkMarkdownFiles`
+ * below) — a `.md` FILE is never itself checked against this, only the
+ * directories it's nested under.
  */
 function isExcludedDir(relativePath: string, exclude: readonly string[]): boolean {
   if (relativePath.split("/").some((segment) => segment.startsWith("."))) return true;
@@ -87,9 +86,9 @@ async function walkDirLevel(
 
 /**
  * Recursively collect every `.md` file under `root`, pruning excluded/dot
- * directories before descending into them (`lib/index.py:118-128`, `_walk_md`).
- * Sorted per directory level so the walk is deterministic — `os.walk`'s own
- * order is OS-dependent and irrelevant to the resulting index content, but a
+ * directories before descending into them. Sorted per directory level so
+ * the walk is deterministic — directory entry order is otherwise
+ * OS-dependent and irrelevant to the resulting index content, but a
  * deterministic order makes tests reproducible without changing behavior.
  */
 function walkMarkdownFiles(
@@ -101,10 +100,10 @@ function walkMarkdownFiles(
 }
 
 /**
- * `os.path.splitext(os.path.basename(path))[0]` (`lib/index.py:86`) — the
- * fallback title for a note with no H1. A leading-dot-only "extension" (the
- * last `.` sitting at index 0, e.g. a file literally named `.md`) is NOT split
- * off, matching Python's `splitext` treating a dotfile as having no extension.
+ * The fallback title for a note with no H1: the filename minus its
+ * extension. A leading-dot-only "extension" (the last `.` sitting at
+ * index 0, e.g. a file literally named `.md`) is NOT split off — a dotfile
+ * is treated as having no extension.
  */
 function fallbackTitleFromPath(path: AbsPath): string {
   const base = path.slice(path.lastIndexOf("/") + 1);
@@ -127,12 +126,10 @@ function requireUpsertedId(rows: readonly UpsertedId[]): number {
 }
 
 /**
- * Parse and upsert one note file into `notes`/`notes_fts`/`links`
- * (`lib/index.py:150-162`). Returns `false` on a parse failure — the caller
- * SKIPS THE FILE SILENTLY (`lib/index.py:146-149`), a quirk preserved exactly:
- * one malformed note must never abort the whole reindex, AND (since Python's
- * `continue` runs before its `added`/`updated` increment) a skipped file must
- * never be counted as either.
+ * Parse and upsert one note file into `notes`/`notes_fts`/`links`. Returns
+ * `false` on a parse failure — the caller skips the file silently: one
+ * malformed note must never abort the whole reindex, and a skipped file
+ * must never be counted as either added or updated.
  */
 async function upsertNote(
   fs: FileSystem,
@@ -203,7 +200,7 @@ async function upsertNoteIfChanged(
     existingMtime !== undefined &&
     Math.abs(existingMtime - mtime) < 1e-6
   ) {
-    return NoteUpsertOutcome.Skipped; // unchanged — skip re-parsing (lib/index.py:144)
+    return NoteUpsertOutcome.Skipped; // unchanged — skip re-parsing
   }
   const upserted = await upsertNote(fs, db, path, mtime);
   if (!upserted) return NoteUpsertOutcome.Skipped; // parse failure — not counted either way
@@ -213,9 +210,9 @@ async function upsertNoteIfChanged(
 }
 
 /**
- * Walk the vault, upserting new/changed notes (`lib/index.py:136-166`).
- * Returns the added/updated counts and the full set of paths seen, so the
- * caller can prune anything indexed that wasn't seen this time.
+ * Walk the vault, upserting new/changed notes. Returns the added/updated
+ * counts and the full set of paths seen, so the caller can prune anything
+ * indexed that wasn't seen this time.
  */
 async function upsertNotes(
   fs: FileSystem,
@@ -248,8 +245,7 @@ async function upsertNotes(
   return { added, updated, seen: new Set(paths) };
 }
 
-/** Delete every indexed note whose path wasn't seen in this walk
- * (`lib/index.py:167-173`). */
+/** Delete every indexed note whose path wasn't seen in this walk. */
 function pruneNotes(db: Db, seen: ReadonlySet<string>): number {
   const rows = db.query<{ readonly id: number; readonly path: string }>(
     "SELECT id, path FROM notes",
@@ -270,8 +266,8 @@ type ExistingWorklogFile = { readonly id: number; readonly mtime: number };
 
 /**
  * Index one worklog file into `worklog_fts`, tracked by `worklog_files` so a
- * later call can tell it's unchanged (bugfix #7). Mirrors `upsertNote`'s
- * rowid-paired upsert shape.
+ * later call can tell it's unchanged. Mirrors `upsertNote`'s rowid-paired
+ * upsert shape.
  */
 async function upsertWorklogFile(
   fs: FileSystem,
@@ -285,7 +281,7 @@ async function upsertWorklogFile(
   try {
     body = await fs.readFile(path);
   } catch {
-    return; // matches lib/index.py:196-197's except-continue
+    return; // an unreadable worklog file is skipped, not fatal to the reindex
   }
   const rows = db.query<UpsertedId>(
     "INSERT INTO worklog_files(path,mtime) VALUES(?,?) " +
@@ -303,7 +299,8 @@ async function upsertWorklogFile(
   ]);
 }
 
-/** `f[:-3] if f != "STATE.md" else "STATE"` (`lib/index.py:198`). */
+/** The worklog `date` value indexed for a file: `STATE.md` is kept as
+ * `"STATE"`, everything else drops its `.md` extension. */
 function worklogDateFromFileName(fileName: string): string {
   return fileName === "STATE.md" ? "STATE" : fileName.slice(0, -3);
 }
@@ -336,8 +333,8 @@ async function reindexWorklogFile(
 }
 
 /** One worktree slug directory under `_Worklogs/`: its `.md` files, reindexed
- * in parallel (`lib/index.py:186-200`). `.`-prefixed slugs are skipped, same
- * as a non-directory entry. */
+ * in parallel. `.`-prefixed slugs are skipped, same as a non-directory
+ * entry. */
 async function reindexWorklogSlug(
   fs: FileSystem,
   db: Db,
@@ -359,12 +356,12 @@ async function reindexWorklogSlug(
 }
 
 /**
- * `worklog_fts`, made incremental by mtime instead of a full
- * `DELETE FROM worklog_fts` + reinsert on every call ([[bugfixes]] #7,
- * `lib/index.py:181-200`). Produces the SAME rows a full rebuild would (same
- * dot-slug skip, same `date` derivation, same silent skip of an unreadable
- * file), just without re-reading files whose mtime hasn't moved, and prunes
- * `worklog_files`/`worklog_fts` rows for anything no longer on disk.
+ * Rebuilds `worklog_fts`, incrementally by mtime instead of a full
+ * `DELETE FROM worklog_fts` + reinsert on every call. Produces the same rows
+ * a full rebuild would (same dot-slug skip, same `date` derivation, same
+ * silent skip of an unreadable file), just without re-reading files whose
+ * mtime hasn't moved, and prunes `worklog_files`/`worklog_fts` rows for
+ * anything no longer on disk.
  */
 async function buildWorklogs(
   fs: FileSystem,
@@ -398,8 +395,8 @@ async function buildWorklogs(
 
 /**
  * Rebuild (or incrementally update) one workspace's index: notes, then
- * worklogs (`lib/index.py:131-178`). A schema-version bump forces a full
- * rebuild regardless of `options.incremental` (`db.ts`'s `forcedFullRebuild`).
+ * worklogs. A schema-version bump forces a full rebuild regardless of
+ * `options.incremental` (`indexDb.service.ts`'s `forcedFullRebuild`).
  */
 export async function buildIndex(
   container: Container,

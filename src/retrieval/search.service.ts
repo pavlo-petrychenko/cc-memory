@@ -10,20 +10,17 @@ import { fuse } from "./rank.ts";
 
 /**
  * The two indexed corpora a search can target — `notes_fts` (the vault) or
- * `worklog_fts` (recent worklogs), `lib/index.py:280-287,305`. A closed set,
- * so an enum rather than the Python's bare `"notes"`/`"worklog"` strings
- * (CLAUDE.md's "no magic strings" rule) — the enum VALUES are still exactly
- * those strings, since `kind` never crosses an agent-visible boundary as JSON.
+ * `worklog_fts` (recent worklogs). A closed set, so an enum rather than a
+ * bare string union.
  */
 export enum SearchKind {
   Notes = "notes",
   Worklog = "worklog",
 }
 
-// One SQL per kind, weights frozen by **C7** — verbatim from the plan's Porting
-// Reference ("Search SQL", `lib/index.py:280-287`). Column weights: notes =
-// title 10 / body 1 / tags 5; worklog = slug 3 / date 1 / body 1. `snippet()`
-// draws from the body column (index 1 for notes_fts, index 2 for worklog_fts).
+// One SQL per kind. Column weights: notes = title 10 / body 1 / tags 5;
+// worklog = slug 3 / date 1 / body 1. `snippet()` draws from the body column
+// (index 1 for notes_fts, index 2 for worklog_fts).
 // Exported individually (rather than kept as a private `Record`) so
 // `tests/integration/adapters/fts5Smoke.test.ts` can import the REAL,
 // currently-running query text instead of keeping its own hand-copied
@@ -42,8 +39,8 @@ const SEARCH_SQL = {
   [SearchKind.Worklog]: WORKLOG_SEARCH_SQL,
 } satisfies Readonly<Record<SearchKind, string>>;
 
-const DEFAULT_LIMIT = 5; // lib/index.py:305,312 — `search`/`search_fused`'s own default
-const DEFAULT_KIND = SearchKind.Notes; // lib/index.py:305,312
+const DEFAULT_LIMIT = 5;
+const DEFAULT_KIND = SearchKind.Notes;
 
 type SearchRow = {
   readonly path: string;
@@ -52,8 +49,8 @@ type SearchRow = {
   readonly score: number;
 };
 
-/** `" ".join(snip.split())` (`lib/index.py:302`) — Python's argless `str.split()`
- * splits on any run of whitespace and drops empty tokens either side. */
+/** Collapses any run of whitespace to a single space and trims leading/
+ * trailing empty tokens. */
 function collapseWhitespace(text: string): string {
   return text
     .split(/\s+/u)
@@ -62,11 +59,11 @@ function collapseWhitespace(text: string): string {
 }
 
 /**
- * Execute one prebuilt FTS5 MATCH (`lib/index.py:290-302`, `_run`). An empty
- * (or all-whitespace) query short-circuits to `[]` without touching the
- * database; an FTS5 syntax error is swallowed to `[]` rather than thrown
- * (`lib/index.py:297-298`) — this is what makes a natural prompt containing
- * `OR`/`AND`/`NEAR`/quotes always safe to search with.
+ * Execute one prebuilt FTS5 MATCH. An empty (or all-whitespace) query
+ * short-circuits to `[]` without touching the database; an FTS5 syntax
+ * error is swallowed to `[]` rather than thrown — this is what makes a
+ * natural prompt containing `OR`/`AND`/`NEAR`/quotes always safe to search
+ * with.
  */
 function runMatch(
   db: Db,
@@ -78,7 +75,7 @@ function runMatch(
   try {
     const rows = db.query<SearchRow>(SEARCH_SQL[kind], [matchQuery, limit]);
     return rows.map((row) => ({
-      // SAFETY: the `path` column is only ever written by `build.ts`'s
+      // SAFETY: the `path` column is only ever written by `build.service.ts`'s
       // upserts, which always bind an already-validated `AbsPath` — reading
       // it back restores the brand SQLite's storage necessarily erases.
       path: row.path as AbsPath,
@@ -97,10 +94,10 @@ export type SearchOptions = {
 };
 
 /**
- * Single BM25 query over one workspace (`lib/index.py:305-309`). `query` is
- * natural text: it is always tokenized via `ftsQuery` and never interpreted as
- * raw FTS5 syntax, so any prompt (including one containing `OR`/`AND`/`NEAR`/
- * quotes) is safe and never errors.
+ * Single BM25 query over one workspace. `query` is natural text: it is
+ * always tokenized via `ftsQuery` and never interpreted as raw FTS5 syntax,
+ * so any prompt (including one containing `OR`/`AND`/`NEAR`/quotes) is safe
+ * and never errors.
  */
 export async function search(
   container: Container,
@@ -118,11 +115,10 @@ export async function search(
 }
 
 export type SearchFusedOptions = SearchOptions & {
-  /** Include the wikilink-corroboration bonus (`lib/index.py:312`'s `links`
-   * parameter). Default `true`. */
+  /** Include the wikilink-corroboration bonus. Default `true`. */
   readonly links?: boolean;
   /** RRF bonus per corroborating in-link — `Config.linkBoost`
-   * (`CCMEM_LINK_BOOST`). Required rather than defaulted here: the C5 default
+   * (`CCMEM_LINK_BOOST`). Required rather than defaulted here: the default
    * (`0.003`) is `core/Config.ts`'s to own, not re-derived in this file. */
   readonly linkBoost: number;
 };
@@ -130,15 +126,15 @@ export type SearchFusedOptions = SearchOptions & {
 /**
  * Proximity-aware retrieval: fuse a token-OR ranking with a phrase/`NEAR`
  * ranking via Reciprocal Rank Fusion, plus the small wikilink-corroboration
- * bonus (`lib/index.py:312-336`, `search_fused`). Returns `[]` EARLY when the
- * token query yields no candidates at all — phrase hits are always a subset of
- * token hits (`NEAR` requires both terms to already match), so the token list
- * is the complete candidate set. Degrades to pure BM25 ordering when
- * `phraseQuery` has no adjacent-term pair to build a `NEAR` clause from.
+ * bonus. Returns `[]` EARLY when the token query yields no candidates at
+ * all — phrase hits are always a subset of token hits (`NEAR` requires both
+ * terms to already match), so the token list is the complete candidate set.
+ * Degrades to pure BM25 ordering when `phraseQuery` has no adjacent-term
+ * pair to build a `NEAR` clause from.
  *
- * Reuses the SAME `Db` handle for the token search, the phrase search and the
- * in-link count ([[bugfixes]] #6, via `openIndexDb`/`Container.openDb`'s
- * per-path memoization) instead of the PoC's three separate connections.
+ * Reuses the SAME `Db` handle for the token search, the phrase search and
+ * the in-link count (via `openIndexDb`/`Container.openDb`'s per-path
+ * memoization) instead of opening three separate connections.
  */
 export async function searchFused(
   container: Container,
@@ -149,7 +145,7 @@ export async function searchFused(
   const limit = options.limit ?? DEFAULT_LIMIT;
   const kind = options.kind ?? DEFAULT_KIND;
   const links = options.links ?? true;
-  const pool = Math.max(limit * 3, 10); // lib/index.py:319 — candidate pool size
+  const pool = Math.max(limit * 3, 10); // candidate pool size before fusion
 
   const { db } = await openIndexDb(container, workspace);
   const tokenHits = runMatch(db, ftsQuery(query), pool, kind);

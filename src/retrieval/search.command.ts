@@ -10,18 +10,15 @@ import { expandPath } from "../core/paths.ts";
 import type { Container } from "../platform/container.ts";
 import { SearchKind, searchFused } from "./search.service.ts";
 
-/** `os.path.relpath(h["path"], ws["kb"]) if h["path"].startswith(ws["kb"]) else
- * h["path"]` (`bin/memory:151`) — every indexed path is always under `kb`, so
- * this is prefix-stripping, not full relpath resolution (`..` segments never
- * occur in practice, same reasoning as `retrieval/notes.ts`'s
- * `relativeToKb`, which this duplicates rather than imports — it's private
- * there). */
+/** Every indexed path is always under `kb`, so this is prefix-stripping, not
+ * full relpath resolution (`..` segments never occur in practice, same
+ * reasoning as `notes.service.ts`'s `relativeToKb`, which this duplicates
+ * rather than imports — it's private there). */
 function relativeToKb(path: string, kb: string): string {
   const prefix = `${kb}/`;
   return path.startsWith(prefix) ? path.slice(prefix.length) : path;
 }
 
-/** `cmd_search` (`bin/memory:139-152`). */
 export async function search(
   container: Container,
   config: Config,

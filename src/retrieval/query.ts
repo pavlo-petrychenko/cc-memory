@@ -1,6 +1,6 @@
 import { orderedTerms, salientTokens } from "./tokenize.ts";
 
-/** NEAR proximity window, in tokens (`index.py:244`). */
+/** NEAR proximity window, in tokens. */
 export const PHRASE_WINDOW = 8;
 
 const MAX_QUERY_TOKENS = 32;
@@ -8,9 +8,9 @@ const MAX_NEAR_CLAUSES = 24;
 
 /**
  * Build a safe FTS5 MATCH query: an OR over up to 32 sorted, quoted salient
- * tokens (`index.py:237-239`). `query` is always natural text run through this —
- * never raw FTS5 syntax — so a prompt containing `OR`/`AND`/`NEAR`/quotes is safe
- * and never errors.
+ * tokens. `text` is always natural prompt text run through this — never raw
+ * FTS5 syntax — so a prompt containing `OR`/`AND`/`NEAR`/quotes is safe and
+ * never errors.
  */
 export function ftsQuery(text: string): string {
   const tokens = [...salientTokens(text)].toSorted();
@@ -21,9 +21,9 @@ export function ftsQuery(text: string): string {
 }
 
 /**
- * FTS5 `NEAR` clauses over adjacent salient-term pairs, OR'd together
- * (`index.py:262-275`). Rewards proximity ("salient tokens" as a phrase, not just
- * both words somewhere). Empty string when there are fewer than two ordered
+ * FTS5 `NEAR` clauses over adjacent salient-term pairs, OR'd together.
+ * Rewards proximity (salient tokens appearing as a phrase, not just both
+ * words somewhere). Empty string when there are fewer than two ordered
  * terms — phrase ranking then degrades to pure BM25.
  */
 export function phraseQuery(text: string, window: number = PHRASE_WINDOW): string {
