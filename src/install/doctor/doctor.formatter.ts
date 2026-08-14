@@ -9,9 +9,6 @@ export class DoctorFormatter {
   // having an unreachable synthetic one, which drags its function-coverage
   // percentage down even at 100% line coverage — a non-empty (if inert)
   // constructor body keeps that synthetic slot out of the count.
-  constructor() {
-    void 0;
-  }
 
   formatRegistryStatus(registryPath: string, status: string): string {
     return `registry: ${registryPath} ${status}`;

@@ -19,7 +19,15 @@
 # nothing at all. Every value below was verified by seeding a file that violates it
 # and checking the exit code — do the same if you change any of them.
 [test]
-coverageThreshold = 0.6
+# LINES only. Function coverage is not a usable signal here: Bun counts a class's
+# implicit constructor as an uncovered function, so a class with one method and no
+# declared constructor reads 50% however well it is tested. Chasing that number
+# produced empty `constructor() { void 0; }` bodies, which is worse than the metric.
+#
+# `functions = 0` is written explicitly on purpose: OMITTING a key from this object
+# does not mean "don't check it", it means Bun applies a strict default and the run
+# fails at 99.8% line coverage. Verified by trying it.
+coverageThreshold = { lines = 0.6, functions = 0 }
 coverageSkipTestFiles = true
 coverageReporter = ["text"]
 coveragePathIgnorePatterns = ["src/testing/**", "src/quality/**", "src/platform/**"]

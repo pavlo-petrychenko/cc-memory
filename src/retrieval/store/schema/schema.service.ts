@@ -6,9 +6,6 @@ export class SchemaService {
   // having an unreachable synthetic one, which drags its function-coverage
   // percentage down even at 100% line coverage — a non-empty (if inert)
   // constructor body keeps that synthetic slot out of the count.
-  constructor() {
-    void 0;
-  }
 
   /**
    * Drop our derived tables and recreate them at the current schema, then

@@ -3,9 +3,6 @@ export class ReindexFormatter {
   // having an unreachable synthetic one, which drags its function-coverage
   // percentage down even at 100% line coverage — a non-empty (if inert)
   // constructor body keeps that synthetic slot out of the count.
-  constructor() {
-    void 0;
-  }
 
   line(
     id: string,
