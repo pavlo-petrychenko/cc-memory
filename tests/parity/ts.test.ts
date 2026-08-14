@@ -5,13 +5,14 @@
  * readiness check `tests/parity/self.test.ts` was built to prepare for (see
  * that file's doc comment and the plan's "packet-1-parity"/"testing" docs).
  *
- * A handful of CLI_CASES exercise `reflect`/`doctor`, whose FULL behavior
- * depends on packets that haven't landed yet (P8's real reflector, P7's
- * hooks) — `src/cli/commands/reflect.command.ts` and `doctor.command.ts` are
- * deliberate, documented stubs for the parts only those packets can finish.
- * Those specific cases are called out below with `test.skip` and a comment
+ * A handful of `doctor` CLI_CASES still exercise a stub: `doctor.command.ts`
+ * is P7's to finish (the 5 real hook scripts Python's doctor spawns and
+ * reports on). `reflect` landed with P8 and is asserted for real, including
+ * the reworked cursor scheme (bugfix #3 — see `tests/parity/divergences.ts`).
+ * Those `doctor` cases are called out below with `test.skip` and a comment
  * naming exactly what's missing; every other CLI case (workspace, resolve,
- * reindex, search, notes, commit) is fully ported and asserted for real.
+ * reindex, search, notes, commit, reflect) is fully ported and asserted for
+ * real.
  */
 import { beforeAll, describe, expect, test } from "bun:test";
 
@@ -41,17 +42,13 @@ const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 
 /**
  * CLI cases whose PYTHON side genuinely does something this packet's TS
- * command deliberately does not (yet) — see the doc comments on
- * `reflect.command.ts` (P8: candidate gathering, `is_due`, the LLM decision
- * step) and `doctor.command.ts` (P7: the 5 real hook scripts Python's doctor
- * spawns and reports on). Every one of these is a STUB producing an honest
- * "not implemented" message, never a silent/incorrect success — see this
- * packet's final report for the exact reasoning. Revisit (delete rows) as P7
- * and P8 land.
+ * command deliberately does not (yet) — see the doc comment on
+ * `doctor.command.ts` (P7: the 5 real hook scripts Python's doctor spawns
+ * and reports on). Every one of these is a STUB producing an honest "not
+ * implemented" message, never a silent/incorrect success. Revisit (delete
+ * rows) as P7 lands.
  */
 const PENDING_PACKET_CASES: ReadonlySet<string> = new Set([
-  "cli/reflect-no-candidates-headless",
-  "cli/reflect-if-due-skips-second-run",
   "cli/doctor-basic",
   "cli/doctor-with-prompt",
   "cli/doctor-outside-workspace",

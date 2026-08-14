@@ -64,7 +64,17 @@ async function assertCliCaseIsSelfConsistent(cliCase: CliCase): Promise<void> {
       pair.right.fixture.root,
       cliCase.orderInsensitiveStdout,
     );
-    assertParity(cliCase.name, mismatches);
+    // Python vs Python must NEVER have a registered divergence — the real
+    // `DIVERGENCES` allowlist (`assertParity`'s default) exists only to
+    // describe intentional TS-vs-Python behavior changes (P2 onward's
+    // bugfixes), which this self-test predates by design (its whole point is
+    // proving the harness itself finds zero differences, independent of
+    // whatever divergences other suites have since registered). Passing the
+    // default here would make an unrelated suite's legitimate entry (e.g.
+    // this packet's bugfix #3 cursor rework) fail HERE as a false "stale
+    // allowlist entry", since a same-implementation comparison can never
+    // reproduce it.
+    assertParity(cliCase.name, mismatches, []);
   } finally {
     removeFixturePair(pair);
   }
@@ -84,7 +94,8 @@ async function assertHookCaseIsSelfConsistent(hookCase: HookCase): Promise<void>
       pair.right.fixture.root,
       false,
     );
-    assertParity(hookCase.name, mismatches);
+    // See the identical comment in `assertCliCaseIsSelfConsistent` above.
+    assertParity(hookCase.name, mismatches, []);
   } finally {
     removeFixturePair(pair);
   }

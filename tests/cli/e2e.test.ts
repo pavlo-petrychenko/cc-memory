@@ -214,7 +214,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
     }
   });
 
-  test("reflect stub reports plainly, never a fake consolidation", async () => {
+  test("reflect runs the real reflector against the built binary", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
       const result = await runTs(["reflect", "--workspace", "primary", "--headless"], {
@@ -222,7 +222,10 @@ describe("CLI e2e against the built dist/memory.js", () => {
         cwd: primaryCwd(fixture),
       });
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toBe("primary: reflect not implemented yet (P8)\n");
+      // The fixture's worklogs hold only `STATE.md` (gather.ts skips it),
+      // so there is nothing to promote — the real, honest outcome, never a
+      // fake consolidation.
+      expect(result.stdout).toBe("primary: no candidates since last run\n");
     } finally {
       tempDir.remove();
     }

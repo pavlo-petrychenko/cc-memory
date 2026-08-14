@@ -1,9 +1,9 @@
 /**
- * Unit tests for the divergence allowlist lookup. DIVERGENCES itself was
- * empty through P1-P6 (see its own doc comment) — the first real entries
- * are P7's ([[bugfixes]] #1, wrap-state.json). These tests use an explicit
- * allowlist fixture to exercise both outcomes independent of whatever the
- * real export currently holds.
+ * Unit tests for the divergence allowlist lookup. Most cases use an explicit
+ * allowlist fixture so this file doesn't depend on which bugfix rows have landed;
+ * the last test exercises the REAL `DIVERGENCES` export against both P7's
+ * ([[bugfixes]] #1, wrap-state.json) and P8's (#3, the reflector's two cursors)
+ * entries, which are guaranteed present from those packets onward.
  */
 import { describe, expect, test } from "bun:test";
 
@@ -34,9 +34,11 @@ describe("findDivergence", () => {
   });
 
   test("defaults to the real DIVERGENCES export", () => {
-    expect(findDivergence("anything")).toBeUndefined();
+    expect(findDivergence("cli/some-case-with-no-registered-divergence")).toBeUndefined();
     expect(
       findDivergence("hooks/wrap-gate/happy-path-first-nudge (ts-vs-python)")?.bugfix,
     ).toBe(1);
+    expect(findDivergence("cli/reflect-no-candidates-headless")?.bugfix).toBe(3);
+    expect(DIVERGENCES.length).toBeGreaterThan(0);
   });
 });
