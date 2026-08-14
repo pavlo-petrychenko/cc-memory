@@ -1,22 +1,16 @@
 /**
- * C2's stdin JSON protocol, parsed at the boundary: one typed shape per hook
- * event instead of the ad-hoc `payload.get(...)` calls scattered across the 5
- * `*.py` hooks. The union of fields any hook ever reads is `cwd`, `session_id`,
+ * The hook stdin JSON protocol, parsed at the boundary: one typed shape per
+ * hook event. The union of fields any hook ever reads is `cwd`, `session_id`,
  * `source`, `prompt`, `stop_hook_active`, `compact_summary`, `trigger`,
- * `reason` — no single event needs all of them (`source` in particular is
- * accepted on `SessionStart`'s payload but never read anywhere in
- * `session-start.py`, so it has no field here either; that's not a gap, it's
- * the same thing Python does with it).
+ * `reason` — no single event needs all of them (`SessionStart`'s payload
+ * accepts a `source` field that is never read, so it has no field here
+ * either).
  *
- * `runtime.ts` owns the tolerant top-level parse (`parseTolerantJson`) — empty
- * or invalid stdin becomes `{}`, never a thrown error, matching every hook's
- * `json.loads(raw) if raw.strip() else {}` / `except Exception: payload = {}`
- * preamble. Each `parse*Payload` function below then reads its own fields out
- * of that already-parsed `JsonRecord`, tolerantly: a field of the wrong JSON
- * type is treated the same as an absent one rather than raising, which is
- * safe (`{}` on a malformed field is a *subset* of Python's behavior — Python
- * would raise inside a later `str` call and fall through to the outer
- * `except Exception: pass`, ending up silent all the same).
+ * `runtime.ts` owns the tolerant top-level parse (`parseTolerantJson`) —
+ * empty or invalid stdin becomes `{}`, never a thrown error. Each
+ * `parse*Payload` function below then reads its own fields out of that
+ * already-parsed `JsonRecord`, tolerantly: a field of the wrong JSON type is
+ * treated the same as an absent one rather than raising.
  */
 
 /** A JSON value shape honest about what `JSON.parse` can hand back — the same
@@ -53,14 +47,10 @@ function isJsonBoolean(value: JsonValue | undefined): value is boolean {
 }
 
 /**
- * `json.loads(raw) if raw.strip() else {}` / `except Exception: payload = {}`
- * — the identical two-line preamble copy-pasted into every `*.py` hook's
- * `main()` (e.g. `hooks/session-start.py:112-116`). A parse that succeeds but
- * yields something other than a JSON object (an array, a string, a bare
- * number) is ALSO folded to `{}` here: Python's `payload.get(...)` on such a
- * value would raise `AttributeError`, caught by the outer `except Exception:
- * pass` in `__main__` — same observable result (silent), reached more
- * directly.
+ * Parses stdin tolerantly: empty input, invalid JSON, and JSON that parses
+ * but isn't an object (an array, a string, a bare number) all fold to `{}`
+ * rather than throwing, so a malformed payload results in every field
+ * reading as absent instead of the hook crashing.
  */
 export function parseTolerantJson(raw: string): JsonRecord {
   if (raw.trim() === "") return {};
@@ -78,29 +68,26 @@ function stringField(record: JsonRecord, key: string): string | null {
   return isJsonString(value) ? value : null;
 }
 
-/** Read one field as a plain string, defaulting to `""` — for fields Python
- * reads via `payload.get(key, "")` or `(payload.get(key) or "")` rather than
- * an explicit fallback the caller applies itself. */
+/** Read one field as a plain string, defaulting to `""` when absent. */
 function stringFieldOrEmpty(record: JsonRecord, key: string): string {
   return stringField(record, key) ?? "";
 }
 
 /** Read one field as a plain boolean; anything else (absent, `null`, a
- * string) reads as `false` — Python's `payload.get(key)` truthiness check
- * only ever sees a real JSON boolean on this field in practice (C2). */
+ * string) reads as `false`. */
 function booleanField(record: JsonRecord, key: string): boolean {
   const value = record[key];
   return isJsonBoolean(value) && value;
 }
 
-/** `SessionStart` (`hooks/session-start.py:117`) — only `cwd` is ever read. */
+/** `SessionStart` — only `cwd` is ever read. */
 export type SessionStartPayload = { readonly cwd: string | null };
 
 export function parseSessionStartPayload(record: JsonRecord): SessionStartPayload {
   return { cwd: stringField(record, "cwd") };
 }
 
-/** `UserPromptSubmit` (`hooks/memory-inject.py:59-60`). */
+/** `UserPromptSubmit`. */
 export type MemoryInjectPayload = {
   readonly cwd: string | null;
   readonly prompt: string;
@@ -113,7 +100,7 @@ export function parseMemoryInjectPayload(record: JsonRecord): MemoryInjectPayloa
   };
 }
 
-/** `Stop` (`hooks/wrap-gate.py:52,54-55`). */
+/** `Stop`. */
 export type WrapGatePayload = {
   readonly cwd: string | null;
   readonly sessionId: string | null;
@@ -128,7 +115,7 @@ export function parseWrapGatePayload(record: JsonRecord): WrapGatePayload {
   };
 }
 
-/** `SessionEnd` (`hooks/worklog-floor.py:34,45`). */
+/** `SessionEnd`. */
 export type WorklogFloorPayload = {
   readonly cwd: string | null;
   readonly reason: string;
@@ -141,7 +128,7 @@ export function parseWorklogFloorPayload(record: JsonRecord): WorklogFloorPayloa
   };
 }
 
-/** `PostCompact` (`hooks/compact-checkpoint.py:24,27,33`). */
+/** `PostCompact`. */
 export type CompactCheckpointPayload = {
   readonly cwd: string | null;
   readonly compactSummary: string;

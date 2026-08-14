@@ -11,18 +11,16 @@ import type { JsonRecord } from "./payload.ts";
 import { parseTolerantJson } from "./payload.ts";
 
 /**
- * The shared preamble/postamble copy-pasted into all five Python hooks (e.g.
- * `hooks/session-start.py:111-139`): read stdin, resolve exactly one
- * workspace or go silent (invariant #2 — the isolation boundary), run the
- * event's handler, render the result through C2, write stdout, and — no
- * matter what happens above — exit 0 having LOGGED any failure instead of
- * swallowing it blind ([[bugfixes]] #9's `runHook`/CLI wiring).
+ * The shared preamble/postamble every hook needs: read stdin, resolve
+ * exactly one workspace or go silent (the cwd-to-workspace isolation
+ * boundary), run the event's handler, render the result through the hook
+ * protocol, write stdout, and — no matter what happens above — exit 0 having
+ * LOGGED any failure instead of swallowing it blind.
  *
  * `container`/`config` arrive as parameters rather than being built here, so
- * this whole pipeline is testable in-process with fakes
- * (`tests/contract/hooks/**`) — `cli/commands/hook.command.ts`'s `hook()` is
- * the one place that supplies a REAL container for an actual invocation of
- * `memory hook <name>`.
+ * this whole pipeline is testable in-process with fakes —
+ * `cli/commands/hook.command.ts`'s `hook()` is the one place that supplies a
+ * REAL container for an actual invocation of `memory hook <name>`.
  */
 
 export type HookContext = {
@@ -42,21 +40,18 @@ export type HookHandler<TPayload> = (
   payload: TPayload,
 ) => Promise<HookResult>;
 
-/** `payload.get("cwd") or os.getcwd()`, then `registry.expand(cwd)`
- * (`resolve.py:16`) — a present-but-empty `cwd` field is also falsy in
- * Python, so it falls back the same as a missing one. */
+/** Falls back to the process cwd when the payload's `cwd` field is either
+ * absent or present-but-empty. */
 function resolveHookCwd(rawCwd: string | null, container: Container): AbsPath {
   if (rawCwd === null || rawCwd === "") return container.env.cwd();
   return expandPath(rawCwd, container.env.home());
 }
 
 /**
- * `resolve.resolve(cwd)` (`resolve.py:12-26`) plus the registry-load half of
- * `registry.load` (`registry.py:33-39`), composed the way every hook's
- * `main()` uses them together. A malformed (present but unparsable) registry
- * is treated as "no workspace" AND logged — `services/registry.service.ts`'s
- * own doc comment names this as the hook-specific handling of a
- * `RegistryError`, unlike the CLI (P6), which reports it to the caller.
+ * Loads the registry and resolves it against `cwd`. A malformed (present
+ * but unparsable) registry is treated as "no workspace" AND logged — this is
+ * the hook-specific handling of a `RegistryError`, unlike the CLI, which
+ * reports it to the caller.
  */
 async function resolveWorkspaceForHook(
   container: Container,

@@ -1,8 +1,7 @@
 /**
- * Renders the wrap-gate's two messages — `hooks/wrap-gate.py:97-108`.
- * Agent-visible text (C4): copied verbatim. Which one to emit (nudge vs. block)
- * is a stateful decision (nudge count, marker files) that belongs to the `Stop`
- * hook handler (P7), not here — these are pure `(slug, dirtyCount) => string`.
+ * Renders the wrap-gate's two messages. Which one to emit (nudge vs. block)
+ * is a stateful decision (nudge count, prior state) that belongs to the
+ * `Stop` hook handler, not here — these are pure `(slug, dirtyCount) => string`.
  */
 
 export type WrapGateInput = {
