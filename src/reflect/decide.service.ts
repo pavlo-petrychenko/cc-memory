@@ -6,22 +6,18 @@ import type { RelatedNote, ReflectorDecision } from "./Reflector.ts";
 import { ReflectorAction } from "./Reflector.ts";
 
 /**
- * The LLM decision step (`decide_with_llm`, `bin/reflector.py:128-144`). Two
- * deliberate improvements over the Python (packet P8, "improvements" list),
- * neither a behavior change to the three failure modes `write_proposals`'s
- * raw-candidate fallback depends on:
+ * The LLM decision step: invoke `claude -p` with the decision prompt and
+ * parse its reply into typed decisions.
  *  - the prompt goes on **stdin**, not as a `claude -p <prompt>` argv element
- *    (`bin/reflector.py:133`) — a huge prompt no longer risks the platform's
- *    argv length limit;
+ *    — a huge prompt never risks the platform's argv length limit;
  *  - the JSON array is extracted by scanning for a fenced ` ```json ` block
- *    first, then balanced bracket-matching — not the greedy `\[.*\]` at
- *    `bin/reflector.py:137`, which (with `re.DOTALL`) can swallow trailing
- *    prose after the real array or mis-match across more than one `[...]`
- *    span in the model's reply.
+ *    first, then balanced bracket-matching — not a greedy `\[.*\]` regex,
+ *    which could swallow trailing prose after the real array or mis-match
+ *    across more than one `[...]` span in the model's reply.
  */
 
-const CLAUDE_TIMEOUT_MS = 240_000; // bin/reflector.py:133 — `claude -p` timeout (Porting Reference)
-const STDERR_EXCERPT_LENGTH = 200; // bin/reflector.py:135 — `r.stderr.strip()[:200]`
+const CLAUDE_TIMEOUT_MS = 240_000; // `claude -p` timeout
+const STDERR_EXCERPT_LENGTH = 200;
 
 const FENCED_JSON_BLOCK = /```(?:json)?[ \t]*\r?\n([\s\S]*?)```/u;
 
@@ -37,8 +33,7 @@ function extractFencedJsonBlock(text: string): string | null {
  * The first balanced top-level `[...]` span in `text`, respecting string
  * literals and nested brackets/braces so a `]` inside a quoted string (or a
  * nested array/object) never truncates the match early. Returns `null` when
- * no `[` starts a properly-closed span at all — replaces the greedy
- * `\[.*\]` regex `bin/reflector.py:137` used.
+ * no `[` starts a properly-closed span at all.
  */
 function extractBalancedJsonArray(text: string): string | null {
   const start = text.indexOf("[");
@@ -112,9 +107,8 @@ function readOptionalNumber(record: JsonRecord, key: string): number | undefined
   return value !== undefined && isJsonNumber(value) ? value : undefined;
 }
 
-/** `action` narrowed to the enum, or `null` for anything else — matches
- * neither of `write_proposals`'s two checks (`bin/reflector.py:161-163`),
- * so Python already renders such an item as invisible either way. */
+/** `action` narrowed to the enum, or `null` for anything else — an
+ * unrecognized action is dropped rather than rendered. */
 function parseAction(raw: string | undefined): ReflectorAction | null {
   switch (raw) {
     case ReflectorAction.Add:
@@ -134,10 +128,8 @@ function parseAction(raw: string | undefined): ReflectorAction | null {
  * One raw JSON element -> a typed `ReflectorDecision`, or `null` for an
  * element that isn't an object or whose `action` isn't one of the four exact
  * strings the prompt asks for — dropped up front rather than rendered as a
- * `ReflectorAction`-typed lie, which is behavior-preserving (see
- * `parseAction`'s doc comment) and keeps every other field exactly as
- * tolerant as `renderProposals`'s own `?? ""`/`?? "(untitled)"` fallbacks
- * already are.
+ * `ReflectorAction`-typed lie. Every other field stays as tolerant as
+ * `renderProposals`'s own `?? ""`/`?? "(untitled)"` fallbacks.
  */
 function parseDecision(raw: JsonValue): ReflectorDecision | null {
   if (!isJsonRecord(raw)) return null;
@@ -164,11 +156,11 @@ function parseDecision(raw: JsonValue): ReflectorDecision | null {
   };
 }
 
-/** `json.loads(m.group(0))` (`bin/reflector.py:140`) plus per-item shape
- * validation — `null` when the text isn't valid JSON, or isn't a JSON array
- * at its top level. `JSON.parse`'s return type is the one true I/O boundary
- * here (same reasoning as `domain/note.ts`'s `YAML.parse` call): its result
- * is handed straight to the concrete `JsonValue` union rather than through an
+/** Parses `jsonArrayText` plus per-item shape validation — `null` when the
+ * text isn't valid JSON, or isn't a JSON array at its top level.
+ * `JSON.parse`'s return type is the one true I/O boundary here (same
+ * reasoning as `domain/note.ts`'s `YAML.parse` call): its result is handed
+ * straight to the concrete `JsonValue` union rather than through an
  * `unknown`-typed parameter anywhere in this module.
  */
 function parseDecisions(jsonArrayText: string): readonly ReflectorDecision[] | null {
@@ -188,13 +180,13 @@ function parseDecisions(jsonArrayText: string): readonly ReflectorDecision[] | n
 }
 
 /**
- * `decide_with_llm` (`bin/reflector.py:128-144`): invoke `claude -p` with the
- * decision prompt on stdin, parse its JSON-array reply into decisions. The
- * three failure modes `write_proposals`'s raw-candidate fallback depends on
- * all collapse to `{ok: false, error}` here: `claude` missing or the 240s
- * timeout firing (both surface as `Proc.run` rejecting — see `proc.port.ts`'s
- * doc comment, and `gitCli.adapter.ts` for the same one-catch pattern), a
- * non-zero exit, or output with no parseable JSON array in it.
+ * Invokes `claude -p` with the decision prompt on stdin, parses its
+ * JSON-array reply into decisions. The three failure modes the
+ * raw-candidate fallback (`renderProposals`) depends on all collapse to
+ * `{ok: false, error}` here: `claude` missing or the 240s timeout firing
+ * (both surface as `Proc.run` rejecting — see `proc.port.ts`'s doc comment,
+ * and `gitCli.adapter.ts` for the same one-catch pattern), a non-zero exit,
+ * or output with no parseable JSON array in it.
  */
 export async function decideWithLlm(
   proc: Proc,
