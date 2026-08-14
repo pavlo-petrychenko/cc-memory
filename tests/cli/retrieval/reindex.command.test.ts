@@ -18,7 +18,7 @@ const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
 // A registered workspace whose `index_db` is bun:sqlite's OWN in-memory
 // identifier, not a derived real path — the same `IN_MEMORY_DB` convention
 // `tests/integration/retrieval/build.test.ts` uses, satisfying "never
-// fake Db" (CLAUDE.md) without touching the real filesystem.
+// fake SqlDatabase" (CLAUDE.md) without touching the real filesystem.
 const PRIMARY: RawWorkspace = {
   id: "primary",
   match: ["/repo/primary"],

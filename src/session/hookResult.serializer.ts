@@ -5,7 +5,7 @@ import { type HookResult, HookResultKind } from "./HookResult.ts";
  * `null` for the silent case: the runtime prints nothing at all rather than
  * an empty line.
  */
-export function renderHookResult(result: HookResult): string | null {
+export function serializeHookResult(result: HookResult): string | null {
   switch (result.kind) {
     case HookResultKind.Silent:
       return null;

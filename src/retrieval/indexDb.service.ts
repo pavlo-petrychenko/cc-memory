@@ -1,7 +1,7 @@
 import type { AbsPath } from "../core/AbsPath.ts";
 import type { Workspace } from "../core/Workspace.ts";
 import type { Container } from "../platform/container.ts";
-import type { Db } from "../platform/db.port.ts";
+import type { SqlDatabase } from "../platform/database.typedefs.ts";
 import { resetSchema, SCHEMA, SCHEMA_VERSION } from "./schema.service.ts";
 
 /** The parent directory of an already-absolute, normalized `AbsPath`. */
@@ -15,8 +15,8 @@ function parentDirectory(path: AbsPath): AbsPath {
   return sliced as AbsPath;
 }
 
-export type IndexDbHandle = {
-  readonly db: Db;
+export type IndexConnection = {
+  readonly db: SqlDatabase;
   /** True when opening this handle just performed the one-time full
    * rebuild — the stored `PRAGMA user_version` was behind `SCHEMA_VERSION`,
    * so every existing row was wiped and `build.service.ts` must treat the
@@ -25,22 +25,22 @@ export type IndexDbHandle = {
 };
 
 /**
- * Open (or reuse, one handle per process via `container.openDb`'s
+ * Open (or reuse, one handle per process via `container.openDatabase`'s
  * memoization) the index database for one workspace: ensure its parent
  * directory exists, create any table that's missing, and decide whether the
  * stored schema version forces a full rebuild.
  *
  * Idempotent: once a full rebuild has run, `PRAGMA user_version` reads back as
  * `SCHEMA_VERSION`, so every subsequent open of the same handle sees
- * `forcedFullRebuild: false` — matching `build.service.ts` and `Db`'s
+ * `forcedFullRebuild: false` — matching `build.service.ts` and `SqlDatabase`'s
  * once-per-process-per-path pattern.
  */
 export async function openIndexDb(
   container: Container,
   workspace: Workspace,
-): Promise<IndexDbHandle> {
+): Promise<IndexConnection> {
   await container.fs.mkdir(parentDirectory(workspace.indexDb));
-  const db = container.openDb(workspace.indexDb);
+  const db = container.openDatabase(workspace.indexDb);
   db.exec(SCHEMA); // create anything missing — a fresh DB gets the current tokenizer
   const forcedFullRebuild = db.getUserVersion() < SCHEMA_VERSION;
   if (forcedFullRebuild) {

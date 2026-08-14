@@ -1,6 +1,6 @@
 import { appendToDated } from "../worklog/worklog.service.ts";
 import { worktreeSlug } from "../workspace/resolver.service.ts";
-import { renderCompactBlock } from "./compact.renderer.ts";
+import { formatCompactBlock } from "./compact.formatter.ts";
 import { HookResultKind } from "./HookResult.ts";
 import type { HookHandler } from "./hookRuntime.service.ts";
 import type { CompactCheckpointPayload } from "./payload.ts";
@@ -20,7 +20,7 @@ export const handleCompactCheckpoint: HookHandler<CompactCheckpointPayload> = as
   const { container, workspace, cwd } = context;
   const slug = await worktreeSlug(container.git, cwd, workspace);
   const date = container.clock.today();
-  const block = renderCompactBlock({ trigger: payload.trigger, summary });
+  const block = formatCompactBlock({ trigger: payload.trigger, summary });
 
   try {
     await appendToDated(container.fs, workspace, slug, date, block);

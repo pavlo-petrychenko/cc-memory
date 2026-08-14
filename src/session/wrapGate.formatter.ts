@@ -15,7 +15,7 @@ function describeDirtyWork(input: WrapGateInput): string {
 }
 
 /** The non-blocking nudge shown the first time(s) unsaved work is detected. */
-export function renderNudge(input: WrapGateInput): string {
+export function formatNudge(input: WrapGateInput): string {
   const where = describeDirtyWork(input);
   return (
     `📝 Unsaved work in ${where}. Consider running the \`remember\` skill to ` +
@@ -25,7 +25,7 @@ export function renderNudge(input: WrapGateInput): string {
 }
 
 /** The hard-block reason once escalation thresholds are met. */
-export function renderBlockReason(input: WrapGateInput): string {
+export function formatBlockReason(input: WrapGateInput): string {
   const where = describeDirtyWork(input);
   return (
     `Before you finish: capture this session in working memory for ${where}. ` +

@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { renderKbMap } from "../../../src/knowledge/kbMap.renderer.ts";
+import { formatKbMap } from "../../../src/knowledge/kbMap.formatter.ts";
 
-describe("renderKbMap", () => {
+describe("formatKbMap", () => {
   test("golden: header, one described feature, one bare feature, loose notes", () => {
-    const rendered = renderKbMap({
+    const rendered = formatKbMap({
       vaultLabel: "~/Documents/Homeserver Vault",
       features: [
         {
@@ -39,13 +39,13 @@ describe("renderKbMap", () => {
   });
 
   test("no loose notes -> no trailing section at all", () => {
-    const rendered = renderKbMap({ vaultLabel: "~/Vault", features: [], looseNotes: [] });
+    const rendered = formatKbMap({ vaultLabel: "~/Vault", features: [], looseNotes: [] });
     expect(rendered.endsWith("## Features")).toBe(true);
     expect(rendered).not.toContain("Loose top-level");
   });
 
   test("a feature title identical (case-insensitively) to its folder name is not repeated", () => {
-    const rendered = renderKbMap({
+    const rendered = formatKbMap({
       vaultLabel: "~/Vault",
       features: [
         { name: "Alpha", hasIndexNote: true, title: "alpha", description: "", epic: "" },
@@ -57,7 +57,7 @@ describe("renderKbMap", () => {
   });
 
   test("a feature with an index note but no description gets no placeholder", () => {
-    const rendered = renderKbMap({
+    const rendered = formatKbMap({
       vaultLabel: "~/Vault",
       features: [
         { name: "Alpha", hasIndexNote: true, title: "", description: "", epic: "" },

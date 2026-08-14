@@ -1,7 +1,7 @@
-import type { Stdio } from "./stdio.port.ts";
+import type { Stdio } from "./stdio.typedefs.ts";
 
 /** The real `Stdio`, reading stdin, writing stdout, and exiting the process. */
-export function makeIoProcessAdapter(): Stdio {
+export function makeStdioAdapter(): Stdio {
   return {
     readStdin: () => Bun.stdin.text(),
     write: (text: string) => {

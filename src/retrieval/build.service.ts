@@ -3,8 +3,8 @@ import { stripChars } from "../core/paths.ts";
 import type { Workspace } from "../core/Workspace.ts";
 import { parseNote } from "../knowledge/note.ts";
 import type { Container } from "../platform/container.ts";
-import type { Db, DbValue } from "../platform/db.port.ts";
-import type { FileSystem } from "../platform/fileSystem.port.ts";
+import type { SqlDatabase, SqlValue } from "../platform/database.typedefs.ts";
+import type { FileSystem } from "../platform/fileSystem.typedefs.ts";
 import { openIndexDb } from "./indexDb.service.ts";
 
 /**
@@ -133,7 +133,7 @@ function requireUpsertedId(rows: readonly UpsertedId[]): number {
  */
 async function upsertNote(
   fs: FileSystem,
-  db: Db,
+  db: SqlDatabase,
   path: AbsPath,
   mtime: number,
 ): Promise<boolean> {
@@ -144,7 +144,7 @@ async function upsertNote(
     return false;
   }
   const note = parseNote(text, fallbackTitleFromPath(path));
-  const upsertParams: readonly DbValue[] = [
+  const upsertParams: readonly SqlValue[] = [
     path,
     note.title,
     note.type,
@@ -188,7 +188,7 @@ enum NoteUpsertOutcome {
 
 async function upsertNoteIfChanged(
   fs: FileSystem,
-  db: Db,
+  db: SqlDatabase,
   path: AbsPath,
   existingMtimeByPath: ReadonlyMap<string, number>,
   incremental: boolean,
@@ -216,7 +216,7 @@ async function upsertNoteIfChanged(
  */
 async function upsertNotes(
   fs: FileSystem,
-  db: Db,
+  db: SqlDatabase,
   workspace: Workspace,
   incremental: boolean,
 ): Promise<{
@@ -246,7 +246,7 @@ async function upsertNotes(
 }
 
 /** Delete every indexed note whose path wasn't seen in this walk. */
-function pruneNotes(db: Db, seen: ReadonlySet<string>): number {
+function pruneNotes(db: SqlDatabase, seen: ReadonlySet<string>): number {
   const rows = db.query<{ readonly id: number; readonly path: string }>(
     "SELECT id, path FROM notes",
     [],
@@ -271,7 +271,7 @@ type ExistingWorklogFile = { readonly id: number; readonly mtime: number };
  */
 async function upsertWorklogFile(
   fs: FileSystem,
-  db: Db,
+  db: SqlDatabase,
   slug: string,
   date: string,
   path: AbsPath,
@@ -309,7 +309,7 @@ function worklogDateFromFileName(fileName: string): string {
  * it, then report its path so the caller can compute what to prune. */
 async function reindexWorklogFile(
   fs: FileSystem,
-  db: Db,
+  db: SqlDatabase,
   slug: string,
   slugDir: AbsPath,
   fileName: string,
@@ -337,7 +337,7 @@ async function reindexWorklogFile(
  * entry. */
 async function reindexWorklogSlug(
   fs: FileSystem,
-  db: Db,
+  db: SqlDatabase,
   worklogsRoot: AbsPath,
   slug: string,
   existingByPath: ReadonlyMap<string, ExistingWorklogFile>,
@@ -365,7 +365,7 @@ async function reindexWorklogSlug(
  */
 async function buildWorklogs(
   fs: FileSystem,
-  db: Db,
+  db: SqlDatabase,
   workspace: Workspace,
 ): Promise<void> {
   const existingRows = db.query<{

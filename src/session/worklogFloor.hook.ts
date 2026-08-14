@@ -1,5 +1,5 @@
 import { appendToDated } from "../worklog/worklog.service.ts";
-import { renderFloorBlock } from "../worklog/worklogFloor.renderer.ts";
+import { formatFloorBlock } from "../worklog/worklogFloor.formatter.ts";
 import { worktreeSlug } from "../workspace/resolver.service.ts";
 import { HookResultKind } from "./HookResult.ts";
 import type { HookHandler } from "./hookRuntime.service.ts";
@@ -21,7 +21,7 @@ function lastLineTrimmed(text: string): string {
  *
  * Every `Git` call here has its result trimmed by this handler rather than by
  * the `Git` port itself, since other callers of the same port need the
- * untrimmed output — see `git.port.ts`.
+ * untrimmed output — see `git.typedefs.ts`.
  */
 export const handleWorklogFloor: HookHandler<WorklogFloorPayload> = async (
   context,
@@ -39,7 +39,7 @@ export const handleWorklogFloor: HookHandler<WorklogFloorPayload> = async (
   const combinedStat = diffStat !== "" ? diffStat : stagedStat;
   const uncommitted = combinedStat === "" ? "" : lastLineTrimmed(combinedStat);
 
-  const block = renderFloorBlock({
+  const block = formatFloorBlock({
     date,
     reason: payload.reason,
     branch,

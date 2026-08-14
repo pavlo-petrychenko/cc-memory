@@ -19,7 +19,7 @@ export enum HookResultKind {
 
 /**
  * What a hook handler decides to do, decoupled from the stdin/stdout JSON
- * protocol that `hookResult.renderer.ts` encodes it into.
+ * protocol that `hookResult.serializer.ts` encodes it into.
  *
  *   silent  -> print nothing (the common case: cwd matched no workspace, etc.)
  *   context -> `{"hookSpecificOutput": {"hookEventName": event, "additionalContext": text}}`

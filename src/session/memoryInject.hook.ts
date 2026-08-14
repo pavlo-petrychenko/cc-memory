@@ -1,12 +1,12 @@
 import type { AbsPath } from "../core/AbsPath.ts";
-import type { FileSystem } from "../platform/fileSystem.port.ts";
+import type { FileSystem } from "../platform/fileSystem.typedefs.ts";
 import type { FusedHit } from "../retrieval/Hit.ts";
 import { SearchKind, searchFused } from "../retrieval/search.service.ts";
 import { salientTokens } from "../retrieval/tokenize.ts";
 import { HookEvent, HookResultKind } from "./HookResult.ts";
 import type { HookContext } from "./hookRuntime.service.ts";
 import type { HookHandler } from "./hookRuntime.service.ts";
-import { type InjectedHit, renderInjectContext } from "./inject.renderer.ts";
+import { type InjectedHit, formatInjectContext } from "./inject.formatter.ts";
 import type { MemoryInjectPayload } from "./payload.ts";
 
 /**
@@ -26,7 +26,7 @@ const MAX_LOGGED_PROMPT_LENGTH = 500;
 const MAX_LOGGED_TOKENS = 40;
 
 // Size-capped rotation for `inject.jsonl`, same 1 MiB / keep-2 policy as
-// `adapters/loggerFile.adapter.ts`'s `appendWithRotation`, reimplemented over
+// `logger.adapter.ts`'s `appendWithRotation`, reimplemented over
 // the `FileSystem` port instead of reusing that function directly:
 // `appendWithRotation` goes around the port (real node:fs) specifically so
 // `Logger` diagnostics can never be blocked by the very seam they're meant to
@@ -222,7 +222,7 @@ export const handleMemoryInject: HookHandler<MemoryInjectPayload> = async (
     return { kind: HookResultKind.Silent };
   }
 
-  const text = renderInjectContext({
+  const text = formatInjectContext({
     workspaceId: context.workspace.id,
     notes: injectedNotes.map((hit) => toInjectedHit(hit, context.workspace.kb)),
     worklogs: injectedWorklogs.map((hit) =>

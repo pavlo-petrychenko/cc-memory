@@ -1,7 +1,7 @@
 import type { AbsPath } from "../core/AbsPath.ts";
 import { expandPath } from "../core/paths.ts";
 import type { Result } from "../core/Result.ts";
-import type { FileSystem } from "../platform/fileSystem.port.ts";
+import type { FileSystem } from "../platform/fileSystem.typedefs.ts";
 import { HookName } from "../session/HookName.ts";
 import { HookEvent } from "../session/HookResult.ts";
 import {

@@ -1,5 +1,5 @@
 import type { AbsPath } from "../core/AbsPath.ts";
-import type { FileSystem } from "../platform/fileSystem.port.ts";
+import type { FileSystem } from "../platform/fileSystem.typedefs.ts";
 import { defaultRegistryPath } from "../workspace/registry.service.ts";
 
 /**

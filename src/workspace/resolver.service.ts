@@ -1,7 +1,7 @@
 import type { AbsPath } from "../core/AbsPath.ts";
 import { isUnder, sanitizeSlug } from "../core/paths.ts";
 import type { RawWorkspace, Workspace, WorktreeSlug } from "../core/Workspace.ts";
-import type { Git } from "../platform/git.port.ts";
+import type { Git } from "../platform/git.typedefs.ts";
 import { expandWorkspace } from "./registry.service.ts";
 
 const PATH_SEPARATOR = "/";

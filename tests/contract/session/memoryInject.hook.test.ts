@@ -38,7 +38,7 @@ const PRIMARY: RawWorkspace = {
   worklogs: "/home/test/vault-primary/_Worklogs",
   exclude: ["_Worklogs"],
   // `dirname(":memory:")` -> `"/"` (`AbsPath.lastIndexOf("/")` is `-1`), so
-  // `inject.jsonl` lands at the fake filesystem's root — harmless: `Db` is
+  // `inject.jsonl` lands at the fake filesystem's root — harmless: `SqlDatabase` is
   // never faked (CLAUDE.md), so `indexDb` MUST stay `":memory:"` to avoid a
   // real on-disk SQLite file; `FileSystem` IS faked, so this path is still
   // just a key in `fsMemory.fake.ts`'s in-memory map, never real disk.
@@ -191,7 +191,7 @@ describe("UserPromptSubmit (memory-inject) hook", () => {
       ...PRIMARY,
       // A path under a directory that cannot exist: `bun:sqlite` throws
       // `SQLITE_CANTOPEN` opening it, synchronously, writing nothing —
-      // `Db` is still the real adapter (CLAUDE.md), just fed a path that
+      // `SqlDatabase` is still the real adapter (CLAUDE.md), just fed a path that
       // fails to open rather than a faked port.
       indexDb: "/definitely-not-a-real-directory-for-this-test/index.db",
     };

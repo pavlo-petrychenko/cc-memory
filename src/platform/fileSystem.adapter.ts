@@ -1,7 +1,7 @@
 import * as nodeFs from "node:fs/promises";
 
 import type { AbsPath } from "../core/AbsPath.ts";
-import type { FileStat, FileSystem } from "./fileSystem.port.ts";
+import type { FileStat, FileSystem } from "./fileSystem.typedefs.ts";
 
 /**
  * The real `FileSystem`, over `node:fs/promises` (works under Bun same as
@@ -10,7 +10,7 @@ import type { FileStat, FileSystem } from "./fileSystem.port.ts";
  * create nested directories or remove either a file or a directory without
  * knowing which up front.
  */
-export function makeFsRealAdapter(): FileSystem {
+export function makeFileSystemAdapter(): FileSystem {
   return {
     readFile: (path: AbsPath) => nodeFs.readFile(path, "utf-8"),
     writeFile: (path: AbsPath, contents: string) =>

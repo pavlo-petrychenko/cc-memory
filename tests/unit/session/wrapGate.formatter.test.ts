@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-  renderBlockReason,
-  renderNudge,
-} from "../../../src/session/wrapGate.renderer.ts";
+  formatBlockReason,
+  formatNudge,
+} from "../../../src/session/wrapGate.formatter.ts";
 
-describe("renderNudge", () => {
+describe("formatNudge", () => {
   test("golden: plural file count", () => {
-    expect(renderNudge({ slug: "cc-memory", dirtyCount: 3 })).toBe(
+    expect(formatNudge({ slug: "cc-memory", dirtyCount: 3 })).toBe(
       "📝 Unsaved work in `cc-memory` (3 uncommitted files). Consider running the " +
         "`remember` skill to update this worktree's worklog (summary of changes + " +
         "open threads) before finishing.",
@@ -15,15 +15,15 @@ describe("renderNudge", () => {
   });
 
   test("singular file count has no trailing s", () => {
-    expect(renderNudge({ slug: "cc-memory", dirtyCount: 1 })).toContain(
+    expect(formatNudge({ slug: "cc-memory", dirtyCount: 1 })).toContain(
       "(1 uncommitted file)",
     );
   });
 });
 
-describe("renderBlockReason", () => {
+describe("formatBlockReason", () => {
   test("golden", () => {
-    expect(renderBlockReason({ slug: "cc-memory", dirtyCount: 6 })).toBe(
+    expect(formatBlockReason({ slug: "cc-memory", dirtyCount: 6 })).toBe(
       "Before you finish: capture this session in working memory for `cc-memory` " +
         "(6 uncommitted files). Run the `remember` skill — write today's worklog " +
         "entry with a **summary of ALL changes you made**, plus Learned/Decided/Open " +

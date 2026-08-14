@@ -35,7 +35,7 @@ function makeWorkspace(overrides: Partial<Workspace> = {}): Workspace {
     exclude: ["_Worklogs", "Archive", ".obsidian"],
     // SAFETY: `bun:sqlite`'s own special literal for an in-memory database —
     // never touches a real `.claude/memory/**/index.db` file (CLAUDE.md's
-    // "never fake `Db`" rule still applies, but `buildKbMapInput` never opens
+    // "never fake `SqlDatabase`" rule still applies, but `buildKbMapInput` never opens
     // this path at all — it's unused by anything under test here).
     indexDb: ":memory:" as AbsPath,
     matchedPrefix: KB,

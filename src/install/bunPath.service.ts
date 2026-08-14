@@ -1,7 +1,7 @@
 import type { AbsPath } from "../core/AbsPath.ts";
 import type { Result } from "../core/Result.ts";
-import type { FileSystem } from "../platform/fileSystem.port.ts";
-import type { Proc } from "../platform/proc.port.ts";
+import type { FileSystem } from "../platform/fileSystem.typedefs.ts";
+import type { Proc } from "../platform/proc.typedefs.ts";
 
 /**
  * Resolve the REAL `bun` binary at install time — never the ephemeral path a

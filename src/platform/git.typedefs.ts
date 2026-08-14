@@ -2,7 +2,7 @@ import type { AbsPath } from "../core/AbsPath.ts";
 
 /**
  * Every git interaction the codebase performs, as an interface implemented over
- * `Proc` (`adapters/gitCli.adapter.ts`) rather than `child_process` directly, so
+ * `Proc` (`git.adapter.ts`) rather than `child_process` directly, so
  * git calls are assertable against a scripted fake without a real repo.
  *
  * **Failure semantics are part of the contract, not an adapter detail**: every

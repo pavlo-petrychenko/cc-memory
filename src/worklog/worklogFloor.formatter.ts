@@ -15,7 +15,7 @@ export type FloorBlockInput = {
   readonly commits: string;
 };
 
-export function renderFloorBlock(input: FloorBlockInput): string {
+export function formatFloorBlock(input: FloorBlockInput): string {
   const lines = [
     `<!-- auto (SessionEnd ${input.date}, reason=${input.reason || "n/a"}) -->`,
   ];

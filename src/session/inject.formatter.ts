@@ -14,7 +14,7 @@ export type InjectContextInput = {
   readonly worklogs: readonly InjectedHit[];
 };
 
-export function renderInjectContext(input: InjectContextInput): string {
+export function formatInjectContext(input: InjectContextInput): string {
   const lines = [
     `Relevant memory (auto-retrieved from workspace \`${input.workspaceId}\` — ` +
       "pointers; open the file for detail, ignore if off-topic):",

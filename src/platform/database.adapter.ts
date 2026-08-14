@@ -1,18 +1,18 @@
 import { Database, type Statement } from "bun:sqlite";
 
-import type { Db, DbValue } from "./db.port.ts";
+import type { SqlDatabase, SqlValue } from "./database.typedefs.ts";
 
 /**
- * The real `Db`: one `bun:sqlite` handle per process, with a prepared-statement
+ * The real `SqlDatabase`: one `bun:sqlite` handle per process, with a prepared-statement
  * cache keyed by the SQL string itself. Every SQL string this project runs is a
  * literal constant (never built by string concatenation with untrusted input),
  * so caching by exact string is safe and bounded — there is no query-string
  * fuzzing here that would make the cache grow unboundedly.
  *
- * Bind values are `DbValue` — `bun:sqlite` accepts a plain array of values for
+ * Bind values are `SqlValue` — `bun:sqlite` accepts a plain array of values for
  * a positional-`?`-parameterized statement.
  */
-export function makeDbBunSqliteAdapter(path: string): Db {
+export function makeDatabaseAdapter(path: string): SqlDatabase {
   const database = new Database(path);
   const statementCache = new Map<string, Statement>();
 
@@ -28,12 +28,12 @@ export function makeDbBunSqliteAdapter(path: string): Db {
     exec: (sql: string) => {
       database.exec(sql);
     },
-    query: <RowType>(sql: string, params: readonly DbValue[]): readonly RowType[] => {
+    query: <RowType>(sql: string, params: readonly SqlValue[]): readonly RowType[] => {
       // SAFETY: `bun:sqlite` has no way to type a row by the SQL text alone; the
       // caller supplies `RowType` to match the columns their own SQL selects.
       return prepared(sql).all(...params) as RowType[];
     },
-    run: (sql: string, params: readonly DbValue[]) => {
+    run: (sql: string, params: readonly SqlValue[]) => {
       prepared(sql).run(...params);
     },
     getUserVersion: () => {

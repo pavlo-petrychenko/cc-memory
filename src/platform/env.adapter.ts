@@ -1,7 +1,7 @@
 import { homedir } from "node:os";
 
 import type { AbsPath } from "../core/AbsPath.ts";
-import type { Env } from "./env.port.ts";
+import type { Env } from "./env.typedefs.ts";
 
 /**
  * The real `Env`, reading the actual process for the home directory and cwd.
@@ -11,7 +11,7 @@ import type { Env } from "./env.port.ts";
  * outside `core/paths.ts` an `AbsPath` cast is warranted, because there is no
  * relative or `~`-prefixed input to run through `expandPath`.
  */
-export function makeEnvProcessAdapter(): Env {
+export function makeEnvAdapter(): Env {
   return {
     get: (name: string) => process.env[name],
     home: () => {

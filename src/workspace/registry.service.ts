@@ -5,8 +5,8 @@ import type { AbsPath } from "../core/AbsPath.ts";
 import { expandPath, isUnder } from "../core/paths.ts";
 import type { Result } from "../core/Result.ts";
 import type { RawWorkspace, Workspace } from "../core/Workspace.ts";
-import type { FileSystem } from "../platform/fileSystem.port.ts";
-import { serializeRegistry } from "./registryToml.renderer.ts";
+import type { FileSystem } from "../platform/fileSystem.typedefs.ts";
+import { serializeRegistry } from "./registryToml.serializer.ts";
 
 /**
  * Workspace registry: read/write/validate `~/.claude/memory/registry.toml`. A

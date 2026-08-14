@@ -1,7 +1,7 @@
 import type { AbsPath } from "../core/AbsPath.ts";
 import type { Workspace, WorktreeSlug } from "../core/Workspace.ts";
-import type { FileSystem } from "../platform/fileSystem.port.ts";
-import type { Git } from "../platform/git.port.ts";
+import type { FileSystem } from "../platform/fileSystem.typedefs.ts";
+import type { Git } from "../platform/git.typedefs.ts";
 
 /**
  * Worklog (short-term/episodic memory) paths and I/O. Two files per worktree

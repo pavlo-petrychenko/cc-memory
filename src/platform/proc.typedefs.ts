@@ -10,7 +10,7 @@ export type ProcResult = {
 /**
  * Options for one `Proc.run` call. All optional: `input` (text piped to
  * stdin), `timeoutMs` (every call
- * site in this project sets one explicitly; see `git.port.ts`'s per-method
+ * site in this project sets one explicitly; see `git.typedefs.ts`'s per-method
  * timeouts), `cwd` (`-C cwd` is passed as an argv element for git, but other
  * commands rely on process cwd), `env` (additive to the process environment,
  * not a full replacement).

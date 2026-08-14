@@ -5,7 +5,7 @@ import type { Workspace } from "../core/Workspace.ts";
 import type { Container } from "../platform/container.ts";
 import { defaultRegistryPath, loadRegistry } from "../workspace/registry.service.ts";
 import { resolveWorkspace } from "../workspace/resolver.service.ts";
-import { renderHookResult } from "./hookResult.renderer.ts";
+import { serializeHookResult } from "./hookResult.serializer.ts";
 import { type HookResult, HookResultKind } from "./HookResult.ts";
 import type { JsonRecord } from "./payload.ts";
 import { parseTolerantJson } from "./payload.ts";
@@ -98,7 +98,7 @@ export async function runHook<TPayload extends { readonly cwd: string | null }>(
         ? { kind: HookResultKind.Silent }
         : await handle({ container, config, workspace, cwd }, payload);
 
-    const rendered = renderHookResult(result);
+    const rendered = serializeHookResult(result);
     if (rendered !== null) container.stdio.write(rendered);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

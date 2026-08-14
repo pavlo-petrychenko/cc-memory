@@ -1,6 +1,6 @@
 import type { AbsPath } from "../core/AbsPath.ts";
 import { expandPath } from "../core/paths.ts";
-import type { FileSystem } from "../platform/fileSystem.port.ts";
+import type { FileSystem } from "../platform/fileSystem.typedefs.ts";
 
 /**
  * `~/.local/bin/memory` — a 2-line `sh` shim with ABSOLUTE paths baked in.
@@ -36,7 +36,7 @@ function parentDirectory(path: AbsPath): AbsPath {
 
 /**
  * Write the shim, `chmod +x`. `fs.remove` runs first and unconditionally
- * (idempotent on a missing path, per `fileSystem.port.ts`): `writeFile` opens
+ * (idempotent on a missing path, per `fileSystem.typedefs.ts`): `writeFile` opens
  * a path THROUGH a symlink, so writing directly over a pre-existing
  * `~/.local/bin/memory` symlink would silently overwrite whatever it pointed
  * at with shim text instead of replacing the link itself. Removing first

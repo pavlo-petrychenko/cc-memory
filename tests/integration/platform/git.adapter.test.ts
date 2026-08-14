@@ -1,20 +1,20 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "../../../src/core/AbsPath.ts";
-import { makeGitCliAdapter } from "../../../src/platform/gitCli.adapter.ts";
+import { makeGitAdapter } from "../../../src/platform/git.adapter.ts";
 import { makeProcFake } from "../../helpers/fakes/procFake.fake.ts";
 
 // SAFETY: fixed test fixture, never a real filesystem lookup.
 const CWD = "/repo" as AbsPath;
 
-describe("gitCli adapter — argv and timeouts", () => {
+describe("git adapter — argv and timeouts", () => {
   test("statusPorcelain runs `git -C cwd status --porcelain` with a 5s timeout", async () => {
     const proc = makeProcFake();
     proc.enqueue({
       kind: "resolve",
       result: { stdout: " M a.md\n", stderr: "", exitCode: 0 },
     });
-    const git = makeGitCliAdapter(proc);
+    const git = makeGitAdapter(proc);
 
     const result = await git.statusPorcelain(CWD);
 
@@ -34,7 +34,7 @@ describe("gitCli adapter — argv and timeouts", () => {
       kind: "resolve",
       result: { stdout: "deadbeef\n", stderr: "", exitCode: 0 },
     });
-    const git = makeGitCliAdapter(proc);
+    const git = makeGitAdapter(proc);
 
     const result = await git.revParse(CWD, ["--abbrev-ref", "HEAD"]);
 
@@ -49,7 +49,7 @@ describe("gitCli adapter — argv and timeouts", () => {
       kind: "resolve",
       result: { stdout: "/repo\n", stderr: "", exitCode: 0 },
     });
-    const git = makeGitCliAdapter(proc);
+    const git = makeGitAdapter(proc);
 
     await git.showToplevel(CWD);
 
@@ -63,7 +63,7 @@ describe("gitCli adapter — argv and timeouts", () => {
       kind: "resolve",
       result: { stdout: " 1 file changed\n", stderr: "", exitCode: 0 },
     });
-    const git = makeGitCliAdapter(proc);
+    const git = makeGitAdapter(proc);
 
     await git.diffStat(CWD, false);
 
@@ -73,7 +73,7 @@ describe("gitCli adapter — argv and timeouts", () => {
   test("diffStat(staged=true) uses `diff --cached --stat`", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } });
-    const git = makeGitCliAdapter(proc);
+    const git = makeGitAdapter(proc);
 
     await git.diffStat(CWD, true);
 
@@ -86,7 +86,7 @@ describe("gitCli adapter — argv and timeouts", () => {
       kind: "resolve",
       result: { stdout: "abc123 msg\n", stderr: "", exitCode: 0 },
     });
-    const git = makeGitCliAdapter(proc);
+    const git = makeGitAdapter(proc);
 
     await git.logOneline(CWD, 5);
 
@@ -96,7 +96,7 @@ describe("gitCli adapter — argv and timeouts", () => {
   test("add runs `git add -- <...paths>` with a 10s timeout", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } });
-    const git = makeGitCliAdapter(proc);
+    const git = makeGitAdapter(proc);
 
     const result = await git.add(CWD, ["_Worklogs/foo.md"]);
 
@@ -108,7 +108,7 @@ describe("gitCli adapter — argv and timeouts", () => {
   test("commit runs `git commit -m <message>` with a 10s timeout", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } });
-    const git = makeGitCliAdapter(proc);
+    const git = makeGitAdapter(proc);
 
     const result = await git.commit(CWD, "worklog update");
 
@@ -117,7 +117,7 @@ describe("gitCli adapter — argv and timeouts", () => {
   });
 });
 
-describe("gitCli adapter — failure semantics", () => {
+describe("git adapter — failure semantics", () => {
   test("a non-zero exit resolves to an empty string, not the process's stdout", async () => {
     const proc = makeProcFake();
     proc.enqueue({
@@ -128,7 +128,7 @@ describe("gitCli adapter — failure semantics", () => {
         exitCode: 128,
       },
     });
-    const git = makeGitCliAdapter(proc);
+    const git = makeGitAdapter(proc);
 
     const result = await git.statusPorcelain(CWD);
 
@@ -138,7 +138,7 @@ describe("gitCli adapter — failure semantics", () => {
   test("a rejected Proc.run (timeout/spawn failure) resolves to an empty string too", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "reject", error: new Error("timed out") });
-    const git = makeGitCliAdapter(proc);
+    const git = makeGitAdapter(proc);
 
     const result = await git.revParse(CWD, ["HEAD"]);
 
@@ -148,7 +148,7 @@ describe("gitCli adapter — failure semantics", () => {
   test("add resolves false only when the process itself fails to run", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "reject", error: new Error("timed out") });
-    const git = makeGitCliAdapter(proc);
+    const git = makeGitAdapter(proc);
 
     expect(await git.add(CWD, ["x.md"])).toBe(false);
   });
@@ -159,7 +159,7 @@ describe("gitCli adapter — failure semantics", () => {
       kind: "resolve",
       result: { stdout: "", stderr: "nothing to commit", exitCode: 1 },
     });
-    const git = makeGitCliAdapter(proc);
+    const git = makeGitAdapter(proc);
 
     expect(await git.commit(CWD, "no-op")).toBe(true);
   });

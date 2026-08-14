@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { renderFloorBlock } from "../../../src/worklog/worklogFloor.renderer.ts";
+import { formatFloorBlock } from "../../../src/worklog/worklogFloor.formatter.ts";
 
-describe("renderFloorBlock", () => {
+describe("formatFloorBlock", () => {
   test("golden: every field present", () => {
-    const rendered = renderFloorBlock({
+    const rendered = formatFloorBlock({
       date: "2026-08-14",
       reason: "other",
       branch: "p2-domain",
@@ -26,7 +26,7 @@ describe("renderFloorBlock", () => {
 
   test("no reason falls back to n/a", () => {
     expect(
-      renderFloorBlock({
+      formatFloorBlock({
         date: "2026-08-14",
         reason: "",
         branch: "",
@@ -39,7 +39,7 @@ describe("renderFloorBlock", () => {
   });
 
   test("branch/uncommitted/commits all empty still yields the no-activity line", () => {
-    const rendered = renderFloorBlock({
+    const rendered = formatFloorBlock({
       date: "2026-08-14",
       reason: "clear",
       branch: "",

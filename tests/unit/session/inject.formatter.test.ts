@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { renderInjectContext } from "../../../src/session/inject.renderer.ts";
+import { formatInjectContext } from "../../../src/session/inject.formatter.ts";
 
-describe("renderInjectContext", () => {
+describe("formatInjectContext", () => {
   test("golden: header, one note bullet, one worklog bullet", () => {
-    const rendered = renderInjectContext({
+    const rendered = formatInjectContext({
       workspaceId: "homeserver",
       notes: [
         {
@@ -32,7 +32,7 @@ describe("renderInjectContext", () => {
   });
 
   test("no hits at all: just the header line", () => {
-    const rendered = renderInjectContext({
+    const rendered = formatInjectContext({
       workspaceId: "homeserver",
       notes: [],
       worklogs: [],

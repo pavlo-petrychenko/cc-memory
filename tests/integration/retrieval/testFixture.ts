@@ -2,13 +2,13 @@ import type { AbsPath } from "../../../src/core/AbsPath.ts";
 import { expandPath } from "../../../src/core/paths.ts";
 import type { Workspace } from "../../../src/core/Workspace.ts";
 import type { Container } from "../../../src/platform/container.ts";
-import { makeFsRealAdapter } from "../../../src/platform/fsReal.adapter.ts";
+import { makeFileSystemAdapter } from "../../../src/platform/fileSystem.adapter.ts";
 /**
  * Shared setup for the retrieval integration tests: a REAL vault on disk
  * built by `tests/fixtures/vault.ts`'s `buildFixtureVault`, plus a second,
  * unrelated workspace for isolation checks. A real `FileSystem`
- * (`fsReal.adapter.ts`) and a real `bun:sqlite` file back every test built
- * from this — `Db` is never faked, since FTS5's stemmer, bm25 weighting and
+ * (`fileSystem.adapter.ts`) and a real `bun:sqlite` file back every test built
+ * from this — `SqlDatabase` is never faked, since FTS5's stemmer, bm25 weighting and
  * `NEAR` semantics are the behavior under test — and using the real disk
  * here (rather than the in-memory `fs` fake) means the same fixture module
  * backs both these tests and the end-to-end tests.
@@ -64,7 +64,7 @@ export function setupIndexFixture(): IndexFixture {
   // own doc comment).
   const home = tempDir.path as AbsPath;
   const vault = buildFixtureVault(tempDir.path);
-  const container = makeTestContainer({ fs: makeFsRealAdapter() });
+  const container = makeTestContainer({ fs: makeFileSystemAdapter() });
   return {
     tempDir,
     vault,

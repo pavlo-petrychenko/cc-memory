@@ -26,7 +26,7 @@ import {
  * calling into this file — those two lines are anchored by tests.
  */
 
-// Matches `adapters/loggerFile.adapter.ts`'s private `MAX_LOG_BYTES` — that
+// Matches `logger.adapter.ts`'s private `MAX_LOG_BYTES` — that
 // constant isn't exported (single call site there), so this is a linked
 // duplicate rather than a new, independently-chosen threshold.
 const LOG_SIZE_WARNING_BYTES = 1_048_576;

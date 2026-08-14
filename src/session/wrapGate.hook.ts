@@ -1,12 +1,12 @@
 import type { AbsPath } from "../core/AbsPath.ts";
-import type { FileSystem } from "../platform/fileSystem.port.ts";
+import type { FileSystem } from "../platform/fileSystem.typedefs.ts";
 import { statePath } from "../worklog/worklog.service.ts";
 import { worktreeSlug } from "../workspace/resolver.service.ts";
 import { HookEvent, HookResultKind } from "./HookResult.ts";
 import type { HookHandler } from "./hookRuntime.service.ts";
 import type { JsonRecord, JsonValue, WrapGatePayload } from "./payload.ts";
 import { parseTolerantJson } from "./payload.ts";
-import { renderBlockReason, renderNudge } from "./wrapGate.renderer.ts";
+import { formatBlockReason, formatNudge } from "./wrapGate.formatter.ts";
 
 /**
  * `Stop`: the wrap-gate. Nudges (non-blocking) on the first stop(s) with
@@ -196,11 +196,11 @@ export const handleWrapGate: HookHandler<WrapGatePayload> = async (context, payl
     nudges >= config.blockAfter &&
     dirtyCount >= config.blockDrift;
   if (shouldBlock) {
-    return { kind: HookResultKind.Block, reason: renderBlockReason(gateInput) };
+    return { kind: HookResultKind.Block, reason: formatBlockReason(gateInput) };
   }
   return {
     kind: HookResultKind.Context,
     event: HookEvent.Stop,
-    text: renderNudge(gateInput),
+    text: formatNudge(gateInput),
   };
 };

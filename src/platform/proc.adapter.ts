@@ -1,4 +1,4 @@
-import type { Proc, ProcResult, ProcRunOptions } from "./proc.port.ts";
+import type { Proc, ProcResult, ProcRunOptions } from "./proc.typedefs.ts";
 
 /**
  * The real `Proc`, over `Bun.spawn`. Captures stdout/stderr as text and rejects
@@ -9,7 +9,7 @@ import type { Proc, ProcResult, ProcRunOptions } from "./proc.port.ts";
 /** The shell's conventional exit code for "command not found". */
 const COMMAND_NOT_FOUND_EXIT_CODE = 127;
 
-export function makeProcRealAdapter(): Proc {
+export function makeProcAdapter(): Proc {
   return {
     run: async (
       command: string,

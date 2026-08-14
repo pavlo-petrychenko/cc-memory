@@ -13,20 +13,14 @@ import { Glob } from "bun";
  * the FILENAME instead, using the role suffixes the project already names files by:
  *
  *   A file may reference `platform/` or a node/bun builtin ONLY if it is a
- *   `.service.ts`, `.command.ts`, `.hook.ts`, `.adapter.ts` or `.port.ts` — or lives
+ *   `.service.ts`, `.command.ts`, `.hook.ts` or `.adapter.ts` — or lives
  *   in `platform/`, which exists to touch the outside world.
  *
  * Everything else is pure by construction, and now says so in its own name: you can
  * tell whether `tokenize.ts` or `build.service.ts` can hit a disk without opening
  * either one.
  */
-const IMPURE_SUFFIXES = [
-  ".service.ts",
-  ".command.ts",
-  ".hook.ts",
-  ".adapter.ts",
-  ".port.ts",
-];
+const IMPURE_SUFFIXES = [".service.ts", ".command.ts", ".hook.ts", ".adapter.ts"];
 
 /** `platform/` IS the outside world; its container wires the real adapters up. */
 const EXEMPT_PREFIXES = ["platform/"];

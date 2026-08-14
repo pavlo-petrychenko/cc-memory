@@ -1,7 +1,7 @@
 import type { AbsPath } from "../core/AbsPath.ts";
 import type { Result } from "../core/Result.ts";
 import type { RawWorkspace, Workspace } from "../core/Workspace.ts";
-import type { FileSystem } from "../platform/fileSystem.port.ts";
+import type { FileSystem } from "../platform/fileSystem.typedefs.ts";
 import {
   defaultRegistryPath,
   expandWorkspace,

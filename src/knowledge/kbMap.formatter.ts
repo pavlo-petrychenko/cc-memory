@@ -47,7 +47,7 @@ function renderFeatureLine(feature: KbMapFeature): string {
   return line;
 }
 
-export function renderKbMap(input: KbMapInput): string {
+export function formatKbMap(input: KbMapInput): string {
   const lines = [
     "# Obsidian KB index (auto-injected at session start)",
     "",

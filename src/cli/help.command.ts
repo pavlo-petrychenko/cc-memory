@@ -1,4 +1,4 @@
-import type { Stdio } from "../platform/stdio.port.ts";
+import type { Stdio } from "../platform/stdio.typedefs.ts";
 import { CC_MEMORY_VERSION } from "../version.ts";
 import { CLI_SUCCESS, type CliOutcome } from "./CliOutcome.ts";
 

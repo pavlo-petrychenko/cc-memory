@@ -4,7 +4,7 @@ import { join } from "node:path";
 import type { AbsPath } from "../../../src/core/AbsPath.ts";
 import { expandPath } from "../../../src/core/paths.ts";
 import type { Workspace } from "../../../src/core/Workspace.ts";
-import { makeFsRealAdapter } from "../../../src/platform/fsReal.adapter.ts";
+import { makeFileSystemAdapter } from "../../../src/platform/fileSystem.adapter.ts";
 import { openIndexDb } from "../../../src/retrieval/indexDb.service.ts";
 import { SCHEMA_VERSION } from "../../../src/retrieval/schema.service.ts";
 import { makeTestContainer } from "../../helpers/container.ts";
@@ -14,7 +14,7 @@ import { createTempDir, type TempDir } from "../../helpers/tempdir.ts";
 // SAFETY: fixed test fixture, mirrors tests/helpers/container.ts's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
 // SAFETY: bun:sqlite's own in-memory-database identifier — an opaque key into
-// Container.openDb's per-path memoization, not a real filesystem path.
+// Container.openDatabase's per-path memoization, not a real filesystem path.
 const IN_MEMORY_DB = ":memory:" as AbsPath;
 
 function makeWorkspace(indexDb: AbsPath): Workspace {
@@ -72,7 +72,7 @@ describe("index/db openIndexDb — schema-version / shared-handle behavior", () 
     expect(second.db.query("SELECT * FROM notes", [])).toEqual([]);
   });
 
-  test("repeated opens of the same path share one Db handle", async () => {
+  test("repeated opens of the same path share one SqlDatabase handle", async () => {
     const container = makeTestContainer({ fs: makeFsMemoryFake() });
     const workspace = makeWorkspace(IN_MEMORY_DB);
 
@@ -100,7 +100,7 @@ describe("index/db openIndexDb — real filesystem", () => {
     // SAFETY: `createTempDir` always returns an absolute, resolved path.
     const root = tempDir.path as AbsPath;
     const indexDbPath = expandPath(join(root, "nested", "idx", "index.db"), HOME);
-    const container = makeTestContainer({ fs: makeFsRealAdapter() });
+    const container = makeTestContainer({ fs: makeFileSystemAdapter() });
     const workspace = makeWorkspace(indexDbPath);
 
     const { db } = await openIndexDb(container, workspace);

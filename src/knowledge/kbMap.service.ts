@@ -1,14 +1,14 @@
 import type { AbsPath } from "../core/AbsPath.ts";
 import { tildify } from "../core/paths.ts";
 import type { Workspace } from "../core/Workspace.ts";
-import type { FileSystem } from "../platform/fileSystem.port.ts";
-import type { KbMapFeature, KbMapInput } from "./kbMap.renderer.ts";
+import type { FileSystem } from "../platform/fileSystem.typedefs.ts";
+import type { KbMapFeature, KbMapInput } from "./kbMap.formatter.ts";
 import { parseIndexNote } from "./note.ts";
 
 /**
  * Scans a workspace's vault top level into a `KbMapInput` — the filesystem-
  * facing half of building the KB map. The string-building half lives in
- * `knowledge/kbMap.renderer.ts`; this file owns the "vault directory
+ * `knowledge/kbMap.formatter.ts`; this file owns the "vault directory
  * missing" short-circuit.
  */
 

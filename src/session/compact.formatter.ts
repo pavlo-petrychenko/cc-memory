@@ -5,6 +5,6 @@ export type CompactBlockInput = {
   readonly summary: string;
 };
 
-export function renderCompactBlock(input: CompactBlockInput): string {
+export function formatCompactBlock(input: CompactBlockInput): string {
   return `<!-- compaction checkpoint (${input.trigger || "auto"}) -->\n**Compaction summary:**\n\n${input.summary}`;
 }

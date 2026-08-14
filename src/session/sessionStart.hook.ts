@@ -1,7 +1,7 @@
-import { renderKbMap } from "../knowledge/kbMap.renderer.ts";
+import { formatKbMap } from "../knowledge/kbMap.formatter.ts";
 import { buildKbMapInput } from "../knowledge/kbMap.service.ts";
 import { buildIndex } from "../retrieval/build.service.ts";
-import { renderWorkingMemory } from "../worklog/workingMemory.renderer.ts";
+import { formatWorkingMemory } from "../worklog/workingMemory.formatter.ts";
 import { readState } from "../worklog/worklog.service.ts";
 import { worktreeSlug } from "../workspace/resolver.service.ts";
 import { HookEvent, HookResultKind } from "./HookResult.ts";
@@ -13,7 +13,7 @@ const CONTEXT_SEPARATOR = "\n\n---\n\n";
 /**
  * `SessionStart`: run a fast incremental reindex, then inject the KB map +
  * this worktree's working memory, joined by a horizontal rule. Emits nothing
- * when both parts are empty — in practice `renderWorkingMemory` never
+ * when both parts are empty — in practice `formatWorkingMemory` never
  * returns `""` (it always prints at least the `# Working memory — …`
  * heading), so this only fires when the KB map is also missing, but the
  * guard is kept regardless.
@@ -32,10 +32,10 @@ export const handleSessionStart: HookHandler<SessionStartPayload> = async (conte
 
   const slug = await worktreeSlug(container.git, cwd, workspace);
   const kbMapInput = await buildKbMapInput(container.fs, workspace, container.env.home());
-  const kbMapText = kbMapInput === null ? "" : renderKbMap(kbMapInput);
+  const kbMapText = kbMapInput === null ? "" : formatKbMap(kbMapInput);
 
   const state = await readState(container.fs, workspace, slug);
-  const workingMemoryText = renderWorkingMemory({
+  const workingMemoryText = formatWorkingMemory({
     workspaceId: workspace.id,
     slug,
     state,

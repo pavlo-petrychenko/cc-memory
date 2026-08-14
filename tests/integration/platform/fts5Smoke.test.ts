@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import type { DbValue } from "../../../src/platform/db.port.ts";
-import { makeDbBunSqliteAdapter } from "../../../src/platform/dbBunSqlite.adapter.ts";
+import { makeDatabaseAdapter } from "../../../src/platform/database.adapter.ts";
+import type { SqlValue } from "../../../src/platform/database.typedefs.ts";
 import { SCHEMA } from "../../../src/retrieval/schema.service.ts";
 import { NOTES_SEARCH_SQL } from "../../../src/retrieval/search.service.ts";
 
@@ -20,19 +20,19 @@ import { NOTES_SEARCH_SQL } from "../../../src/retrieval/search.service.ts";
  */
 
 function insertNote(
-  db: ReturnType<typeof makeDbBunSqliteAdapter>,
+  db: ReturnType<typeof makeDatabaseAdapter>,
   title: string,
   body: string,
   tags: string,
   path: string,
 ): void {
-  const params: readonly DbValue[] = [title, body, tags, path];
+  const params: readonly SqlValue[] = [title, body, tags, path];
   db.run("INSERT INTO notes_fts (title, body, tags, path) VALUES (?, ?, ?, ?)", params);
 }
 
 describe("FTS5 capability smoke test", () => {
   test("porter stemming matches a different inflection of the query term", () => {
-    const db = makeDbBunSqliteAdapter(":memory:");
+    const db = makeDatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     insertNote(db, "Injection", "we are injecting context into the session", "", "a.md");
 
@@ -46,7 +46,7 @@ describe("FTS5 capability smoke test", () => {
   });
 
   test("bm25() ranks the more relevant document first (lower score = stronger)", () => {
-    const db = makeDbBunSqliteAdapter(":memory:");
+    const db = makeDatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     // "memory" appears 3 times in the body and once in the title (weighted 10x) —
     // this document must outrank the one where it merely appears once in tags.
@@ -64,7 +64,7 @@ describe("FTS5 capability smoke test", () => {
   });
 
   test("snippet() produces highlighted, truncated output", () => {
-    const db = makeDbBunSqliteAdapter(":memory:");
+    const db = makeDatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     insertNote(
       db,
@@ -81,7 +81,7 @@ describe("FTS5 capability smoke test", () => {
   });
 
   test("NEAR(…, 8) matches two terms within the window", () => {
-    const db = makeDbBunSqliteAdapter(":memory:");
+    const db = makeDatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     insertNote(db, "Title", "we are injecting some extra context here", "", "near.md");
     insertNote(
@@ -102,7 +102,7 @@ describe("FTS5 capability smoke test", () => {
   });
 
   test("PRAGMA user_version round-trips through getUserVersion/setUserVersion", () => {
-    const db = makeDbBunSqliteAdapter(":memory:");
+    const db = makeDatabaseAdapter(":memory:");
     db.exec(SCHEMA);
 
     expect(db.getUserVersion()).toBe(0);
@@ -112,7 +112,7 @@ describe("FTS5 capability smoke test", () => {
   });
 
   test("the prepared-statement cache serves repeated queries against the same SQL string", () => {
-    const db = makeDbBunSqliteAdapter(":memory:");
+    const db = makeDatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     insertNote(db, "One", "alpha beta", "", "one.md");
     insertNote(db, "Two", "alpha gamma", "", "two.md");

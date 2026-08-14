@@ -11,7 +11,7 @@ import type { Container } from "../platform/container.ts";
 const DEFAULT_COMMIT_MESSAGE = "memory snapshot";
 
 // Reuses the 10s timeout the other git write calls (`add`/`commit` in
-// `gitCli.adapter.ts`) use, rather than leaving these two subcommands unbounded.
+// `git.adapter.ts`) use, rather than leaving these two subcommands unbounded.
 const GIT_TIMEOUT_MS = 10_000;
 
 async function isGitRepoDir(container: Container, path: AbsPath): Promise<boolean> {

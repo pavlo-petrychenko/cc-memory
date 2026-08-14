@@ -1,7 +1,7 @@
 import type { AbsPath } from "../core/AbsPath.ts";
 import type { Workspace } from "../core/Workspace.ts";
 import type { Container } from "../platform/container.ts";
-import type { Db } from "../platform/db.port.ts";
+import type { SqlDatabase } from "../platform/database.typedefs.ts";
 import { inlinkCounts } from "./graph.service.ts";
 import type { FusedHit, Hit } from "./Hit.ts";
 import { openIndexDb } from "./indexDb.service.ts";
@@ -66,7 +66,7 @@ function collapseWhitespace(text: string): string {
  * with.
  */
 function runMatch(
-  db: Db,
+  db: SqlDatabase,
   matchQuery: string,
   limit: number,
   kind: SearchKind,
@@ -132,8 +132,8 @@ export type SearchFusedOptions = SearchOptions & {
  * Degrades to pure BM25 ordering when `phraseQuery` has no adjacent-term
  * pair to build a `NEAR` clause from.
  *
- * Reuses the SAME `Db` handle for the token search, the phrase search and
- * the in-link count (via `openIndexDb`/`Container.openDb`'s per-path
+ * Reuses the SAME `SqlDatabase` handle for the token search, the phrase search and
+ * the in-link count (via `openIndexDb`/`Container.openDatabase`'s per-path
  * memoization) instead of opening three separate connections.
  */
 export async function searchFused(

@@ -10,7 +10,7 @@ import { dirname } from "node:path";
 
 import type { AbsPath } from "../core/AbsPath.ts";
 import { LogLevel } from "../core/Config.ts";
-import type { Logger } from "./logger.port.ts";
+import type { Logger } from "./logger.typedefs.ts";
 
 // 1 MiB, 2 kept generations: <path> is the live file; a write that would push
 // it over the cap rotates <path>.1 -> <path>.2 (dropping any existing
@@ -69,7 +69,7 @@ function formatLine(level: LogLevel, message: string): string {
  * `Config.logLevel` (`CCMEM_LOG_LEVEL`, default `warn`), applied here rather
  * than at every call site.
  */
-export function makeLoggerFileAdapter(path: AbsPath, minLevel: LogLevel): Logger {
+export function makeLoggerAdapter(path: AbsPath, minLevel: LogLevel): Logger {
   const write = (level: LogLevel, message: string): void => {
     if (LEVEL_ORDER[level] < LEVEL_ORDER[minLevel]) return;
     appendWithRotation(path, formatLine(level, message));

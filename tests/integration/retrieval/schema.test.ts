@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { makeDbBunSqliteAdapter } from "../../../src/platform/dbBunSqlite.adapter.ts";
+import { makeDatabaseAdapter } from "../../../src/platform/database.adapter.ts";
 import {
   resetSchema,
   SCHEMA,
@@ -13,7 +13,7 @@ describe("index/schema", () => {
   });
 
   test("SCHEMA creates notes, notes_fts, links, worklog_fts and worklog_files", () => {
-    const db = makeDbBunSqliteAdapter(":memory:");
+    const db = makeDatabaseAdapter(":memory:");
     db.exec(SCHEMA);
 
     const tableNames = db
@@ -32,7 +32,7 @@ describe("index/schema", () => {
   });
 
   test("SCHEMA is idempotent (CREATE ... IF NOT EXISTS)", () => {
-    const db = makeDbBunSqliteAdapter(":memory:");
+    const db = makeDatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     db.exec(SCHEMA); // must not throw on a second exec
     expect(db.getUserVersion()).toBe(0);
@@ -40,7 +40,7 @@ describe("index/schema", () => {
   });
 
   test("resetSchema drops and recreates every table, then stamps PRAGMA user_version", () => {
-    const db = makeDbBunSqliteAdapter(":memory:");
+    const db = makeDatabaseAdapter(":memory:");
     db.exec(SCHEMA);
     db.run("INSERT INTO notes(path,title,type,importance,mtime) VALUES(?,?,?,?,?)", [
       "a.md",

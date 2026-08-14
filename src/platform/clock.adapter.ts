@@ -1,11 +1,11 @@
-import type { Clock } from "./clock.port.ts";
+import type { Clock } from "./clock.typedefs.ts";
 
 function twoDigits(value: number): string {
   return value < 10 ? `0${value}` : String(value);
 }
 
 /** The real `Clock`, reading the system clock in **local** time, not UTC. */
-export function makeClockRealAdapter(): Clock {
+export function makeClockAdapter(): Clock {
   return {
     nowMs: () => Date.now(),
     today: () => {

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { parse } from "smol-toml";
 
-import { serializeRegistry } from "../../../src/workspace/registryToml.renderer.ts";
+import { serializeRegistry } from "../../../src/workspace/registryToml.serializer.ts";
 
 describe("serializeRegistry", () => {
   test("an empty registry is just the header comment", () => {

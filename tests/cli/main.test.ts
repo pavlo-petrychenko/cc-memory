@@ -5,23 +5,23 @@ import { join } from "node:path";
 
 import { runCli } from "../../src/cli/main.ts";
 import { LogLevel } from "../../src/core/Config.ts";
-import type { Db } from "../../src/platform/db.port.ts";
-import { makeDbBunSqliteAdapter } from "../../src/platform/dbBunSqlite.adapter.ts";
+import { makeDatabaseAdapter } from "../../src/platform/database.adapter.ts";
+import type { SqlDatabase } from "../../src/platform/database.typedefs.ts";
 import { makeTestContainer } from "../helpers/container.ts";
 import { makeIoFake } from "../helpers/fakes/ioFake.fake.ts";
 
 /** Same rationale as `commands/workspace.command.test.ts`'s helper of the same
  * name: `workspace add`/`workspace rm --purge` derive `index_db` from `home` +
  * the workspace id rather than accepting an override, so a plain in-memory
- * `Container` needs its `openDb` redirected to `:memory:` to avoid trying to
+ * `Container` needs its `openDatabase` redirected to `:memory:` to avoid trying to
  * open a real SQLite file under a `home` that doesn't exist on disk — never a
- * `Db` fake (CLAUDE.md), still the real `bun:sqlite` engine. */
-function makeInMemoryOnlyOpenDb(): (path: string) => Db {
-  const handles = new Map<string, Db>();
+ * `SqlDatabase` fake (CLAUDE.md), still the real `bun:sqlite` engine. */
+function makeInMemoryOnlyOpenDb(): (path: string) => SqlDatabase {
+  const handles = new Map<string, SqlDatabase>();
   return (path: string) => {
     const existing = handles.get(path);
     if (existing !== undefined) return existing;
-    const db = makeDbBunSqliteAdapter(":memory:");
+    const db = makeDatabaseAdapter(":memory:");
     handles.set(path, db);
     return db;
   };
@@ -53,7 +53,10 @@ describe("runCli dispatch", () => {
 
   test("workspace add dispatches to workspaceAdd", async () => {
     const io = makeIoFake();
-    const container = makeTestContainer({ stdio: io, openDb: makeInMemoryOnlyOpenDb() });
+    const container = makeTestContainer({
+      stdio: io,
+      openDatabase: makeInMemoryOnlyOpenDb(),
+    });
     const outcome = await runCli(
       ["workspace", "add", "mate", "--match", "/repo/mate"],
       container,
@@ -65,15 +68,19 @@ describe("runCli dispatch", () => {
 
   test("workspace rm dispatches to workspaceRm", async () => {
     const io = makeIoFake();
-    const openDb = makeInMemoryOnlyOpenDb();
-    const addContainer = makeTestContainer({ stdio: io, openDb });
+    const openDatabase = makeInMemoryOnlyOpenDb();
+    const addContainer = makeTestContainer({ stdio: io, openDatabase });
     await runCli(
       ["workspace", "add", "mate", "--match", "/repo/mate"],
       addContainer,
       CONFIG,
     );
 
-    const rmContainer = makeTestContainer({ fs: addContainer.fs, stdio: io, openDb });
+    const rmContainer = makeTestContainer({
+      fs: addContainer.fs,
+      stdio: io,
+      openDatabase,
+    });
     const outcome = await runCli(["workspace", "rm", "mate"], rmContainer, CONFIG);
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
   });

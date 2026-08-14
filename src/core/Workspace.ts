@@ -1,4 +1,4 @@
-import type { AbsPath } from "../core/AbsPath.ts";
+import type { AbsPath } from "./AbsPath.ts";
 
 /**
  * The workspace exactly as `registry.toml` stores it: `~`-relative paths, stored

@@ -1,4 +1,4 @@
-import type { Db } from "../platform/db.port.ts";
+import type { SqlDatabase } from "../platform/database.typedefs.ts";
 
 /**
  * The FTS5 index schema. The `porter unicode61` tokenizer and column order
@@ -41,7 +41,7 @@ export const SCHEMA_VERSION = 2;
  * stamp `PRAGMA user_version`. Safe: the markdown vault is the source of
  * truth, so `build.service.ts` repopulates from scratch.
  */
-export function resetSchema(db: Db): void {
+export function resetSchema(db: SqlDatabase): void {
   db.exec(
     "DROP TABLE IF EXISTS notes; DROP TABLE IF EXISTS notes_fts; " +
       "DROP TABLE IF EXISTS links; DROP TABLE IF EXISTS worklog_fts; " +

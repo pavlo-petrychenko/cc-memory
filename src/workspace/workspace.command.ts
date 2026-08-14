@@ -25,7 +25,7 @@ const DEFAULT_EXCLUDE = ["_Worklogs", "Archive", ".obsidian"];
 /** Written only when `<kb>/.gitignore` doesn't exist yet. */
 const GITIGNORE_CONTENT = ".obsidian/workspace*\n.obsidian/cache\n.DS_Store\n";
 
-const GIT_INIT_TIMEOUT_MS = 10_000; // matches gitCli.adapter.ts's WRITE_TIMEOUT_MS
+const GIT_INIT_TIMEOUT_MS = 10_000; // matches git.adapter.ts's WRITE_TIMEOUT_MS
 
 function homeNoteContent(title: string, id: string): string {
   // The vault's home note content, written once at workspace creation.
@@ -161,7 +161,7 @@ export async function workspaceRm(
 
   if (args.purge) {
     const expanded = expandWorkspace(target, home);
-    // `fs.remove` is recursive+idempotent (fileSystem.port.ts) — it never
+    // `fs.remove` is recursive+idempotent (fileSystem.typedefs.ts) — it never
     // throws on a missing path.
     await container.fs.remove(expanded.indexDb);
     container.stdio.write(formatWorkspaceRemovedPurged(args.id));

@@ -1,5 +1,5 @@
 import type { AbsPath } from "../../../src/core/AbsPath.ts";
-import type { Git } from "../../../src/platform/git.port.ts";
+import type { Git } from "../../../src/platform/git.typedefs.ts";
 
 /** One recorded `Git` call, for assertions in services/hooks tests that don't
  * care about the underlying `Proc` invocation, only "did we call `git add`". */
@@ -23,7 +23,7 @@ export type GitFake = Git & {
  * A `Git` with a fixed, settable return value per method — for services/hooks
  * tests that want to script "the tree is dirty" or "there is no git repo
  * here" without going through `procFake.fake.ts`'s argv-level detail.
- * `gitCli.adapter.test.ts` itself tests the real adapter over `procFake`, not
+ * `git.adapter.test.ts` itself tests the real adapter over `procFake`, not
  * this fake.
  */
 export function makeGitFake(): GitFake {

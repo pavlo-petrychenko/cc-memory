@@ -6,8 +6,8 @@ import type { AbsPath } from "../../../src/core/AbsPath.ts";
 import { LogLevel } from "../../../src/core/Config.ts";
 import {
   appendWithRotation,
-  makeLoggerFileAdapter,
-} from "../../../src/platform/loggerFile.adapter.ts";
+  makeLoggerAdapter,
+} from "../../../src/platform/logger.adapter.ts";
 import { createTempDir, type TempDir } from "../../helpers/tempdir.ts";
 
 const MAX_LOG_BYTES = 1_048_576; // must match the adapter's private constant
@@ -26,10 +26,10 @@ function tempLogPath(): AbsPath {
   return join(tempDir.path, "ccmem.log") as AbsPath;
 }
 
-describe("loggerFile adapter — level filtering", () => {
+describe("logger adapter — level filtering", () => {
   test("a message below minLevel is not written at all", () => {
     const path = tempLogPath();
-    const logger = makeLoggerFileAdapter(path, LogLevel.Warn);
+    const logger = makeLoggerAdapter(path, LogLevel.Warn);
 
     logger.debug("should not appear");
     logger.info("should not appear either");
@@ -39,7 +39,7 @@ describe("loggerFile adapter — level filtering", () => {
 
   test("a message at or above minLevel is written", () => {
     const path = tempLogPath();
-    const logger = makeLoggerFileAdapter(path, LogLevel.Warn);
+    const logger = makeLoggerAdapter(path, LogLevel.Warn);
 
     logger.warn("a warning");
     logger.error("an error");
@@ -50,7 +50,7 @@ describe("loggerFile adapter — level filtering", () => {
   });
 });
 
-describe("loggerFile adapter — size-capped rotation", () => {
+describe("logger adapter — size-capped rotation", () => {
   test("appending under the cap never rotates", () => {
     const path = tempLogPath();
     appendWithRotation(path, "short line");

@@ -2,7 +2,7 @@ import type {
   Proc,
   ProcResult,
   ProcRunOptions,
-} from "../../../src/platform/proc.port.ts";
+} from "../../../src/platform/proc.typedefs.ts";
 
 /** One invocation of `Proc.run`, exactly as the fake recorded it, for
  * assertions like "git-cli passed the right argv/timeout". */
@@ -28,7 +28,7 @@ export type ProcFake = Proc & {
 const DEFAULT_RESULT: ProcResult = { stdout: "", stderr: "", exitCode: 0 };
 
 /** A `Proc` that records every call and returns pre-scripted responses instead
- * of spawning anything — what `gitCli.adapter.test.ts` scripts non-zero exits
+ * of spawning anything — what `git.adapter.test.ts` scripts non-zero exits
  * and timeouts against. */
 export function makeProcFake(): ProcFake {
   const calls: RecordedProcCall[] = [];

@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "../../../src/core/AbsPath.ts";
 import { expandPath } from "../../../src/core/paths.ts";
 import type { Workspace } from "../../../src/core/Workspace.ts";
-import type { FileSystem } from "../../../src/platform/fileSystem.port.ts";
+import type { FileSystem } from "../../../src/platform/fileSystem.typedefs.ts";
 import { buildIndex } from "../../../src/retrieval/build.service.ts";
 import { openIndexDb } from "../../../src/retrieval/indexDb.service.ts";
 import { listNotes } from "../../../src/retrieval/notes.service.ts";
@@ -14,7 +14,7 @@ import { makeFsMemoryFake } from "../../helpers/fakes/fsMemory.fake.ts";
 // SAFETY: fixed test fixture, mirrors tests/helpers/container.ts's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
 // SAFETY: bun:sqlite's own in-memory-database identifier — an opaque key into
-// Container.openDb's per-path memoization, not a real filesystem path.
+// Container.openDatabase's per-path memoization, not a real filesystem path.
 const IN_MEMORY_DB = ":memory:" as AbsPath;
 
 function under(relativePath: string): AbsPath {

@@ -12,7 +12,7 @@ export type WorkingMemoryInput = {
   readonly state: string | null;
 };
 
-export function renderWorkingMemory(input: WorkingMemoryInput): string {
+export function formatWorkingMemory(input: WorkingMemoryInput): string {
   const head = `# Working memory — workspace \`${input.workspaceId}\`, worktree \`${input.slug}\``;
   if (input.state !== null) {
     return `${head}\n\n${input.state.trim()}\n\n_(Update this at wrap with the \`remember\` skill.)_`;

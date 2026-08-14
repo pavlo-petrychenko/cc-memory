@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "../../../src/core/AbsPath.ts";
-import { makeProcRealAdapter } from "../../../src/platform/procReal.adapter.ts";
+import { makeProcAdapter } from "../../../src/platform/proc.adapter.ts";
 
 // SAFETY: fixed test fixture — a real, always-present absolute directory.
 const TMP = "/tmp" as AbsPath;
 
-describe("procReal adapter", () => {
+describe("proc adapter", () => {
   test("captures stdout, stderr and exit code from a real process", async () => {
-    const proc = makeProcRealAdapter();
+    const proc = makeProcAdapter();
 
     const result = await proc.run("sh", ["-c", "echo out; echo err >&2; exit 3"], {});
 
@@ -18,7 +18,7 @@ describe("procReal adapter", () => {
   });
 
   test("pipes `input` to the child's stdin", async () => {
-    const proc = makeProcRealAdapter();
+    const proc = makeProcAdapter();
 
     const result = await proc.run("cat", [], { input: "hello from the test" });
 
@@ -26,7 +26,7 @@ describe("procReal adapter", () => {
   });
 
   test("runs in the given cwd", async () => {
-    const proc = makeProcRealAdapter();
+    const proc = makeProcAdapter();
 
     const result = await proc.run("pwd", [], { cwd: TMP });
 
@@ -37,7 +37,7 @@ describe("procReal adapter", () => {
   });
 
   test("merges `env` additively onto the inherited process environment", async () => {
-    const proc = makeProcRealAdapter();
+    const proc = makeProcAdapter();
 
     const result = await proc.run("sh", ["-c", "echo $HOME/$CCMEM_TEST_VAR"], {
       env: { CCMEM_TEST_VAR: "injected" },
@@ -48,13 +48,13 @@ describe("procReal adapter", () => {
   });
 
   test("rejects when the process outlives its timeout", async () => {
-    const proc = makeProcRealAdapter();
+    const proc = makeProcAdapter();
 
     await expect(proc.run("sleep", ["5"], { timeoutMs: 100 })).rejects.toThrow();
   });
 
   test("a fast process under its timeout resolves normally", async () => {
-    const proc = makeProcRealAdapter();
+    const proc = makeProcAdapter();
 
     const result = await proc.run("sh", ["-c", "exit 0"], { timeoutMs: 5000 });
 
@@ -70,7 +70,7 @@ describe("procReal adapter", () => {
  */
 describe("a missing binary", () => {
   test("resolves with exit code 127 instead of throwing", async () => {
-    const proc = makeProcRealAdapter();
+    const proc = makeProcAdapter();
     const result = await proc.run("cc-memory-no-such-binary-exists", ["--version"], {});
 
     expect(result.exitCode).toBe(127);

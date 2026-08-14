@@ -1,6 +1,6 @@
 import type { AbsPath } from "../core/AbsPath.ts";
 import { expandPath } from "../core/paths.ts";
-import type { FileSystem } from "../platform/fileSystem.port.ts";
+import type { FileSystem } from "../platform/fileSystem.typedefs.ts";
 import {
   PRE_CCMEMORY_BACKUP_SUFFIX,
   type SkillManifestEntry,
@@ -10,7 +10,7 @@ import {
  * Symlink every skill under `<repo>/src/skills` into `~/.claude/skills`,
  * backing up a pre-existing REAL directory to `<name>.pre-ccmemory.bak` once.
  *
- * The `FileSystem` port has no `readlink`/`lstat` (see `fileSystem.port.ts`
+ * The `FileSystem` port has no `readlink`/`lstat` (see `fileSystem.typedefs.ts`
  * — it is frozen), so there is no portable way to ask "is `linkPath` already
  * a symlink pointing at `sourcePath`?". Idempotency is decided from the
  * MANIFEST instead: a skill already recorded from a previous install run is

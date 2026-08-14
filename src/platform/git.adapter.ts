@@ -1,6 +1,6 @@
 import type { AbsPath } from "../core/AbsPath.ts";
-import type { Git } from "./git.port.ts";
-import type { Proc } from "./proc.port.ts";
+import type { Git } from "./git.typedefs.ts";
+import type { Proc } from "./proc.typedefs.ts";
 
 const SHOW_TOPLEVEL_TIMEOUT_MS = 3000;
 const READ_TIMEOUT_MS = 5000;
@@ -45,7 +45,7 @@ async function writeGit(
 
 /** The real `Git`, implemented over `Proc` (never `child_process` directly) so
  * git interactions are assertable against `procFake.fake.ts`. */
-export function makeGitCliAdapter(proc: Proc): Git {
+export function makeGitAdapter(proc: Proc): Git {
   return {
     statusPorcelain: (cwd) =>
       readGit(proc, cwd, ["status", "--porcelain"], READ_TIMEOUT_MS),

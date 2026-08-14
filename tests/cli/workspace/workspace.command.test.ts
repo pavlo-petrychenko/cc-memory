@@ -4,8 +4,8 @@ import { CliCommand } from "../../../src/cli/args.ts";
 import type { AbsPath } from "../../../src/core/AbsPath.ts";
 import { expandPath } from "../../../src/core/paths.ts";
 import type { Container } from "../../../src/platform/container.ts";
-import type { Db } from "../../../src/platform/db.port.ts";
-import { makeDbBunSqliteAdapter } from "../../../src/platform/dbBunSqlite.adapter.ts";
+import { makeDatabaseAdapter } from "../../../src/platform/database.adapter.ts";
+import type { SqlDatabase } from "../../../src/platform/database.typedefs.ts";
 import {
   workspaceAdd,
   workspaceLs,
@@ -26,7 +26,7 @@ type CliTestFixture = {
 };
 
 /**
- * A REAL `bun:sqlite` handle (never a `Db` fake — CLAUDE.md), but backed by
+ * A REAL `bun:sqlite` handle (never a `SqlDatabase` fake — CLAUDE.md), but backed by
  * `:memory:` regardless of the path a caller asks for, keyed by that path so
  * two different workspace ids each still get their OWN isolated database.
  * `workspaceAdd`/`workspaceRm --purge` derive `index_db` from `home` + the
@@ -35,12 +35,12 @@ type CliTestFixture = {
  * not the real disk) would otherwise try to open a real SQLite file under a
  * `home` directory that doesn't exist on disk.
  */
-function makeInMemoryOnlyOpenDb(): (path: string) => Db {
-  const handles = new Map<string, Db>();
+function makeInMemoryOnlyOpenDb(): (path: string) => SqlDatabase {
+  const handles = new Map<string, SqlDatabase>();
   return (path: string) => {
     const existing = handles.get(path);
     if (existing !== undefined) return existing;
-    const db = makeDbBunSqliteAdapter(":memory:");
+    const db = makeDatabaseAdapter(":memory:");
     handles.set(path, db);
     return db;
   };
@@ -52,7 +52,7 @@ function makeCliTestFixture(): CliTestFixture {
   const container = makeTestContainer({
     stdio: io,
     proc,
-    openDb: makeInMemoryOnlyOpenDb(),
+    openDatabase: makeInMemoryOnlyOpenDb(),
   });
   return { container, written: io.written, procCalls: proc.calls };
 }
