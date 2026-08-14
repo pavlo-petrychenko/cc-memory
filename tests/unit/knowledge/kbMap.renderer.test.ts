@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { renderKbMap } from "../../../src/knowledge/kbMap.renderer.ts";
 
-describe("renderKbMap (C4)", () => {
+describe("renderKbMap", () => {
   test("golden: header, one described feature, one bare feature, loose notes", () => {
     const rendered = renderKbMap({
       vaultLabel: "~/Documents/Homeserver Vault",

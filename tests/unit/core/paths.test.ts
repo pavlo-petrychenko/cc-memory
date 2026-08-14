@@ -21,7 +21,7 @@ describe("stripChars", () => {
     expect(stripChars('"quoted"', "'\"")).toBe("quoted");
   });
 
-  test("strips repeated characters from both ends (Python str.strip semantics)", () => {
+  test("strips repeated characters from both ends", () => {
     expect(stripChars("[[a, b]]", "[]")).toBe("a, b");
   });
 
@@ -119,7 +119,7 @@ describe("sanitizeSlug", () => {
     expect(sanitizeSlug("")).toBe("_root");
   });
 
-  test("Unicode letters count as alphanumeric (Python str.isalnum is Unicode-aware)", () => {
+  test("Unicode letters count as alphanumeric", () => {
     expect(sanitizeSlug("café")).toBe("café");
   });
 });
@@ -133,7 +133,7 @@ describe("titleize", () => {
     expect(titleize("homeserver")).toBe("Homeserver");
   });
 
-  test("Python str.capitalize lowercases the rest of the word", () => {
+  test("the rest of the word is lowercased, not just the first letter capitalized", () => {
     expect(titleize("myAPI")).toBe("Myapi");
   });
 

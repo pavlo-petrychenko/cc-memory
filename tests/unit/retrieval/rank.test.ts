@@ -17,7 +17,7 @@ function hit(path: string, score: number): Hit {
 }
 
 describe("RRF_K", () => {
-  test("is the standard constant (index.py:242)", () => {
+  test("is the standard RRF constant", () => {
     expect(RRF_K).toBe(60);
   });
 });
@@ -98,7 +98,7 @@ describe("fuse", () => {
 });
 
 describe("applyScoreFloor", () => {
-  // bm25 returns a negative score; "strength" is -score. memory-inject.py:78-79.
+  // bm25 returns a negative score; "strength" is -score.
   test("keeps a hit whose strength clears the floor", () => {
     expect(applyScoreFloor([hit("/a", -5)], 0.2)).toEqual([hit("/a", -5)]);
   });

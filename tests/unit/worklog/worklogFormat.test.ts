@@ -7,7 +7,7 @@ import {
   stateTemplate,
 } from "../../../src/worklog/worklogFormat.ts";
 
-describe("stateTemplate (C4)", () => {
+describe("stateTemplate", () => {
   test("golden string", () => {
     expect(
       stateTemplate({ workspace: "homeserver", slug: "cc-memory", date: "2026-08-14" }),
@@ -33,7 +33,7 @@ _(nothing yet)_
   });
 });
 
-describe("entryTemplate (C4)", () => {
+describe("entryTemplate", () => {
   test("golden string", () => {
     expect(
       entryTemplate({

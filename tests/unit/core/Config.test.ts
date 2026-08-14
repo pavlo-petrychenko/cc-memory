@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { LogLevel, parseConfig } from "../../../src/core/Config.ts";
 
-describe("parseConfig defaults (C5)", () => {
+describe("parseConfig defaults", () => {
   test("every default applies on an empty env", () => {
     const config = parseConfig({});
     expect(config.injectMinScore).toBe(0.2);

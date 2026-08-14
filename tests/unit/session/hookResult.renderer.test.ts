@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { renderHookResult } from "../../../src/session/hookResult.renderer.ts";
 import { HookEvent, HookResultKind } from "../../../src/session/HookResult.ts";
 
-describe("renderHookResult (C2)", () => {
+describe("renderHookResult", () => {
   test("silent renders to null (nothing printed)", () => {
     expect(renderHookResult({ kind: HookResultKind.Silent })).toBeNull();
   });

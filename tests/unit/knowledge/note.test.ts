@@ -32,12 +32,12 @@ describe("parseFrontmatter", () => {
     expect(body).toBe("body\n");
   });
 
-  test("a YAML flow list parses as a string array — bugfix #5", () => {
+  test("a YAML flow list parses as a string array", () => {
     const { frontmatter } = parseFrontmatter("---\ntags: [alpha, beta]\n---\nbody\n");
     expect(frontmatter.get("tags")).toEqual(["alpha", "beta"]);
   });
 
-  test("a YAML block list (multiline) parses as a string array — bugfix #5", () => {
+  test("a YAML block list (multiline) parses as a string array", () => {
     const { frontmatter } = parseFrontmatter(
       "---\ntags:\n  - alpha\n  - beta\n---\nbody\n",
     );
@@ -97,10 +97,9 @@ describe("extractWikilinks / extractTypedRelations / extractInlineTags", () => {
     expect(extractInlineTags("#leading tag then text")).toEqual(["leading"]);
   });
 
-  // Python's `\w` on `str` is Unicode-aware, so index.py:14 captures the whole of
-  // "café"; a plain JS `\w` would truncate it to "caf". Verified against the Python
-  // regex directly. The first character stays ASCII-only in both, so a fully
-  // non-Latin tag matches in neither.
+  // Tag matching is Unicode-aware after the first character, so "café" is
+  // captured whole rather than truncated to "caf". The first character stays
+  // ASCII-only, so a fully non-Latin tag matches neither.
   test("a tag with non-ASCII letters after the first character is captured whole", () => {
     expect(extractInlineTags("fix #café soon")).toEqual(["café"]);
     expect(extractInlineTags("see #tag_ok/sub here")).toEqual(["tag_ok/sub"]);
@@ -160,7 +159,7 @@ describe("parseNote", () => {
     expect(parseNote("body", "t").importance).toBeNull();
   });
 
-  test("importance is null when the value doesn't parse as a Python int (unlike parseInt's lenient prefix parse)", () => {
+  test("importance is null when the value isn't a plain integer (no lenient prefix parse)", () => {
     expect(parseNote("---\nimportance: 5abc\n---\nbody", "t").importance).toBeNull();
   });
 
@@ -176,7 +175,7 @@ describe("parseNote", () => {
     expect(note.tags).toBe("alpha bravo zulu");
   });
 
-  test("a scalar (non-list) frontmatter tags value is comma/whitespace-split (index.py:88-89)", () => {
+  test("a scalar (non-list) frontmatter tags value is comma/whitespace-split", () => {
     const note = parseNote('---\ntags: "alpha, beta"\n---\nbody', "t");
     expect(note.tags).toBe("alpha beta");
   });
@@ -221,11 +220,10 @@ describe("parseIndexNote", () => {
   });
 
   test("blockquote lines before AND after the title both feed the description (quirk)", () => {
-    // The Python loop's blockquote branch runs on every line regardless of
-    // whether the title has been found yet — only a "# " line's own branch is
-    // title-gated (and `continue`s past the blockquote check for that one
-    // line). A blockquote before the title is collected too, since nothing
-    // ever resets `quote` between it and the title line.
+    // The blockquote-collecting branch runs on every line regardless of whether
+    // the title has been found yet — only the "# " line itself is title-gated.
+    // A blockquote before the title is collected too, since nothing resets the
+    // accumulated quote text between it and the title line.
     const parsed = parseIndexNote(
       "> too early, no title yet\n# Title\n> real description\n",
     );

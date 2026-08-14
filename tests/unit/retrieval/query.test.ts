@@ -29,7 +29,6 @@ describe("ftsQuery", () => {
 });
 
 describe("phraseQuery", () => {
-  // Ported from tests/test_retrieval.py:171-173 (test_phrase_query_shape).
   test("contains a NEAR clause for two adjacent terms", () => {
     expect(phraseQuery("red car")).toContain("NEAR");
   });

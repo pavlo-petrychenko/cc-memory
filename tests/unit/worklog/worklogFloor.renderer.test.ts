@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { renderFloorBlock } from "../../../src/worklog/worklogFloor.renderer.ts";
 
-describe("renderFloorBlock (C4)", () => {
+describe("renderFloorBlock", () => {
   test("golden: every field present", () => {
     const rendered = renderFloorBlock({
       date: "2026-08-14",

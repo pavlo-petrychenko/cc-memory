@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { renderInjectContext } from "../../../src/session/inject.renderer.ts";
 
-describe("renderInjectContext (C4)", () => {
+describe("renderInjectContext", () => {
   test("golden: header, one note bullet, one worklog bullet", () => {
     const rendered = renderInjectContext({
       workspaceId: "homeserver",
