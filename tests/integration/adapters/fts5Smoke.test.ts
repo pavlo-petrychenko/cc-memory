@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 
 import { makeDbBunSqliteAdapter } from "../../../src/adapters/dbBunSqlite.adapter.ts";
 import type { DbValue } from "../../../src/ports/db.port.ts";
+import { SCHEMA } from "../../../src/services/index/schema.ts";
+import { NOTES_SEARCH_SQL } from "../../../src/services/index/search.ts";
 
 /**
  * The load-bearing assumption of the entire runtime choice: `bun:sqlite`'s
@@ -11,33 +13,13 @@ import type { DbValue } from "../../../src/ports/db.port.ts";
  * for exactly this reason. If this file ever goes red, the runtime choice
  * itself needs revisiting, not the code around it.
  *
- * Schema and search SQL are copied verbatim from [[reference]] ("Index
- * schema" / "Search SQL", `src/lib/index.py:23-43,280-287`) — C7 freezes the
- * bm25 weights and tokenizer, so this test also pins that the frozen values
- * still parse and run.
+ * `SCHEMA` and `NOTES_SEARCH_SQL` are IMPORTED from `services/index/schema.ts`
+ * / `search.ts` (P5) rather than kept as a second hand-copied transcription of
+ * [[reference]] ("Index schema" / "Search SQL", `src/lib/index.py:23-43,
+ * 280-287`) — C7 freezes the bm25 weights and tokenizer, and importing the
+ * REAL, currently-running constants means this smoke test and the actual
+ * search SQL can never silently drift apart.
  */
-
-// Verbatim from [[reference]] — src/lib/index.py:25-43.
-const SCHEMA = `
-CREATE TABLE IF NOT EXISTS notes(
-  id INTEGER PRIMARY KEY, path TEXT UNIQUE, title TEXT, type TEXT,
-  importance INTEGER, mtime REAL
-);
-CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
-  title, body, tags, path UNINDEXED, tokenize = 'porter unicode61'
-);
-CREATE TABLE IF NOT EXISTS links(src_path TEXT, rel_type TEXT, dst TEXT);
-CREATE VIRTUAL TABLE IF NOT EXISTS worklog_fts USING fts5(
-  slug, date, body, path UNINDEXED, tokenize = 'porter unicode61'
-);
-`;
-
-// Verbatim from [[reference]] — src/lib/index.py:280-287 (C7: weights frozen).
-const NOTES_SEARCH_SQL = `
-  SELECT path, title, snippet(notes_fts,1,'','','…',12) AS snip,
-         bm25(notes_fts, 10.0, 1.0, 5.0) AS score
-    FROM notes_fts WHERE notes_fts MATCH ? ORDER BY score LIMIT ?
-`;
 
 function insertNote(
   db: ReturnType<typeof makeDbBunSqliteAdapter>,
