@@ -21,7 +21,39 @@ export type Divergence = {
 // Packets P2-P10 append one entry per plan doc "bugfixes" row as their own
 // parity tests exercise a deliberate fix (e.g. bugfix #1's wrap-state.json
 // replacing per-session `.wrap-<id>` marker files).
-export const DIVERGENCES: readonly Divergence[] = [];
+export const DIVERGENCES: readonly Divergence[] = [
+  {
+    case: "cli/reflect-no-candidates-headless",
+    reason:
+      "Bugfix #3 (see the plan's 'bugfixes' doc): the single `.last-reflect` " +
+      "timestamp is replaced with two cursors, `.reflect-last-run` (drives " +
+      "`--if-due`) and `.reflect-last-consolidated` (drives `gather`'s `since` " +
+      "window) — see `src/services/reflect/cursor.ts`. The old cursor stamped " +
+      "unconditionally whenever the reflector spawned a tmux session, which is " +
+      "exactly what silently dropped candidates on an unattended night; the new " +
+      "`lastConsolidated` only advances when candidates were durably recorded " +
+      "somewhere a human can act on them. In this case (no candidates at all), " +
+      "nothing was ever at risk of being lost, so only `lastRun` is stamped — " +
+      "`.reflect-last-consolidated` doesn't even get created.",
+    bugfix: 3,
+    expectedDiff:
+      "the file-tree gains `.claude/memory/primary/.reflect-last-run` instead of " +
+      "`.claude/memory/primary/.last-reflect`",
+  },
+  {
+    case: "cli/reflect-if-due-skips-second-run",
+    reason:
+      "Same cursor rework as `cli/reflect-no-candidates-headless` above — the " +
+      "first (headless, no-candidates) step in this case's sequence produces " +
+      "the identical file-tree divergence; the second (`--if-due`) step reads " +
+      "the same new `lastRun` cursor and correctly reports 'not due, skipping', " +
+      "matching Python's stdout exactly.",
+    bugfix: 3,
+    expectedDiff:
+      "the file-tree gains `.claude/memory/primary/.reflect-last-run` instead of " +
+      "`.claude/memory/primary/.last-reflect`",
+  },
+];
 
 /**
  * Behavior changes already SHIPPED in the domain layer that no parity case can

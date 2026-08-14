@@ -35,15 +35,27 @@ function reflectArgs(overrides: Partial<ReflectArgs> = {}): ReflectArgs {
   };
 }
 
-describe("reflect stub (bin/memory:195-207 — P8 owns the real reflector)", () => {
-  test("a known workspace reports plainly that it isn't implemented, never a fake success", async () => {
+/**
+ * `cmd_reflect` (`bin/memory:195-207`): target resolution is the SAME as
+ * `reindex`/`commit` (`resolveTargetWorkspaces`, exercised for real below);
+ * the actual reflector run (`services/reflect/run.ts`, P8) is covered
+ * exhaustively in `tests/integration/services/reflect/**` — these tests only
+ * confirm the command wires targets to it and prints its output, one line
+ * per emitted message, for every resolved workspace. `container.fs`'s
+ * default empty fake has no `_Worklogs` (or `kb`) content at all, so every
+ * successful case below lands on the real, honest "no candidates" message,
+ * never a fake/incorrect success.
+ */
+describe("reflect (cmd_reflect, bin/memory:195-207)", () => {
+  test("a known workspace runs the real reflector and prints its result", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
     await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
 
     const outcome = await reflect(container, reflectArgs({ workspace: "primary" }));
+
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
-    expect(io.written).toEqual(["primary: reflect not implemented yet (P8)"]);
+    expect(io.written).toEqual(["primary: no candidates since last run"]);
   });
 
   test("an unknown workspace still fails EXACTLY like `_targets` (bin/memory:127)", async () => {
@@ -58,13 +70,28 @@ describe("reflect stub (bin/memory:195-207 — P8 owns the real reflector)", () 
     expect(outcome).toEqual({ exitCode: 1, stderrMessage: "no such workspace: ghost" });
   });
 
-  test("omitting --workspace reports every registered workspace (the default 'all')", async () => {
+  test("omitting --workspace runs every registered workspace (the default 'all')", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
     await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
 
     const outcome = await reflect(container, reflectArgs());
+
     expect(outcome.exitCode).toBe(0);
-    expect(io.written).toEqual(["primary: reflect not implemented yet (P8)"]);
+    expect(io.written).toEqual(["primary: no candidates since last run"]);
+  });
+
+  test("`--all` is accepted but consulted nowhere — same as Python's own no-op flag", async () => {
+    const io = makeIoFake();
+    const container = makeTestContainer({ stdio: io });
+    await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
+
+    const outcome = await reflect(
+      container,
+      reflectArgs({ all: true, workspace: "primary" }),
+    );
+
+    expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
+    expect(io.written).toEqual(["primary: no candidates since last run"]);
   });
 });

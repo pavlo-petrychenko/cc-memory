@@ -1,0 +1,286 @@
+import type { Container } from "../../container.ts";
+import type { AbsPath } from "../../domain/AbsPath.ts";
+import { parseConfig } from "../../domain/Config.ts";
+import type { Candidate, RelatedNote } from "../../domain/Reflector.ts";
+import { renderBrief, renderProposals } from "../../domain/render/proposals.renderer.ts";
+import type { Workspace } from "../../domain/Workspace.ts";
+import { buildIndex } from "../index/build.ts";
+import { proposalsDir } from "../worklog.service.ts";
+import {
+  isDue,
+  isPreviousBriefProcessed,
+  migrateLegacyCursor,
+  readLastConsolidatedMs,
+  stampLastConsolidated,
+  stampLastRun,
+} from "./cursor.ts";
+import { decideWithLlm } from "./decide.ts";
+import { gatherCandidates } from "./gather.ts";
+import { relatedNotes } from "./relate.ts";
+import {
+  hasSession,
+  isSessionActive,
+  killSession,
+  spawnConsolidation,
+  tmuxAvailable,
+} from "./session.ts";
+
+/**
+ * Orchestration for one workspace's `memory reflect` invocation
+ * (`main`, `bin/reflector.py:250-318`): due-check -> reindex -> gather ->
+ * relate -> tmux-or-headless -> render -> stamp. Returns the message line(s)
+ * to print, in emission order — `reflect.command.ts` writes each with one
+ * `Stdio.write` call, mirroring Python calling `print()` once per line
+ * (including the ONE case, the successful tmux spawn, where a single
+ * `print()` embeds its own `\n`).
+ */
+
+const CONSOLIDATION_SESSION_PREFIX = "cc-consolidate-"; // bin/reflector.py:294
+const DEFAULT_SHELL = "/bin/zsh"; // bin/reflector.py:234
+const RAW_LLM_UNAVAILABLE_SUFFIX = "(raw, LLM unavailable) "; // bin/reflector.py:317-318
+
+export type ReflectRunOptions = {
+  readonly ifDue: boolean;
+  readonly thresholdHours: number;
+  readonly headless: boolean;
+  readonly force: boolean;
+};
+
+function sessionNameFor(workspace: Workspace): string {
+  return `${CONSOLIDATION_SESSION_PREFIX}${workspace.id}`;
+}
+
+/** `os.environ.get("CCMEM_CONSOLIDATE_CMD", "claude --dangerously-skip-permissions")`
+ * (`bin/reflector.py:237`) — reuses `Config`'s own default rather than
+ * re-deriving the literal string a second time. */
+function readConsolidateCmd(container: Container): string {
+  return parseConfig({
+    CCMEM_CONSOLIDATE_CMD: container.env.get("CCMEM_CONSOLIDATE_CMD"),
+  }).consolidateCmd;
+}
+
+/** Join a name onto an already-validated `AbsPath` directory. */
+function joinUnderDir(dir: AbsPath, name: string): AbsPath {
+  // SAFETY: `dir` is an already-absolute, normalized `AbsPath`; `name` is a
+  // fixed literal filename built from the run's own `date`/`workspace.id` —
+  // never raw external input — so the join stays absolute and normalized.
+  return `${dir}/${name}` as AbsPath;
+}
+
+async function writeBriefFile(
+  container: Container,
+  workspace: Workspace,
+  date: string,
+  candidates: readonly Candidate[],
+  related: readonly RelatedNote[],
+): Promise<AbsPath> {
+  const dir = proposalsDir(workspace);
+  await container.fs.mkdir(dir);
+  const path = joinUnderDir(dir, `_brief-${date}.md`);
+  await container.fs.writeFile(
+    path,
+    renderBrief({ workspaceId: workspace.id, date, candidates, related }),
+  );
+  return path;
+}
+
+async function writeProposalsFile(
+  container: Container,
+  workspace: Workspace,
+  date: string,
+  candidates: readonly Candidate[],
+  related: readonly RelatedNote[],
+): Promise<{
+  readonly path: AbsPath;
+  readonly count: number;
+  readonly llmError: string | null;
+}> {
+  const decideResult = await decideWithLlm(container.proc, candidates, related);
+  const llmError = decideResult.ok ? null : decideResult.error;
+  const rendered = renderProposals({
+    workspaceId: workspace.id,
+    date,
+    candidates,
+    error: llmError,
+    decisions: decideResult.ok ? decideResult.value : [],
+  });
+  const dir = proposalsDir(workspace);
+  await container.fs.mkdir(dir);
+  const path = joinUnderDir(dir, `${date}.md`);
+  await container.fs.writeFile(path, rendered.content);
+  return { path, count: rendered.count, llmError };
+}
+
+/**
+ * `tryInteractiveConsolidation`'s outcome — a closed set (CLAUDE.md's "no
+ * magic strings"), so the caller's "does this fall through to headless?"
+ * decision is a type-checked switch rather than sniffing message text:
+ *  - `skipped`: tmux isn't in play at all (`--headless`, or tmux missing) —
+ *    the caller runs the headless branch as if this function didn't exist.
+ *  - `done`: terminal for this run, one way or another — an already-active
+ *    session left untouched, or a fresh spawn that succeeded.
+ *  - `spawnFailed`: tmux was tried and failed; Python's own control flow
+ *    falls through into the headless branch from here (`bin/reflector.py:311`).
+ */
+type InteractiveOutcome =
+  | { readonly kind: "skipped" }
+  | { readonly kind: "done"; readonly lines: readonly string[] }
+  | { readonly kind: "spawnFailed"; readonly lines: readonly string[] };
+
+/**
+ * The tmux (interactive) branch: replace a stale/forced session, spawn a
+ * fresh one, and report the outcome — `bin/reflector.py:292-311`.
+ */
+async function tryInteractiveConsolidation(
+  container: Container,
+  workspace: Workspace,
+  options: ReflectRunOptions,
+  date: string,
+  candidates: readonly Candidate[],
+  related: readonly RelatedNote[],
+  nowMs: number,
+): Promise<InteractiveOutcome> {
+  if (options.headless || !(await tmuxAvailable(container.proc))) {
+    return { kind: "skipped" };
+  }
+
+  const sessionName = sessionNameFor(workspace);
+  const lines: string[] = [];
+
+  if (await hasSession(container.proc, sessionName)) {
+    if (!options.force && (await isSessionActive(container.proc, sessionName))) {
+      // bin/reflector.py:296-299's own comment: "leave candidates pending;
+      // don't restamp" — neither cursor advances while a session is
+      // genuinely still being worked, so tomorrow's due check (and this
+      // same gather window) sees it again.
+      return {
+        kind: "done",
+        lines: [
+          `${workspace.id}: consolidation already running -> tmux attach -t ${sessionName}` +
+            "  (or rerun with --force)",
+        ],
+      };
+    }
+    await killSession(container.proc, sessionName);
+    lines.push(
+      `${workspace.id}: replaced ${options.force ? "existing" : "stale"} consolidation session`,
+    );
+  }
+
+  const briefPath = await writeBriefFile(container, workspace, date, candidates, related);
+  const shell = container.env.get("SHELL") ?? DEFAULT_SHELL;
+  const spawnResult = await spawnConsolidation(
+    container.proc,
+    workspace,
+    briefPath,
+    sessionName,
+    shell,
+    readConsolidateCmd(container),
+  );
+  if (spawnResult.ok) {
+    // bugfix #3, the actual fix: advance ONLY `lastRun` here. The old code
+    // stamped its single cursor the moment the tmux session SPAWNED, so an
+    // unattended night silently dropped every candidate in it — the brief is
+    // durable, but nothing durable records that it was ever REVIEWED until
+    // `isPreviousBriefProcessed` (or a later headless run) says so.
+    await stampLastRun(container.fs, workspace, nowMs);
+    lines.push(
+      `${workspace.id}: ${candidates.length} candidates -> interactive consolidation ` +
+        `in tmux '${sessionName}'. Attach: tmux attach -t ${sessionName}\n  brief: ${briefPath}`,
+    );
+    return { kind: "done", lines };
+  }
+  lines.push(
+    `${workspace.id}: tmux spawn failed (${spawnResult.error}); falling back to headless`,
+  );
+  return { kind: "spawnFailed", lines };
+}
+
+async function runHeadless(
+  container: Container,
+  workspace: Workspace,
+  date: string,
+  candidates: readonly Candidate[],
+  related: readonly RelatedNote[],
+  nowMs: number,
+): Promise<string> {
+  const { path, count, llmError } = await writeProposalsFile(
+    container,
+    workspace,
+    date,
+    candidates,
+    related,
+  );
+  // The headless path always produces a durable proposals file — even the
+  // raw-candidate fallback is something a human can act on — so both
+  // cursors advance together, exactly like Python's single `stamp()` did.
+  await stampLastRun(container.fs, workspace, nowMs);
+  await stampLastConsolidated(container.fs, workspace, nowMs);
+  const rawSuffix = llmError !== null ? RAW_LLM_UNAVAILABLE_SUFFIX : "";
+  return `${workspace.id}: ${candidates.length} candidates -> ${count} proposal(s) ${rawSuffix}-> ${path}`;
+}
+
+export async function runReflect(
+  container: Container,
+  workspace: Workspace,
+  options: ReflectRunOptions,
+): Promise<readonly string[]> {
+  await migrateLegacyCursor(container.fs, workspace);
+
+  const nowMs = container.clock.nowMs();
+  if (
+    options.ifDue &&
+    !(await isDue(container.fs, workspace, nowMs, options.thresholdHours))
+  ) {
+    return [`${workspace.id}: not due, skipping`];
+  }
+
+  // bin/reflector.py:270-273 — best-effort; a broken vault must never abort
+  // the reflector (the same fail-open shape as everything else here).
+  try {
+    await buildIndex(container, workspace, { incremental: true });
+  } catch {
+    // intentionally swallowed
+  }
+
+  // bugfix #3's second cursor-advance trigger: if the last brief we handed a
+  // human/agent has since been fully marked `[x]`/`[~]`, treat everything up
+  // to now as settled before computing this run's gather window.
+  if (await isPreviousBriefProcessed(container.fs, workspace)) {
+    await stampLastConsolidated(container.fs, workspace, nowMs);
+  }
+
+  const sinceMs = (await readLastConsolidatedMs(container.fs, workspace)) ?? 0;
+  const candidates = await gatherCandidates(container.fs, workspace, sinceMs);
+  const date = container.clock.today();
+
+  if (candidates.length === 0) {
+    await stampLastRun(container.fs, workspace, nowMs);
+    return [`${workspace.id}: no candidates since last run`];
+  }
+
+  const related = await relatedNotes(container, workspace, candidates);
+
+  const interactive = await tryInteractiveConsolidation(
+    container,
+    workspace,
+    options,
+    date,
+    candidates,
+    related,
+    nowMs,
+  );
+  if (interactive.kind === "done") return interactive.lines;
+
+  const headlessLine = await runHeadless(
+    container,
+    workspace,
+    date,
+    candidates,
+    related,
+    nowMs,
+  );
+  return interactive.kind === "spawnFailed"
+    ? [...interactive.lines, headlessLine]
+    : [headlessLine];
+}
