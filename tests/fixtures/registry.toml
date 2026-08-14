@@ -1,0 +1,18 @@
+# cc-memory workspace registry (managed by `memory workspace …`).
+# Paths may use ~; they are expanded at load time. One block per workspace.
+
+[[workspace]]
+id = "mate"
+match = ["~/Desktop/project"]
+kb = "~/Documents/Mate Vault"
+worklogs = "~/Documents/Mate Vault/_Worklogs"
+exclude = ["_Worklogs", "Archive", ".obsidian"]
+index_db = "~/.claude/memory/mate/index.db"
+
+[[workspace]]
+id = "personal"
+match = ["~/Documents/personal"]
+kb = "~/Documents/Personal Vault"
+worklogs = "~/Documents/Personal Vault/_Worklogs"
+exclude = ["_Worklogs", "Archive", ".obsidian"]
+index_db = "~/.claude/memory/personal/index.db"
