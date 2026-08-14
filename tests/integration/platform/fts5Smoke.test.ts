@@ -8,17 +8,15 @@ import { NOTES_SEARCH_SQL } from "../../../src/retrieval/search.service.ts";
 /**
  * The load-bearing assumption of the entire runtime choice: `bun:sqlite`'s
  * bundled SQLite supports FTS5 with the `porter unicode61` tokenizer,
- * `bm25()`, `snippet()` and `NEAR`. `node:sqlite` does NOT ship FTS5 (verified
- * during planning — [[root]]'s "Decisions (locked)" table) and was rejected
- * for exactly this reason. If this file ever goes red, the runtime choice
- * itself needs revisiting, not the code around it.
+ * `bm25()`, `snippet()` and `NEAR`. `node:sqlite` does NOT ship FTS5, which is
+ * why this project runs on Bun rather than Node. If this file ever goes red,
+ * the runtime choice itself needs revisiting, not the code around it.
  *
- * `SCHEMA` and `NOTES_SEARCH_SQL` are IMPORTED from `retrieval/schema.ts`
- * / `search.ts` (P5) rather than kept as a second hand-copied transcription of
- * [[reference]] ("Index schema" / "Search SQL", `src/lib/index.py:23-43,
- * 280-287`) — C7 freezes the bm25 weights and tokenizer, and importing the
- * REAL, currently-running constants means this smoke test and the actual
- * search SQL can never silently drift apart.
+ * `SCHEMA` and `NOTES_SEARCH_SQL` are IMPORTED from `retrieval/schema.ts` /
+ * `search.ts` rather than kept as a second hand-copied transcription of the
+ * index schema and search SQL, so this smoke test and the actual search SQL
+ * (whose bm25 weights and tokenizer are frozen) can never silently drift
+ * apart.
  */
 
 function insertNote(

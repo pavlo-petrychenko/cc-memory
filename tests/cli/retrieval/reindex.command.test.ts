@@ -46,7 +46,7 @@ async function seedRegistry(): Promise<{
   return { container, io };
 }
 
-describe("reindex (cmd_reindex, bin/memory:132-136)", () => {
+describe("reindex", () => {
   test("reindexes a single workspace and prints the +/~/- summary", async () => {
     const { container, io } = await seedRegistry();
 
@@ -55,7 +55,7 @@ describe("reindex (cmd_reindex, bin/memory:132-136)", () => {
     expect(io.written).toEqual(["primary: +1 ~0 -0 = 1 notes"]);
   });
 
-  test("an unknown workspace fails with the exact bin/memory:127 message", async () => {
+  test("an unknown workspace fails with the exact 'no such workspace' message", async () => {
     const { container } = await seedRegistry();
 
     const outcome = await reindex(container, reindexArgs({ workspace: "ghost" }));

@@ -6,10 +6,9 @@ import { CC_MEMORY_VERSION } from "../../src/version.ts";
 import { makeIoFake } from "../helpers/fakes/ioFake.fake.ts";
 
 /**
- * Python got `-h`/`--help` and the no-arguments usage dump from `argparse`. The
- * hand-rolled parser has to handle them explicitly — without this, `memory --help`
- * exited 2 with "unknown command: --help", which is a broken CLI even though no
- * skill invokes it (so it is not contract C3).
+ * `-h`/`--help` and the no-arguments usage dump have no built-in parser
+ * support here, so they must be handled explicitly — without this,
+ * `memory --help` would exit 2 with "unknown command: --help".
  */
 describe("help and version parsing", () => {
   const helpForms = ["-h", "--help"];
@@ -20,7 +19,7 @@ describe("help and version parsing", () => {
     });
   }
 
-  test("no arguments at all is help, matching argparse's usage dump", () => {
+  test("no arguments at all is help", () => {
     expect(parseArgs([])).toEqual({ ok: true, value: { command: CliCommand.Help } });
   });
 
@@ -39,7 +38,7 @@ describe("help and version parsing", () => {
 });
 
 describe("help output", () => {
-  test("exits 0 and lists every command in the C3 surface", () => {
+  test("exits 0 and lists every command", () => {
     const stdio = makeIoFake();
     const outcome = help(stdio);
 
@@ -64,7 +63,7 @@ describe("help output", () => {
     }
   });
 
-  test("documents every CCMEM_* environment variable (C5)", () => {
+  test("documents every CCMEM_* environment variable", () => {
     const stdio = makeIoFake();
     help(stdio);
     const written = stdio.written.join("");

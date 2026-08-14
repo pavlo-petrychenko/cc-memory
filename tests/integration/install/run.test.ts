@@ -24,8 +24,7 @@ import { makeTestContainer } from "../../helpers/container.ts";
 import { makeProcFake, type ProcFake } from "../../helpers/fakes/procFake.fake.ts";
 
 /**
- * `run.ts`'s `runInstall`/`runUninstall` (safe orchestration coverage,
- * [[services]]/packet-9-install's "TESTS" section) — every scenario here
+ * `run.ts`'s `runInstall`/`runUninstall` orchestration — every scenario here
  * runs against `makeTestContainer`'s in-memory `fs` and a `procFake`, NEVER
  * a real `bun`/`launchctl`. See `tests/cli/commands/install.command.test.ts`'s
  * doc comment for why that distinction matters on THIS machine specifically.

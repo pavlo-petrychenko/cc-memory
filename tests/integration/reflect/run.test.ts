@@ -10,10 +10,11 @@ import { makeFsMemoryFake } from "../../helpers/fakes/fsMemory.fake.ts";
 import { makeProcFake, type ProcFake } from "../../helpers/fakes/procFake.fake.ts";
 
 /**
- * `runReflect` orchestration (`main`, `bin/reflector.py:250-318`) end to end,
- * against `procFake`/`clockFixed` — NEVER a real tmux session or `claude`.
- * The cursor-advance assertions below are what proves bugfix #3: a
- * successful tmux spawn stamps ONLY `lastRun`, never `lastConsolidated`.
+ * `runReflect` orchestration end to end, against `procFake`/`clockFixed` —
+ * NEVER a real tmux session or `claude`. The cursor-advance assertions below
+ * prove that a successful tmux spawn stamps ONLY `lastRun`, never
+ * `lastConsolidated`, since consolidation itself only finishes once the
+ * spawned session actually processes the brief.
  */
 
 // SAFETY: fixed test fixture, mirrors tests/helpers/container.ts's DEFAULT_HOME.
@@ -175,7 +176,7 @@ describe("reflect/run runReflect — headless", () => {
   });
 });
 
-describe("reflect/run runReflect — interactive tmux (bugfix #3)", () => {
+describe("reflect/run runReflect — interactive tmux", () => {
   function scriptFreshSpawn(proc: ProcFake): void {
     proc.enqueue({
       kind: "resolve",
@@ -185,7 +186,7 @@ describe("reflect/run runReflect — interactive tmux (bugfix #3)", () => {
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } }); // new-session
   }
 
-  test("a successful spawn stamps ONLY lastRun — the actual bugfix", async () => {
+  test("a successful spawn stamps ONLY lastRun", async () => {
     const fs = makeFsMemoryFake();
     seedOneCandidate(fs);
     const proc = makeProcFake();
@@ -199,8 +200,9 @@ describe("reflect/run runReflect — interactive tmux (bugfix #3)", () => {
       "interactive consolidation in tmux 'cc-consolidate-primary'",
     );
     expect(lines[0]).toContain("brief: ");
-    // THE regression this bugfix closes: lastConsolidated must NOT advance
-    // just because a tmux session was spawned — only lastRun does.
+    // lastConsolidated must NOT advance just because a tmux session was
+    // spawned — only lastRun does; lastConsolidated advances once the
+    // session actually processes the brief.
     expect(await fs.exists(LAST_RUN_CURSOR_PATH)).toBe(true);
     expect(await fs.exists(LAST_CONSOLIDATED_CURSOR_PATH)).toBe(false);
   });

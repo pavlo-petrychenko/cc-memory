@@ -1,11 +1,11 @@
 /**
  * Synthetic vault + registry.toml builder for the parity harness.
  *
- * Extends the corpus proven useful in tests/test_retrieval.py:27-95 (8 notes
- * across Alpha/Beta/Gamma exercising camelCase-vs-prose matching,
- * title-vs-body BM25 weighting, adjacent-vs-distant term pairs and a typed
- * `depends_on` relation) with a SECOND, unrelated workspace so cross-workspace
- * isolation (invariant #2 in CLAUDE.md) is exercised, not just retrieval.
+ * An 8-note corpus across Alpha/Beta/Gamma exercising camelCase-vs-prose
+ * matching, title-vs-body BM25 weighting, adjacent-vs-distant term pairs and
+ * a typed `depends_on` relation, plus a SECOND, unrelated workspace so
+ * cross-workspace isolation (invariant #2 in CLAUDE.md) is exercised, not
+ * just retrieval.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -66,7 +66,6 @@ const GIT_ENV = {
   GIT_CONFIG_NOSYSTEM: "1",
 } as const;
 
-// Verbatim from tests/test_retrieval.py:27-90.
 const PRIMARY_NOTES = {
   "Alpha/Alpha.md": `---
 type: index
@@ -124,7 +123,6 @@ Red apples are quite tasty and then much later i finally drove a car back home.
 `,
 } satisfies Readonly<Record<string, string>>;
 
-// Verbatim from tests/test_retrieval.py:92-95.
 const PRIMARY_WORKLOGS = {
   "wt1/STATE.md": "# wt1\n## Current focus\nnothing\n",
   "wt1/2026-01-01.md":

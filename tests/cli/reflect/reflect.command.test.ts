@@ -36,17 +36,17 @@ function reflectArgs(overrides: Partial<ReflectArgs> = {}): ReflectArgs {
 }
 
 /**
- * `cmd_reflect` (`bin/memory:195-207`): target resolution is the SAME as
- * `reindex`/`commit` (`resolveTargetWorkspaces`, exercised for real below);
- * the actual reflector run (`reflect/run.ts`, P8) is covered
- * exhaustively in `tests/integration/reflect/**` — these tests only
- * confirm the command wires targets to it and prints its output, one line
- * per emitted message, for every resolved workspace. `container.fs`'s
- * default empty fake has no `_Worklogs` (or `kb`) content at all, so every
- * successful case below lands on the real, honest "no candidates" message,
- * never a fake/incorrect success.
+ * Target resolution here is the SAME as `reindex`/`commit`
+ * (`resolveTargetWorkspaces`, exercised for real below); the actual
+ * reflector run (`reflect/run.ts`) is covered exhaustively in
+ * `tests/integration/reflect/**` — these tests only confirm the command
+ * wires targets to it and prints its output, one line per emitted message,
+ * for every resolved workspace. `container.fs`'s default empty fake has no
+ * `_Worklogs` (or `kb`) content at all, so every successful case below
+ * lands on the real, honest "no candidates" message, never a
+ * fake/incorrect success.
  */
-describe("reflect (cmd_reflect, bin/memory:195-207)", () => {
+describe("reflect", () => {
   test("a known workspace runs the real reflector and prints its result", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
@@ -58,7 +58,7 @@ describe("reflect (cmd_reflect, bin/memory:195-207)", () => {
     expect(io.written).toEqual(["primary: no candidates since last run"]);
   });
 
-  test("an unknown workspace still fails EXACTLY like `_targets` (bin/memory:127)", async () => {
+  test("an unknown workspace still fails EXACTLY like `resolveTargetWorkspaces`", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
     await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);

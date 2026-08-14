@@ -105,7 +105,7 @@ describe("recentEntries", () => {
     ]);
   });
 
-  test("defaults to a limit of 2 (worklog.py:72)", async () => {
+  test("defaults to a limit of 2", async () => {
     const fs = makeFsMemoryFake();
     const dir = worktreeDir(ws, slug);
     fs.seedFile(absPath(`${dir}/2026-08-01.md`), "one");
@@ -141,9 +141,8 @@ describe("appendToDated", () => {
     const fs = makeFsMemoryFake();
     const path = await appendToDated(fs, ws, slug, "2026-08-14", "first entry");
     await appendToDated(fs, ws, slug, "2026-08-14", "second entry");
-    // Exact byte layout (worklog.py:96's separator quirk, pinned): one blank
-    // line between entries, each entry's trailing whitespace stripped and a
-    // single newline appended.
+    // Exact byte layout: one blank line between entries, each entry's
+    // trailing whitespace stripped and a single newline appended.
     expect(await fs.readFile(path)).toBe("first entry\n\nsecond entry\n");
   });
 
@@ -225,7 +224,7 @@ describe("commitWorklogs", () => {
     expect(await commitWorklogs(fs, git, siblingWs, "wrap up session")).toBe(true);
   });
 
-  test("returns true even when commit itself exits non-zero (nothing staged, worklog.py:111)", async () => {
+  test("returns true even when commit itself exits non-zero (nothing staged)", async () => {
     const fs = makeFsMemoryFake();
     fs.seedDir(absPath(`${ws.kb}/.git`));
     const git = makeGitFake();

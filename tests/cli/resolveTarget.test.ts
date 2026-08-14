@@ -30,7 +30,7 @@ const PRIMARY = raw("primary", "/repo/primary");
 const SECONDARY = raw("secondary", "/repo/secondary");
 const RAWS: readonly RawWorkspace[] = [PRIMARY, SECONDARY];
 
-describe("resolveTargetWorkspaces — `_targets` (reindex/commit/reflect)", () => {
+describe("resolveTargetWorkspaces (reindex/commit/reflect)", () => {
   test("id === null resolves every registered workspace, expanded, in registry order", () => {
     const result = resolveTargetWorkspaces(RAWS, HOME, null);
     expect(result.ok).toBe(true);
@@ -45,13 +45,13 @@ describe("resolveTargetWorkspaces — `_targets` (reindex/commit/reflect)", () =
     expect(result.value.map((ws) => ws.id)).toEqual(["secondary"]);
   });
 
-  test("an unknown id fails with the exact bin/memory:127 message", () => {
+  test("an unknown id fails with the exact 'no such workspace' message", () => {
     const result = resolveTargetWorkspaces(RAWS, HOME, "ghost");
     expect(result).toEqual({ ok: false, error: "no such workspace: ghost" });
   });
 });
 
-describe("resolveWorkspaceForCwd — `_resolve_ws` (search/notes)", () => {
+describe("resolveWorkspaceForCwd (search/notes)", () => {
   test("an explicit --workspace id wins even when cwd would resolve elsewhere", () => {
     const cwd = expandPath("/repo/primary/wt1", HOME);
     const result = resolveWorkspaceForCwd(RAWS, HOME, cwd, "secondary");
@@ -60,7 +60,7 @@ describe("resolveWorkspaceForCwd — `_resolve_ws` (search/notes)", () => {
     expect(result.value.id).toBe("secondary");
   });
 
-  test("an unknown --workspace id fails with the exact bin/memory:157 message", () => {
+  test("an unknown --workspace id fails with the exact 'no such workspace' message", () => {
     const cwd = expandPath("/repo/primary", HOME);
     const result = resolveWorkspaceForCwd(RAWS, HOME, cwd, "ghost");
     expect(result).toEqual({ ok: false, error: "no such workspace: ghost" });
@@ -74,7 +74,7 @@ describe("resolveWorkspaceForCwd — `_resolve_ws` (search/notes)", () => {
     expect(result.value.id).toBe("secondary");
   });
 
-  test("a cwd under no workspace fails with the exact bin/memory:161 message", () => {
+  test("a cwd under no workspace fails with the exact 'no workspace for cwd' message", () => {
     const cwd = expandPath("/elsewhere", HOME);
     const result = resolveWorkspaceForCwd(RAWS, HOME, cwd, null);
     expect(result).toEqual({ ok: false, error: NO_WORKSPACE_FOR_CWD_MESSAGE });

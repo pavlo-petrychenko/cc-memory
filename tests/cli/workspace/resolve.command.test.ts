@@ -26,7 +26,7 @@ function resolveArgs(overrides: Partial<ResolveArgs> = {}): ResolveArgs {
   return { command: CliCommand.Resolve, cwd: null, ...overrides };
 }
 
-describe("resolve (cmd_resolve, bin/memory:110-120)", () => {
+describe("resolve", () => {
   test("inside a workspace prints the 5 key: value lines", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
@@ -43,7 +43,7 @@ describe("resolve (cmd_resolve, bin/memory:110-120)", () => {
     ]);
   });
 
-  test("outside any workspace prints a plain message and still exits 0 (bin/memory:114)", async () => {
+  test("outside any workspace prints a plain message and still exits 0", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
     await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);

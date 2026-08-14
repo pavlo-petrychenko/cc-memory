@@ -27,7 +27,7 @@ function underKb(relativePath: string): AbsPath {
   return `${fixture.primary.kb}/${relativePath}` as AbsPath;
 }
 
-describe("index/graph inlinkCounts (test_retrieval.py:191-197)", () => {
+describe("index/graph inlinkCounts", () => {
   test("a note depends_on'd by another gets an in-link; the linker gets none", async () => {
     const injectionHook = underKb("Alpha/Injection Hook.md");
     const searchRanking = underKb("Alpha/Search Ranking.md");

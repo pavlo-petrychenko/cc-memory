@@ -27,7 +27,7 @@ describe("install/seed.ts — seeding registry.toml from registry.example.toml",
     expect(written).toBe('[[workspace]]\nid = "example"\n');
   });
 
-  test("leaves an existing registry untouched (tools/install.py:148-150)", async () => {
+  test("leaves an existing registry untouched", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(defaultExampleRegistryPath(REPO_ROOT), '[[workspace]]\nid = "example"\n');
     fs.seedFile(defaultRegistryPath(HOME), '[[workspace]]\nid = "real"\n');

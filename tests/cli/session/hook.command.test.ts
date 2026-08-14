@@ -30,8 +30,7 @@ describe("hook dispatch (memory hook <name>)", () => {
     // `dispatchHook` return before ever calling `runHook`, so this never
     // reaches a real `container.stdio.exit()` (a genuine `process.exit()`
     // for the REAL container `hook()` builds) — which WOULD tear down the
-    // entire `bun test` process mid-run for any KNOWN name (confirmed by
-    // direct repro; see this packet's final report). Building a real
+    // entire `bun test` process mid-run for any KNOWN name. Building a real
     // `Container`/`Config` from the actual process environment is itself
     // side-effect-free (every adapter constructor is lazy — I/O only happens
     // when a method is actually called), so this is hermetic despite using

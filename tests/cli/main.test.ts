@@ -39,11 +39,10 @@ const CONFIG = {
 };
 
 /**
- * `runCli` dispatch coverage (`bin/memory:294-295`'s `a.func(a)`) — one case
- * per `CliCommand` member, using the cheapest args/state that reaches each
- * command function. Behavior itself is covered exhaustively by each
- * `commands/*.test.ts` and by `tests/parity/ts.test.ts`; this file only
- * proves the dispatch switch actually wires every command to its function.
+ * `runCli` dispatch coverage — one case per `CliCommand` member, using the
+ * cheapest args/state that reaches each command function. Behavior itself is
+ * covered exhaustively by each `commands/*.test.ts`; this file only proves
+ * the dispatch switch actually wires every command to its function.
  */
 describe("runCli dispatch", () => {
   test("a parse failure maps to exit code 2 with the parser's message on stderr", async () => {
@@ -147,32 +146,29 @@ describe("runCli dispatch", () => {
   // actual process environment — the fake `container` built above is never
   // what it uses. Worse, that real container's `Stdio` is the REAL adapter,
   // whose `exit()` calls the actual `process.exit(0)`: calling `hook()`
-  // in-process (confirmed by direct repro) terminates the entire `bun test`
-  // process mid-run, silently, before any results print — exactly the
-  // failure mode the `Stdio` port exists to prevent, defeated here because
-  // `hook()` cannot accept an injected container at all. Dispatch wiring for
-  // `hook` is instead covered where a real `process.exit` is safe: spawned
-  // subprocesses in `tests/cli/e2e.test.ts` and
-  // `tests/contract/failopen.test.ts`. `dispatchHook` — the actual per-name
-  // dispatch logic `hook()` delegates to — is fully covered in-process with
-  // fakes by `tests/cli/commands/hook.command.test.ts`.
+  // in-process terminates the entire `bun test` process mid-run, silently,
+  // before any results print — exactly the failure mode the `Stdio` port
+  // exists to prevent, defeated here because `hook()` cannot accept an
+  // injected container at all. Dispatch wiring for `hook` is instead covered
+  // where a real `process.exit` is safe: spawned subprocesses in
+  // `tests/cli/e2e.test.ts` and `tests/contract/failopen.test.ts`.
+  // `dispatchHook` — the actual per-name dispatch logic `hook()` delegates
+  // to — is fully covered in-process with fakes by
+  // `tests/cli/commands/hook.command.test.ts`.
 
   /**
-   * `dispatch`'s `case CliCommand.Install`/`Uninstall` (`src/cli/main.ts`,
-   * frozen — outside this packet) call `install(parsed)`/`uninstall()` with
-   * NO `container` argument, unlike every other case here — so the
-   * `container` this test builds via `makeTestContainer` is NEVER what
-   * `install`/`uninstall` actually run against; they always build their OWN
-   * container from the real `process.env` (`install.command.ts`'s doc
-   * comment explains why). Faking that by mutating `process.env.HOME`
-   * mid-process does NOT work under Bun — `os.homedir()` resolves `$HOME`
-   * once and does not observe a later reassignment in the same process
-   * (verified directly: `bun -e 'process.env.HOME = "/tmp/x";
-   * require("node:os").homedir()'` still prints the real path) — the very
-   * bug that turned an earlier draft of this test into a real, unwanted
-   * `memory install`/`uninstall` run against this machine's actual
-   * `~/.claude/settings.json`, `~/.local/bin/memory` and launchd state
-   * during this packet's development.
+   * `dispatch`'s `case CliCommand.Install`/`Uninstall` call
+   * `install(parsed)`/`uninstall()` with NO `container` argument, unlike
+   * every other case here — so the `container` this test builds via
+   * `makeTestContainer` is NEVER what `install`/`uninstall` actually run
+   * against; they always build their OWN container from the real
+   * `process.env` (`install.command.ts`'s doc comment explains why). Faking
+   * that by mutating `process.env.HOME` mid-process does NOT work under
+   * Bun — `os.homedir()` resolves `$HOME` once at startup and does not
+   * observe a later reassignment in the same process, so doing so would
+   * turn this test into a real, unwanted `memory install`/`uninstall` run
+   * against this machine's actual `~/.claude/settings.json`,
+   * `~/.local/bin/memory` and launchd state.
    *
    * So each case below is picked because it is safe REGARDLESS of that
    * limitation: `install --dry-run` structurally never writes anything
@@ -180,12 +176,10 @@ describe("runCli dispatch", () => {
    * `uninstall` only ever reads `~/.claude/memory/installed.json` before
    * deciding what to do — so the second test asserts that file does NOT
    * exist first and refuses to run otherwise, rather than silently trusting
-   * that assumption forever (it stops being true the moment this machine is
-   * actually cut over for real, per the plan's "execution" doc — a separate,
-   * human-run step). Full behavioral coverage of both functions — including
-   * every unsafe path (a real write, a real `launchctl` call) — lives in
-   * `tests/cli/commands/install.command.test.ts`, entirely against an
-   * explicit fake `Container` (`procFake`), never the real default.
+   * that assumption forever. Full behavioral coverage of both functions —
+   * including every unsafe path (a real write, a real `launchctl` call) —
+   * lives in `tests/cli/commands/install.command.test.ts`, entirely against
+   * an explicit fake `Container` (`procFake`), never the real default.
    */
   test("install --dry-run dispatches to install (always safe: dry-run never writes)", async () => {
     const container = makeTestContainer({ stdio: makeIoFake() });

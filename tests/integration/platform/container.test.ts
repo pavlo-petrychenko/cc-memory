@@ -26,7 +26,7 @@ describe("makeRealContainer", () => {
     expect(container.stdio).toBeDefined();
   });
 
-  test("openDb memoizes by path — the same path returns the same handle ([[bugfixes]] #6)", () => {
+  test("openDb memoizes by path — the same path returns the same handle", () => {
     const container = makeRealContainer({});
 
     const first = container.openDb(":memory:");
@@ -59,9 +59,9 @@ describe("makeRealContainer", () => {
   });
 
   test("the logger's threshold comes from CCMEM_LOG_LEVEL in the given env snapshot", () => {
-    // `parseConfig` (P2, already reviewed) owns the default-vs-override
-    // parsing; this only asserts the value actually reaches the logger the
-    // container builds, wiring the two together correctly.
+    // `parseConfig` owns the default-vs-override parsing; this only asserts the
+    // value actually reaches the logger the container builds, wiring the two
+    // together correctly.
     const container = makeRealContainer({ CCMEM_LOG_LEVEL: LogLevel.Debug });
 
     expect(container.logger).toBeDefined();

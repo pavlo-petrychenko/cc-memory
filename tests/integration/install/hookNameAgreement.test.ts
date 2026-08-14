@@ -11,11 +11,9 @@ import { HookName } from "../../../src/session/HookName.ts";
  * open, which is the correct invariant but means the symptom is memory silently not
  * working in every session, with nothing in the output to explain why.
  *
- * P7 (dispatcher) and P9 (installer) were built in parallel and each defined its own
- * copy of these strings. They matched, but only by luck. Both now import one enum;
- * this test additionally pins that the installer registers EVERY dispatchable name
- * and no others, so dropping a hook from either side fails here rather than in a
- * user's session after cutover.
+ * Both sides import one shared enum; this test additionally pins that the installer
+ * registers EVERY dispatchable name and no others, so dropping a hook from either
+ * side fails here rather than in a user's session.
  */
 describe("installer and dispatcher agree on hook names", () => {
   test("every registered hook name is dispatchable", () => {

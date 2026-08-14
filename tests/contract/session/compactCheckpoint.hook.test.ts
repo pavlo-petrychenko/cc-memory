@@ -14,8 +14,8 @@ import { makeFsMemoryFake } from "../../helpers/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "../../helpers/fakes/ioFake.fake.ts";
 
 /**
- * `PostCompact` (`hooks/compact-checkpoint.py:18-39`): persist the
- * compaction summary into today's dated journal — write-only, no stdout.
+ * `PostCompact`: persist the compaction summary into today's dated journal —
+ * write-only, no stdout.
  */
 
 // SAFETY: fixed test fixtures, matching `tests/helpers/container.ts`'s

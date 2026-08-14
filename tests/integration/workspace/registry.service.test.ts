@@ -336,7 +336,7 @@ describe("validateNew", () => {
     ]);
   });
 
-  test("returns every conflict at once, not just the first (unlike registry.py's raise-on-first)", () => {
+  test("returns every conflict at once, not just the first", () => {
     const candidate: RawWorkspace = {
       id: "acme", // duplicate
       match: ["~/code/acme/sub"], // overlaps acme's match
@@ -374,7 +374,7 @@ describe("validateNew", () => {
   });
 });
 
-describe("C1 — registry.toml round-trip", () => {
+describe("registry.toml round-trip", () => {
   test("parse -> serialize -> parse is byte-identical and structurally identical", async () => {
     const fixturePath = new URL("../../fixtures/registry.toml", import.meta.url).pathname;
     const originalText = await Bun.file(fixturePath).text();
@@ -389,7 +389,8 @@ describe("C1 — registry.toml round-trip", () => {
     await saveRegistry(fs, REGISTRY_PATH, firstLoad.value);
     const rewrittenText = await fs.readFile(REGISTRY_PATH);
 
-    // C1: byte-identical output, not just structurally-equal.
+    // This file is user-owned and rewritten in place, so its output must be
+    // byte-identical, not just structurally-equal.
     expect(rewrittenText).toBe(originalText);
 
     const secondLoad = await loadRegistry(fs, REGISTRY_PATH);

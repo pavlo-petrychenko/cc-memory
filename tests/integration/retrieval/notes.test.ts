@@ -8,9 +8,8 @@ import {
   type IndexFixture,
 } from "./testFixture.ts";
 
-// The 8-note corpus tests/test_retrieval.py:27-90 (== tests/fixtures/vault.ts's
-// PRIMARY_NOTES) — kept here so "exhaustive" is asserted against a named set,
-// not just a count.
+// The 8-note corpus (tests/fixtures/vault.ts's PRIMARY_NOTES) — kept here so
+// "exhaustive" is asserted against a named set, not just a count.
 const ALL_NOTE_PATHS = [
   "Alpha/Alpha.md",
   "Alpha/Injection Hook.md",
@@ -33,7 +32,7 @@ afterEach(() => {
   teardownIndexFixture(fixture);
 });
 
-describe("index/notes listNotes (test_retrieval.py:200-209)", () => {
+describe("index/notes listNotes", () => {
   test("with no folder, enumerates every indexed note, `.md` extension kept", async () => {
     const all = await listNotes(fixture.container, fixture.primary);
     expect(new Set(all.map((note) => note.path))).toEqual(new Set(ALL_NOTE_PATHS));

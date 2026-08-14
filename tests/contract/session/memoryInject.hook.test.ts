@@ -18,10 +18,9 @@ import { makeFsMemoryFake } from "../../helpers/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "../../helpers/fakes/ioFake.fake.ts";
 
 /**
- * `UserPromptSubmit` (`hooks/memory-inject.py:53-95`): gates in order (prompt
- * length, salient-token count, score floor), plus [[bugfixes]] #2 — the
- * `inject.jsonl` log is written before the emptiness check, size-capped and
- * rotated instead of growing unbounded.
+ * `UserPromptSubmit`: gates in order (prompt length, salient-token count,
+ * score floor). The `inject.jsonl` log is written before the emptiness
+ * check, and is size-capped and rotated instead of growing unbounded.
  */
 
 // SAFETY: fixed test fixtures, matching `tests/helpers/container.ts`'s
@@ -271,7 +270,7 @@ describe("UserPromptSubmit (memory-inject) hook", () => {
       JSON.stringify({ cwd: CWD, prompt: "quantum entanglement submarine engines" }),
     );
 
-    // memory-inject.py:80-82 — the pool is logged even when nothing injects.
+    // The pool is logged even when nothing injects.
     expect(fixture.io.written).toEqual([]);
     expect(fixture.io.exitCode).toBe(0);
     expect(await fixture.fs.exists(INJECT_LOG_PATH)).toBe(true);
@@ -303,7 +302,7 @@ describe("UserPromptSubmit (memory-inject) hook", () => {
     expect(await fixture.fs.exists(INJECT_LOG_PATH)).toBe(false);
   });
 
-  test("[[bugfixes]] #2: inject.jsonl rotates instead of growing unbounded", async () => {
+  test("inject.jsonl rotates instead of growing unbounded", async () => {
     const fixture = makeFixture();
     await seedIndexedWorkspace(fixture);
     const oneMebibyte = 1_048_576;
@@ -328,7 +327,7 @@ describe("UserPromptSubmit (memory-inject) hook", () => {
     expect(currentContent.trim().split("\n")).toHaveLength(1);
   });
 
-  test("[[bugfixes]] #2: a second rotation pushes generation 1 into generation 2", async () => {
+  test("a second rotation pushes generation 1 into generation 2", async () => {
     const fixture = makeFixture();
     await seedIndexedWorkspace(fixture);
     const oneMebibyte = 1_048_576;

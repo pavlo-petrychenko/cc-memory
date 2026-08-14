@@ -117,7 +117,7 @@ describe("gitCli adapter — argv and timeouts", () => {
   });
 });
 
-describe("gitCli adapter — failure semantics (wrap-gate.py:28-34)", () => {
+describe("gitCli adapter — failure semantics", () => {
   test("a non-zero exit resolves to an empty string, not the process's stdout", async () => {
     const proc = makeProcFake();
     proc.enqueue({

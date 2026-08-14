@@ -8,7 +8,7 @@ import {
 } from "../../../src/retrieval/schema.service.ts";
 
 describe("index/schema", () => {
-  test("SCHEMA_VERSION is 2 (lib/index.py:23)", () => {
+  test("SCHEMA_VERSION is 2", () => {
     expect(SCHEMA_VERSION).toBe(2);
   });
 

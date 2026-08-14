@@ -14,10 +14,9 @@ import { makeFsMemoryFake } from "../../helpers/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "../../helpers/fakes/ioFake.fake.ts";
 
 /**
- * `SessionStart` (`hooks/session-start.py:111-131`), the packet's own axis
- * matrix: happy path (exact stdout string), cwd outside any workspace, and
- * the fields another hook reads but this one ignores (`session_id`,
- * `source`, `stop_hook_active`).
+ * `SessionStart`: happy path (exact stdout string), cwd outside any
+ * workspace, and the fields another hook reads but this one ignores
+ * (`session_id`, `source`, `stop_hook_active`).
  */
 
 // SAFETY: `"/home/test"` is a fixed test fixture (matching

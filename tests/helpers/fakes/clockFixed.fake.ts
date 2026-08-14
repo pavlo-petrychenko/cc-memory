@@ -11,7 +11,7 @@ export type ClockFake = Clock & {
  * A `Clock` a test fully controls — `today`/`timeHHMM` are settable
  * independently of `nowMs` (rather than derived from it) so a test doesn't
  * have to fight the host machine's timezone to get a deterministic date/time
- * string; `nowMs` is what P5's incremental-index tests advance to make a note
+ * string; `nowMs` is what incremental-index tests advance to make a note
  * "newer" than its indexed mtime.
  */
 export function makeClockFake(

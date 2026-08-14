@@ -39,7 +39,7 @@ const BRIEF_PATH = expandPath(
   HOME,
 );
 
-describe("reflect/session tmuxAvailable (bin/reflector.py:205-206)", () => {
+describe("reflect/session tmuxAvailable", () => {
   test("true when tmux -V starts successfully", async () => {
     const proc = makeProcFake();
     proc.enqueue({
@@ -58,7 +58,7 @@ describe("reflect/session tmuxAvailable (bin/reflector.py:205-206)", () => {
   });
 });
 
-describe("reflect/session hasSession (bin/reflector.py:209-210)", () => {
+describe("reflect/session hasSession", () => {
   test("true on exit 0", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } });
@@ -78,7 +78,7 @@ describe("reflect/session hasSession (bin/reflector.py:209-210)", () => {
   });
 });
 
-describe("reflect/session isSessionActive (bin/reflector.py:216-224)", () => {
+describe("reflect/session isSessionActive", () => {
   const bareShells = [
     "zsh",
     "-zsh",
@@ -131,7 +131,7 @@ describe("reflect/session isSessionActive (bin/reflector.py:216-224)", () => {
   });
 });
 
-describe("reflect/session killSession (bin/reflector.py:300)", () => {
+describe("reflect/session killSession", () => {
   test("runs kill-session and ignores the result either way", async () => {
     const proc = makeProcFake();
     proc.enqueue({
@@ -146,7 +146,7 @@ describe("reflect/session killSession (bin/reflector.py:300)", () => {
   });
 });
 
-describe("reflect/session spawnConsolidation (bin/reflector.py:227-247)", () => {
+describe("reflect/session spawnConsolidation", () => {
   test("spawns a detached session in the workspace's first match directory", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } });
@@ -177,7 +177,8 @@ describe("reflect/session spawnConsolidation (bin/reflector.py:227-247)", () => 
     expect(call?.args?.[6]).toBe("sh");
     expect(call?.args?.[7]).toBe("-c");
     const inner = call?.args?.[8] ?? "";
-    // The exact text sent to `claude` (bin/reflector.py:238-243), verbatim.
+    // The exact text sent to `claude`, verbatim — the tmux pane just runs a
+    // shell command, so this string IS the agent-visible instruction.
     expect(inner).toContain(
       "cc-memory consolidation for the primary workspace. Read the brief at " +
         `${BRIEF_PATH} . For each candidate decide ADD, UPDATE, INVALIDATE or NOOP against ` +
