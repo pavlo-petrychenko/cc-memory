@@ -20,17 +20,15 @@ import { buildIndex } from "../retrieval/build.service.ts";
 import { openIndexDb } from "../retrieval/indexDb.service.ts";
 import { expandWorkspace, saveRegistry, validateNew } from "./registry.service.ts";
 
-/** `bin/memory:36` — `a.exclude or ["_Worklogs", "Archive", ".obsidian"]`.
- * Verbatim from the plan's Porting Reference ("Workspace defaults"). */
 const DEFAULT_EXCLUDE = ["_Worklogs", "Archive", ".obsidian"];
 
-/** `bin/memory:49` — written only when `<kb>/.gitignore` doesn't exist yet. */
+/** Written only when `<kb>/.gitignore` doesn't exist yet. */
 const GITIGNORE_CONTENT = ".obsidian/workspace*\n.obsidian/cache\n.DS_Store\n";
 
 const GIT_INIT_TIMEOUT_MS = 10_000; // matches gitCli.adapter.ts's WRITE_TIMEOUT_MS
 
 function homeNoteContent(title: string, id: string): string {
-  // Verbatim from `bin/memory:53-54` — a literal f-string, not a template file.
+  // The vault's home note content, written once at workspace creation.
   return (
     `---\ntype: index\n---\n# ${title} — Knowledge Base Index\n\n` +
     `> Knowledge base for the **${id}** workspace.\n`
@@ -70,9 +68,9 @@ function defaultRegistryPathFor(container: Container): AbsPath {
   return expandPath("~/.claude/memory/registry.toml", container.env.home());
 }
 
-/** `cmd_workspace_add` (`bin/memory:26-68`): validate against every existing
- * workspace, scaffold the vault (dirs, `.gitignore`, home note, `git init`),
- * register it, then build its index once so the printed note count is real. */
+/** Validate against every existing workspace, scaffold the vault (dirs,
+ * `.gitignore`, home note, `git init`), register it, then build its index
+ * once so the printed note count is real. */
 export async function workspaceAdd(
   container: Container,
   args: WorkspaceAddArgs,
@@ -146,7 +144,6 @@ export async function workspaceAdd(
   return CLI_SUCCESS;
 }
 
-/** `cmd_workspace_rm` (`bin/memory:71-86`). */
 export async function workspaceRm(
   container: Container,
   args: WorkspaceRmArgs,
@@ -165,7 +162,7 @@ export async function workspaceRm(
   if (args.purge) {
     const expanded = expandWorkspace(target, home);
     // `fs.remove` is recursive+idempotent (fileSystem.port.ts) — it never
-    // throws on a missing path, matching Python's `except OSError: pass`.
+    // throws on a missing path.
     await container.fs.remove(expanded.indexDb);
     container.stdio.write(formatWorkspaceRemovedPurged(args.id));
   } else {
@@ -174,10 +171,9 @@ export async function workspaceRm(
   return CLI_SUCCESS;
 }
 
-/** `n = "?"` unless the index file exists and its note count can be read —
- * matches Python's bare `except Exception: pass` around the same block
- * (`bin/memory:96-103`). Written as a standalone async helper (not a literal
- * loop body) so `workspaceLs` can fan the per-workspace reads out via
+/** Returns `"?"` unless the index file exists and its note count can be read
+ * successfully. Written as a standalone async helper (not a literal loop
+ * body) so `workspaceLs` can fan the per-workspace reads out via
  * `Promise.all` instead of `await`-ing sequentially in a `for` loop. */
 async function countNotesOrUnknown(container: Container, ws: Workspace): Promise<string> {
   try {
@@ -206,7 +202,6 @@ async function buildWorkspaceLsRow(
   };
 }
 
-/** `cmd_workspace_ls` (`bin/memory:89-105`). */
 export async function workspaceLs(container: Container): Promise<CliOutcome> {
   const home = container.env.home();
   const registryResult = await loadRegistryForCli(container.fs, home);

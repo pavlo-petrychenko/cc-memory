@@ -1,15 +1,14 @@
 /**
- * Renders the working-memory block injected at SessionStart —
- * `session-start.build_working_memory` (`hooks/session-start.py:101-108`).
- * Agent-visible text (C4): copied verbatim, including both "no working memory
- * yet" phrasings.
+ * Renders the working-memory block injected at SessionStart. This text is
+ * agent-visible and must stay exact, including both "no working memory yet"
+ * phrasings.
  */
 
 export type WorkingMemoryInput = {
   readonly workspaceId: string;
   readonly slug: string;
   /** `STATE.md`'s raw content, or `null` when the worktree has none yet
-   * (`worklog.read_state` returns `None` on a missing/unreadable file). */
+   * (missing or unreadable file). */
   readonly state: string | null;
 };
 

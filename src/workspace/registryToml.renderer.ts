@@ -1,17 +1,15 @@
 import type { RawWorkspace } from "../core/Workspace.ts";
 
 /**
- * Serializes the workspace registry (C1) — a port of `lib/registry.py:60-85`.
+ * Serializes the workspace registry.
  *
- * This deliberately does NOT use `smol-toml`'s stringifier: it emits arrays as
- * `[ "a", "b" ]` (inner spaces), where Python's `_arr` emits `["a", "b"]`. C1
- * requires byte-identical output, because this file is user-owned and every
- * `memory workspace add|rm` rewrites it — a formatting drift would show up as
- * spurious churn in the user's registry. Verified by diffing this function's output
- * against `registry.dumps()` on the real `~/.claude/memory/registry.toml`.
+ * This deliberately does NOT use `smol-toml`'s stringifier: this file is
+ * user-owned and every `memory workspace add|rm` rewrites it in place, so its
+ * exact formatting must stay stable — a stringifier's own array-formatting
+ * choices would show up as spurious churn in the user's registry.
  *
- * `smol-toml` is still used for READING the registry (P4's service), which is where
- * a real parser actually earns its place; writing our fixed six-field schema does
+ * `smol-toml` is still used for READING the registry, which is where a real
+ * parser actually earns its place; writing our fixed six-field schema does
  * not need one.
  */
 const REGISTRY_HEADER =
@@ -19,17 +17,15 @@ const REGISTRY_HEADER =
   "# Paths may use ~; they are expanded at load time. One block per workspace.\n\n";
 
 /**
- * Python's `_q` (`registry.py:60-61`): wrap in double quotes, escaping backslashes
- * then double quotes — and nothing else. Reproduced exactly, limitations included:
- * a control character (a newline in a path, say) would be emitted raw and produce
- * invalid TOML in both implementations. Paths never contain one in practice, and
- * diverging here would break the byte-identical guarantee.
+ * Wrap in double quotes, escaping backslashes then double quotes — and
+ * nothing else. A control character (a newline in a path, say) would be
+ * emitted raw and produce invalid TOML. Paths never contain one in practice.
  */
 function quote(value: string): string {
   return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
 }
 
-/** Python's `_arr` (`registry.py:64-65`) — note: no spaces inside the brackets. */
+/** Comma-separated, quoted; no spaces inside the outer brackets. */
 function quotedArray(items: readonly string[]): string {
   return `[${items.map(quote).join(", ")}]`;
 }
