@@ -228,7 +228,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
     }
   });
 
-  test("hook stub stays silent on stdout and exits 0 (fail-open)", async () => {
+  test("hook session-start runs for real against the built artifact (fail-open: exit 0)", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
       const result = await runTs(["hook", "session-start"], {
@@ -236,8 +236,32 @@ describe("CLI e2e against the built dist/memory.js", () => {
         cwd: primaryCwd(fixture),
       });
       expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe("");
+      const parsed: {
+        readonly hookSpecificOutput: {
+          readonly hookEventName: string;
+          readonly additionalContext: string;
+        };
+      } = JSON.parse(result.stdout);
+      expect(parsed.hookSpecificOutput.hookEventName).toBe("SessionStart");
+      expect(parsed.hookSpecificOutput.additionalContext).toContain(
+        "# Obsidian KB index (auto-injected at session start)",
+      );
+    } finally {
+      tempDir.remove();
+    }
+  });
+
+  test("hook with an unknown name stays fail-open: exit 0, nothing on stdout", async () => {
+    const { tempDir, fixture } = setUpFixture();
+    try {
+      const result = await runTs(["hook", "not-a-real-hook"], {
+        env: fixture.env,
+        cwd: primaryCwd(fixture),
+      });
+      expect(result.exitCode).toBe(0);
       expect(result.stdout).toBe("");
-      expect(result.stderr).toContain("not implemented yet (P7)");
+      expect(result.stderr).toContain("unknown hook name");
     } finally {
       tempDir.remove();
     }

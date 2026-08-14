@@ -1,0 +1,148 @@
+import { describe, expect, test } from "bun:test";
+
+import type { Container } from "../../../src/container.ts";
+import type { AbsPath } from "../../../src/domain/AbsPath.ts";
+import { parseConfig } from "../../../src/domain/Config.ts";
+import { expandPath } from "../../../src/domain/paths.ts";
+import type { RawWorkspace } from "../../../src/domain/Workspace.ts";
+import { handleCompactCheckpoint } from "../../../src/hooks/compactCheckpoint.hook.ts";
+import { parseCompactCheckpointPayload } from "../../../src/hooks/payload.ts";
+import { runHook } from "../../../src/hooks/runtime.ts";
+import { saveRegistry } from "../../../src/services/registry.service.ts";
+import { makeTestContainer } from "../../helpers/container.ts";
+import { makeFsMemoryFake } from "../../helpers/fakes/fsMemory.fake.ts";
+import { type IoFake, makeIoFake } from "../../helpers/fakes/ioFake.fake.ts";
+
+/**
+ * `PostCompact` (`hooks/compact-checkpoint.py:18-39`): persist the
+ * compaction summary into today's dated journal — write-only, no stdout.
+ */
+
+// SAFETY: fixed test fixtures, matching `tests/helpers/container.ts`'s
+// DEFAULT_HOME/DEFAULT_CWD.
+const HOME = "/home/test" as AbsPath;
+// SAFETY: same reasoning as `HOME` above.
+const CWD = "/home/test/project" as AbsPath;
+const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
+const CONFIG = parseConfig({});
+// SAFETY: a fixed literal path — `Clock` fake's `today()` defaults to
+// "2026-01-01" (`clockFixed.fake.ts`), and the worktree slug is `_root`
+// (same reasoning as `sessionStart.hook.test.ts`'s `STATE_PATH`).
+const TODAY_PATH = "/home/test/vault-primary/_Worklogs/_root/2026-01-01.md" as AbsPath;
+
+const PRIMARY: RawWorkspace = {
+  id: "primary",
+  match: ["/home/test/project"],
+  kb: "/home/test/vault-primary",
+  worklogs: "/home/test/vault-primary/_Worklogs",
+  exclude: ["_Worklogs"],
+  indexDb: ":memory:",
+};
+
+type Fixture = {
+  readonly io: IoFake;
+  readonly fs: ReturnType<typeof makeFsMemoryFake>;
+  readonly container: Container;
+};
+
+async function makeFixture(): Promise<Fixture> {
+  const io = makeIoFake();
+  const fs = makeFsMemoryFake();
+  const container = makeTestContainer({ stdio: io, fs });
+  await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+  return { io, fs, container };
+}
+
+async function runCompactCheckpoint(fixture: Fixture, stdin: string): Promise<void> {
+  fixture.io.setStdin(stdin);
+  await runHook(
+    fixture.container,
+    CONFIG,
+    "compact-checkpoint",
+    parseCompactCheckpointPayload,
+    handleCompactCheckpoint,
+  );
+}
+
+describe("PostCompact (compact-checkpoint) hook", () => {
+  test("happy path: persists the summary block, no stdout", async () => {
+    const fixture = await makeFixture();
+
+    await runCompactCheckpoint(
+      fixture,
+      JSON.stringify({
+        cwd: CWD,
+        compact_summary: "Refactored the wrap-gate escalation signature.",
+        trigger: "auto",
+      }),
+    );
+
+    expect(fixture.io.written).toEqual([]);
+    expect(fixture.io.exitCode).toBe(0);
+    const written = await fixture.fs.readFile(TODAY_PATH);
+    expect(written).toBe(
+      "<!-- compaction checkpoint (auto) -->\n" +
+        "**Compaction summary:**\n\n" +
+        "Refactored the wrap-gate escalation signature.\n",
+    );
+  });
+
+  test("cwd outside any workspace: no write, exit 0", async () => {
+    const fixture = await makeFixture();
+
+    await runCompactCheckpoint(
+      fixture,
+      JSON.stringify({
+        cwd: "/home/test/elsewhere",
+        compact_summary: "should not persist",
+      }),
+    );
+
+    expect(fixture.io.written).toEqual([]);
+    expect(fixture.io.exitCode).toBe(0);
+    expect(await fixture.fs.exists(TODAY_PATH)).toBe(false);
+  });
+
+  test("absent compact_summary is silent: no write at all", async () => {
+    const fixture = await makeFixture();
+
+    await runCompactCheckpoint(fixture, JSON.stringify({ cwd: CWD }));
+
+    expect(fixture.io.written).toEqual([]);
+    expect(fixture.io.exitCode).toBe(0);
+    expect(await fixture.fs.exists(TODAY_PATH)).toBe(false);
+  });
+
+  test("a whitespace-only compact_summary is also silent", async () => {
+    const fixture = await makeFixture();
+
+    await runCompactCheckpoint(
+      fixture,
+      JSON.stringify({ cwd: CWD, compact_summary: "   \n  " }),
+    );
+
+    expect(await fixture.fs.exists(TODAY_PATH)).toBe(false);
+  });
+
+  test("missing trigger field falls back to 'auto'", async () => {
+    const fixture = await makeFixture();
+
+    await runCompactCheckpoint(
+      fixture,
+      JSON.stringify({ cwd: CWD, compact_summary: "checkpoint" }),
+    );
+
+    const written = await fixture.fs.readFile(TODAY_PATH);
+    expect(written).toContain("<!-- compaction checkpoint (auto) -->");
+  });
+
+  test("garbage stdin never throws: tolerant-parsed to an empty (silent) payload", async () => {
+    const fixture = await makeFixture();
+
+    await runCompactCheckpoint(fixture, "not json");
+
+    expect(fixture.io.written).toEqual([]);
+    expect(fixture.io.exitCode).toBe(0);
+    expect(await fixture.fs.exists(TODAY_PATH)).toBe(false);
+  });
+});
