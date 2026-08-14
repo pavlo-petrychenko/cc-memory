@@ -33,7 +33,7 @@ describe("decisionPrompt (bin/reflector.py:99-125,128-131)", () => {
 describe("renderProposals (bin/reflector.py:147-176)", () => {
   test("error path: raw candidates listed for manual triage, count is the candidate count", () => {
     const { content, count } = renderProposals({
-      workspaceId: "personal",
+      workspaceId: "homeserver",
       date: "2026-08-14",
       candidates: [
         { text: "fact one", src: "a.md" },
@@ -51,7 +51,7 @@ describe("renderProposals (bin/reflector.py:147-176)", () => {
 
   test("kept decisions must clear both the action allowlist and the importance floor (>=4)", () => {
     const { content, count } = renderProposals({
-      workspaceId: "personal",
+      workspaceId: "homeserver",
       date: "2026-08-14",
       candidates: [],
       error: null,
@@ -79,7 +79,7 @@ describe("renderProposals (bin/reflector.py:147-176)", () => {
 
   test("no kept decisions renders the 'no promotions' line", () => {
     const { content, count } = renderProposals({
-      workspaceId: "personal",
+      workspaceId: "homeserver",
       date: "2026-08-14",
       candidates: [],
       error: null,
@@ -93,7 +93,7 @@ describe("renderProposals (bin/reflector.py:147-176)", () => {
 
   test("an explicit path target wins over folder/title", () => {
     const { content } = renderProposals({
-      workspaceId: "personal",
+      workspaceId: "homeserver",
       date: "2026-08-14",
       candidates: [],
       error: null,
@@ -112,7 +112,7 @@ describe("renderProposals (bin/reflector.py:147-176)", () => {
 
   test("an empty body produces an empty fenced block, not a spurious blank line", () => {
     const { content } = renderProposals({
-      workspaceId: "personal",
+      workspaceId: "homeserver",
       date: "2026-08-14",
       candidates: [],
       error: null,
@@ -127,14 +127,14 @@ describe("renderProposals (bin/reflector.py:147-176)", () => {
 describe("renderBrief (bin/reflector.py:184-198)", () => {
   test("golden: candidates then related notes", () => {
     const content = renderBrief({
-      workspaceId: "personal",
+      workspaceId: "homeserver",
       date: "2026-08-14",
       candidates: [{ text: "fact", src: "a.md" }],
       related: [{ title: "Rank", path: "CC-memory/Rank.md", snippet: "fusion math" }],
     });
     expect(content).toBe(
       [
-        "# Consolidation brief — personal — 2026-08-14",
+        "# Consolidation brief — homeserver — 2026-08-14",
         "",
         "Distilled from worklogs since the last run. For each candidate decide " +
           "ADD / UPDATE / INVALIDATE / NOOP against the existing KB; propose, then " +
@@ -152,7 +152,7 @@ describe("renderBrief (bin/reflector.py:184-198)", () => {
 
   test("no related notes renders (none)", () => {
     const content = renderBrief({
-      workspaceId: "personal",
+      workspaceId: "homeserver",
       date: "2026-08-14",
       candidates: [],
       related: [],

@@ -20,12 +20,12 @@ describe("serializeRegistry (C1)", () => {
   test("emits bytes identical to registry.dumps() (no spaces inside arrays)", () => {
     const output = serializeRegistry([
       {
-        id: "mate",
-        match: ["~/Desktop/project"],
-        kb: "~/Documents/Mate Vault",
-        worklogs: "~/Documents/Mate Vault/_Worklogs",
+        id: "acme",
+        match: ["~/code/acme"],
+        kb: "~/Documents/Acme Vault",
+        worklogs: "~/Documents/Acme Vault/_Worklogs",
         exclude: ["_Worklogs", "Archive", ".obsidian"],
-        indexDb: "~/.claude/memory/mate/index.db",
+        indexDb: "~/.claude/memory/acme/index.db",
       },
     ]);
 
@@ -34,12 +34,12 @@ describe("serializeRegistry (C1)", () => {
         "# Paths may use ~; they are expanded at load time. One block per workspace.\n" +
         "\n" +
         "[[workspace]]\n" +
-        'id = "mate"\n' +
-        'match = ["~/Desktop/project"]\n' +
-        'kb = "~/Documents/Mate Vault"\n' +
-        'worklogs = "~/Documents/Mate Vault/_Worklogs"\n' +
+        'id = "acme"\n' +
+        'match = ["~/code/acme"]\n' +
+        'kb = "~/Documents/Acme Vault"\n' +
+        'worklogs = "~/Documents/Acme Vault/_Worklogs"\n' +
         'exclude = ["_Worklogs", "Archive", ".obsidian"]\n' +
-        'index_db = "~/.claude/memory/mate/index.db"\n',
+        'index_db = "~/.claude/memory/acme/index.db"\n',
     );
   });
 
@@ -62,12 +62,12 @@ describe("serializeRegistry (C1)", () => {
   test("keeps the header and field order, round-trips through smol-toml", () => {
     const output = serializeRegistry([
       {
-        id: "personal",
-        match: ["~/Documents/personal/cc-memory"],
-        kb: "~/Documents/Personal Vault",
-        worklogs: "~/Documents/Personal Vault/_Worklogs",
+        id: "homeserver",
+        match: ["~/code/acme/service-api"],
+        kb: "~/Documents/Homeserver Vault",
+        worklogs: "~/Documents/Homeserver Vault/_Worklogs",
         exclude: ["_Worklogs", "Archive", ".obsidian"],
-        indexDb: "~/.claude/memory/personal/index.db",
+        indexDb: "~/.claude/memory/homeserver/index.db",
       },
     ]);
 
@@ -81,12 +81,12 @@ describe("serializeRegistry (C1)", () => {
     expect(parse(output)).toEqual({
       workspace: [
         {
-          id: "personal",
-          match: ["~/Documents/personal/cc-memory"],
-          kb: "~/Documents/Personal Vault",
-          worklogs: "~/Documents/Personal Vault/_Worklogs",
+          id: "homeserver",
+          match: ["~/code/acme/service-api"],
+          kb: "~/Documents/Homeserver Vault",
+          worklogs: "~/Documents/Homeserver Vault/_Worklogs",
           exclude: ["_Worklogs", "Archive", ".obsidian"],
-          index_db: "~/.claude/memory/personal/index.db",
+          index_db: "~/.claude/memory/homeserver/index.db",
         },
       ],
     });

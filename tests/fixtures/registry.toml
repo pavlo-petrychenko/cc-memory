@@ -2,17 +2,17 @@
 # Paths may use ~; they are expanded at load time. One block per workspace.
 
 [[workspace]]
-id = "mate"
-match = ["~/Desktop/project"]
-kb = "~/Documents/Mate Vault"
-worklogs = "~/Documents/Mate Vault/_Worklogs"
+id = "acme"
+match = ["~/code/acme"]
+kb = "~/Documents/Acme Vault"
+worklogs = "~/Documents/Acme Vault/_Worklogs"
 exclude = ["_Worklogs", "Archive", ".obsidian"]
-index_db = "~/.claude/memory/mate/index.db"
+index_db = "~/.claude/memory/acme/index.db"
 
 [[workspace]]
-id = "personal"
-match = ["~/Documents/personal"]
-kb = "~/Documents/Personal Vault"
-worklogs = "~/Documents/Personal Vault/_Worklogs"
-exclude = ["_Worklogs", "Archive", ".obsidian"]
-index_db = "~/.claude/memory/personal/index.db"
+id = "homeserver"
+match = ["~/homeserver", "~/Desktop/homeserver"]
+kb = "~/Documents/Homeserver Vault"
+worklogs = "~/Documents/Homeserver Vault/_Worklogs"
+exclude = ["_Worklogs", ".obsidian"]
+index_db = "~/.claude/memory/homeserver/index.db"

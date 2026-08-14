@@ -5,7 +5,7 @@ import { renderKbMap } from "../../../../src/domain/render/kbMap.renderer.ts";
 describe("renderKbMap (C4)", () => {
   test("golden: header, one described feature, one bare feature, loose notes", () => {
     const rendered = renderKbMap({
-      vaultLabel: "~/Documents/Personal Vault",
+      vaultLabel: "~/Documents/Homeserver Vault",
       features: [
         {
           name: "Alpha",
@@ -22,7 +22,7 @@ describe("renderKbMap (C4)", () => {
       [
         "# Obsidian KB index (auto-injected at session start)",
         "",
-        "Top level of the vault at `~/Documents/Personal Vault`. This is the map only — " +
+        "Top level of the vault at `~/Documents/Homeserver Vault`. This is the map only — " +
           "when a topic below matches your task, open that folder's notes via the " +
           "`obsidian` MCP and follow the wikilinks. Capture new durable, feature-level " +
           "knowledge with the `save-learning` skill (writes need approval).",

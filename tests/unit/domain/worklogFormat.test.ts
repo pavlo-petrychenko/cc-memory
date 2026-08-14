@@ -10,11 +10,11 @@ import {
 describe("stateTemplate (C4)", () => {
   test("golden string", () => {
     expect(
-      stateTemplate({ workspace: "personal", slug: "cc-memory", date: "2026-08-14" }),
+      stateTemplate({ workspace: "homeserver", slug: "cc-memory", date: "2026-08-14" }),
     ).toBe(
       `---
 type: worktree-state
-workspace: personal
+workspace: homeserver
 worktree: cc-memory
 updated: 2026-08-14
 ---

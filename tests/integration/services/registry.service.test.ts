@@ -20,22 +20,22 @@ import { makeFsMemoryFake } from "../../helpers/fakes/fsMemory.fake.ts";
 const HOME = "/home/test" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
 
-const mate: RawWorkspace = {
-  id: "mate",
-  match: ["~/Desktop/project"],
-  kb: "~/Documents/Mate Vault",
-  worklogs: "~/Documents/Mate Vault/_Worklogs",
+const acme: RawWorkspace = {
+  id: "acme",
+  match: ["~/code/acme"],
+  kb: "~/Documents/Acme Vault",
+  worklogs: "~/Documents/Acme Vault/_Worklogs",
   exclude: ["_Worklogs", "Archive", ".obsidian"],
-  indexDb: "~/.claude/memory/mate/index.db",
+  indexDb: "~/.claude/memory/acme/index.db",
 };
 
-const personal: RawWorkspace = {
-  id: "personal",
-  match: ["~/Documents/personal"],
-  kb: "~/Documents/Personal Vault",
-  worklogs: "~/Documents/Personal Vault/_Worklogs",
+const homeserver: RawWorkspace = {
+  id: "homeserver",
+  match: ["~/homeserver"],
+  kb: "~/Documents/Homeserver Vault",
+  worklogs: "~/Documents/Homeserver Vault/_Worklogs",
   exclude: ["_Worklogs", "Archive", ".obsidian"],
-  indexDb: "~/.claude/memory/personal/index.db",
+  indexDb: "~/.claude/memory/homeserver/index.db",
 };
 
 describe("defaultRegistryPath", () => {
@@ -64,17 +64,17 @@ describe("loadRegistry", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(
       REGISTRY_PATH,
-      '[[workspace]]\nid = "mate"\nmatch = ["~/Desktop/project"]\nkb = "~/Documents/Mate Vault"\nworklogs = "~/Documents/Mate Vault/_Worklogs"\nexclude = ["_Worklogs"]\nindex_db = "~/.claude/memory/mate/index.db"\n',
+      '[[workspace]]\nid = "acme"\nmatch = ["~/code/acme"]\nkb = "~/Documents/Acme Vault"\nworklogs = "~/Documents/Acme Vault/_Worklogs"\nexclude = ["_Worklogs"]\nindex_db = "~/.claude/memory/acme/index.db"\n',
     );
     const result = await loadRegistry(fs, REGISTRY_PATH);
-    expect(result).toEqual({ ok: true, value: [{ ...mate, exclude: ["_Worklogs"] }] });
+    expect(result).toEqual({ ok: true, value: [{ ...acme, exclude: ["_Worklogs"] }] });
   });
 
   test("a workspace table with no exclude defaults it to []", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(
       REGISTRY_PATH,
-      '[[workspace]]\nid = "mate"\nmatch = ["~/Desktop/project"]\nkb = "~/Documents/Mate Vault"\nworklogs = "~/Documents/Mate Vault/_Worklogs"\nindex_db = "~/.claude/memory/mate/index.db"\n',
+      '[[workspace]]\nid = "acme"\nmatch = ["~/code/acme"]\nkb = "~/Documents/Acme Vault"\nworklogs = "~/Documents/Acme Vault/_Worklogs"\nindex_db = "~/.claude/memory/acme/index.db"\n',
     );
     const result = await loadRegistry(fs, REGISTRY_PATH);
     expect(result.ok).toBe(true);
@@ -120,7 +120,7 @@ describe("loadRegistry", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(
       REGISTRY_PATH,
-      '[[workspace]]\nid = "mate"\nmatch = "~/a"\nkb = "~/kb"\nworklogs = "~/kb/_Worklogs"\nindex_db = "~/idx.db"\n',
+      '[[workspace]]\nid = "acme"\nmatch = "~/a"\nkb = "~/kb"\nworklogs = "~/kb/_Worklogs"\nindex_db = "~/idx.db"\n',
     );
     const result = await loadRegistry(fs, REGISTRY_PATH);
     expect(result.ok).toBe(false);
@@ -131,7 +131,7 @@ describe("loadRegistry", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(
       REGISTRY_PATH,
-      '[[workspace]]\nid = "mate"\nmatch = ["~/a"]\nkb = "~/kb"\nworklogs = 5\nindex_db = "~/idx.db"\n',
+      '[[workspace]]\nid = "acme"\nmatch = ["~/a"]\nkb = "~/kb"\nworklogs = 5\nindex_db = "~/idx.db"\n',
     );
     const result = await loadRegistry(fs, REGISTRY_PATH);
     expect(result.ok).toBe(false);
@@ -143,7 +143,7 @@ describe("loadRegistry", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(
       REGISTRY_PATH,
-      '[[workspace]]\nid = "mate"\nmatch = ["~/a"]\nkb = "~/kb"\nworklogs = "~/kb/_Worklogs"\nindex_db = 5\n',
+      '[[workspace]]\nid = "acme"\nmatch = ["~/a"]\nkb = "~/kb"\nworklogs = "~/kb/_Worklogs"\nindex_db = 5\n',
     );
     const result = await loadRegistry(fs, REGISTRY_PATH);
     expect(result.ok).toBe(false);
@@ -155,7 +155,7 @@ describe("loadRegistry", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(
       REGISTRY_PATH,
-      '[[workspace]]\nid = "mate"\nmatch = ["~/a"]\nkb = "~/kb"\nworklogs = "~/kb/_Worklogs"\nindex_db = "~/idx.db"\nexclude = "oops"\n',
+      '[[workspace]]\nid = "acme"\nmatch = ["~/a"]\nkb = "~/kb"\nworklogs = "~/kb/_Worklogs"\nindex_db = "~/idx.db"\nexclude = "oops"\n',
     );
     const result = await loadRegistry(fs, REGISTRY_PATH);
     expect(result.ok).toBe(false);
@@ -175,18 +175,18 @@ describe("loadRegistry", () => {
 describe("saveRegistry", () => {
   test("writes atomically via a .tmp file then rename, leaving no .tmp behind", async () => {
     const fs = makeFsMemoryFake();
-    await saveRegistry(fs, REGISTRY_PATH, [mate]);
+    await saveRegistry(fs, REGISTRY_PATH, [acme]);
 
     expect(await fs.exists(REGISTRY_PATH)).toBe(true);
     // SAFETY: test fixture only — appending a fixed suffix to an already-absolute
     // path for an existence check, never treated as a real path elsewhere.
     expect(await fs.exists(`${REGISTRY_PATH}.tmp` as AbsPath)).toBe(false);
-    expect(await fs.readFile(REGISTRY_PATH)).toContain('id = "mate"');
+    expect(await fs.readFile(REGISTRY_PATH)).toContain('id = "acme"');
   });
 
   test("creates the parent directory first", async () => {
     const fs = makeFsMemoryFake();
-    await saveRegistry(fs, REGISTRY_PATH, [mate]);
+    await saveRegistry(fs, REGISTRY_PATH, [acme]);
     // SAFETY: test fixture only — slicing `REGISTRY_PATH` (already absolute and
     // normalized) at its last `/` yields another absolute, normalized path.
     const parent = REGISTRY_PATH.slice(0, REGISTRY_PATH.lastIndexOf("/")) as AbsPath;
@@ -196,43 +196,43 @@ describe("saveRegistry", () => {
 
 describe("findWorkspace", () => {
   test("returns the matching raw workspace by id", () => {
-    expect(findWorkspace([mate, personal], "personal")).toEqual(personal);
+    expect(findWorkspace([acme, homeserver], "homeserver")).toEqual(homeserver);
   });
 
   test("returns null when no id matches", () => {
-    expect(findWorkspace([mate, personal], "nope")).toBeNull();
+    expect(findWorkspace([acme, homeserver], "nope")).toBeNull();
   });
 });
 
 describe("expandWorkspace", () => {
   test("expands every path field to an absolute, normalized AbsPath", () => {
-    const expanded = expandWorkspace(mate, HOME);
-    expect(expanded.id).toBe("mate");
-    expect(expanded.match).toEqual([expandPath("~/Desktop/project", HOME)]);
-    expect(expanded.kb).toBe(expandPath("~/Documents/Mate Vault", HOME));
-    expect(expanded.worklogs).toBe(expandPath("~/Documents/Mate Vault/_Worklogs", HOME));
-    expect(expanded.indexDb).toBe(expandPath("~/.claude/memory/mate/index.db", HOME));
-    expect(expanded.exclude).toEqual(mate.exclude);
+    const expanded = expandWorkspace(acme, HOME);
+    expect(expanded.id).toBe("acme");
+    expect(expanded.match).toEqual([expandPath("~/code/acme", HOME)]);
+    expect(expanded.kb).toBe(expandPath("~/Documents/Acme Vault", HOME));
+    expect(expanded.worklogs).toBe(expandPath("~/Documents/Acme Vault/_Worklogs", HOME));
+    expect(expanded.indexDb).toBe(expandPath("~/.claude/memory/acme/index.db", HOME));
+    expect(expanded.exclude).toEqual(acme.exclude);
   });
 
   test("matchedPrefix defaults to the first match entry", () => {
-    const expanded = expandWorkspace(mate, HOME);
-    expect(expanded.matchedPrefix).toBe(expandPath("~/Desktop/project", HOME));
+    const expanded = expandWorkspace(acme, HOME);
+    expect(expanded.matchedPrefix).toBe(expandPath("~/code/acme", HOME));
   });
 
   test("matchedPrefix falls back to kb when match is empty", () => {
-    const expanded = expandWorkspace({ ...mate, match: [] }, HOME);
+    const expanded = expandWorkspace({ ...acme, match: [] }, HOME);
     expect(expanded.matchedPrefix).toBe(expanded.kb);
   });
 });
 
 describe("validateNew", () => {
   test("no conflicts against an empty registry", () => {
-    expect(validateNew(mate, [], HOME)).toEqual([]);
+    expect(validateNew(acme, [], HOME)).toEqual([]);
   });
 
   test("reports a missing required field", () => {
-    const conflicts = validateNew({ ...mate, kb: "" }, [], HOME);
+    const conflicts = validateNew({ ...acme, kb: "" }, [], HOME);
     expect(conflicts).toEqual([{ kind: RegistryConflictKind.MissingField, field: "kb" }]);
   });
 
@@ -257,122 +257,124 @@ describe("validateNew", () => {
 
   test("reports a duplicate id", () => {
     const conflicts = validateNew(
-      { ...personal, match: ["~/Documents/other"], kb: "~/Documents/OtherVault" },
-      [mate, personal],
+      { ...homeserver, match: ["~/Documents/other"], kb: "~/Documents/OtherVault" },
+      [acme, homeserver],
       HOME,
     );
     expect(conflicts).toEqual([
-      { kind: RegistryConflictKind.DuplicateId, id: "personal" },
+      { kind: RegistryConflictKind.DuplicateId, id: "homeserver" },
     ]);
   });
 
   test("detects a match overlap when the new prefix is nested under an old one", () => {
     const candidate: RawWorkspace = {
-      ...mate,
+      ...acme,
       id: "sub",
-      match: ["~/Desktop/project/sub"],
+      match: ["~/code/acme/sub"],
       kb: "~/Documents/SubVault",
     };
-    const conflicts = validateNew(candidate, [mate], HOME);
+    const conflicts = validateNew(candidate, [acme], HOME);
     expect(conflicts).toEqual([
       {
         kind: RegistryConflictKind.MatchOverlap,
-        prefix: "~/Desktop/project/sub",
-        otherId: "mate",
-        otherPrefix: "~/Desktop/project",
+        prefix: "~/code/acme/sub",
+        otherId: "acme",
+        otherPrefix: "~/code/acme",
       },
     ]);
   });
 
   test("detects a match overlap when the new prefix is an ancestor of an old one (the other direction)", () => {
     const candidate: RawWorkspace = {
-      ...mate,
+      ...acme,
       id: "outer",
-      match: ["~/Desktop"],
+      // An ANCESTOR of acme's `~/code/acme` — the overlap must be detected in this
+      // direction too, not just when the new prefix nests under an existing one.
+      match: ["~/code"],
       kb: "~/Documents/OuterVault",
     };
-    const conflicts = validateNew(candidate, [mate], HOME);
+    const conflicts = validateNew(candidate, [acme], HOME);
     expect(conflicts).toEqual([
       {
         kind: RegistryConflictKind.MatchOverlap,
-        prefix: "~/Desktop",
-        otherId: "mate",
-        otherPrefix: "~/Desktop/project",
+        prefix: "~/code",
+        otherId: "acme",
+        otherPrefix: "~/code/acme",
       },
     ]);
   });
 
   test("detects kb nesting in either direction", () => {
     const nestedUnder: RawWorkspace = {
-      ...personal,
+      ...homeserver,
       id: "sub",
       match: ["~/elsewhere"],
-      kb: "~/Documents/Mate Vault/Sub",
+      kb: "~/Documents/Acme Vault/Sub",
     };
-    expect(validateNew(nestedUnder, [mate], HOME)).toEqual([
+    expect(validateNew(nestedUnder, [acme], HOME)).toEqual([
       {
         kind: RegistryConflictKind.KbNested,
-        kb: "~/Documents/Mate Vault/Sub",
-        otherId: "mate",
-        otherKb: "~/Documents/Mate Vault",
+        kb: "~/Documents/Acme Vault/Sub",
+        otherId: "acme",
+        otherKb: "~/Documents/Acme Vault",
       },
     ]);
 
     const ancestor: RawWorkspace = {
-      ...personal,
+      ...homeserver,
       id: "outer",
       match: ["~/elsewhere"],
       kb: "~/Documents",
     };
-    expect(validateNew(ancestor, [mate], HOME)).toEqual([
+    expect(validateNew(ancestor, [acme], HOME)).toEqual([
       {
         kind: RegistryConflictKind.KbNested,
         kb: "~/Documents",
-        otherId: "mate",
-        otherKb: "~/Documents/Mate Vault",
+        otherId: "acme",
+        otherKb: "~/Documents/Acme Vault",
       },
     ]);
   });
 
   test("returns every conflict at once, not just the first (unlike registry.py's raise-on-first)", () => {
     const candidate: RawWorkspace = {
-      id: "mate", // duplicate
-      match: ["~/Desktop/project/sub"], // overlaps mate's match
-      kb: "~/Documents/Mate Vault/Sub", // nested under mate's kb
-      worklogs: "~/Documents/Mate Vault/Sub/_Worklogs",
+      id: "acme", // duplicate
+      match: ["~/code/acme/sub"], // overlaps acme's match
+      kb: "~/Documents/Acme Vault/Sub", // nested under acme's kb
+      worklogs: "~/Documents/Acme Vault/Sub/_Worklogs",
       exclude: [],
       indexDb: "~/.claude/memory/mate2/index.db",
     };
-    const conflicts = validateNew(candidate, [mate], HOME);
+    const conflicts = validateNew(candidate, [acme], HOME);
     expect(conflicts).toEqual([
-      { kind: RegistryConflictKind.DuplicateId, id: "mate" },
+      { kind: RegistryConflictKind.DuplicateId, id: "acme" },
       {
         kind: RegistryConflictKind.MatchOverlap,
-        prefix: "~/Desktop/project/sub",
-        otherId: "mate",
-        otherPrefix: "~/Desktop/project",
+        prefix: "~/code/acme/sub",
+        otherId: "acme",
+        otherPrefix: "~/code/acme",
       },
       {
         kind: RegistryConflictKind.KbNested,
-        kb: "~/Documents/Mate Vault/Sub",
-        otherId: "mate",
-        otherKb: "~/Documents/Mate Vault",
+        kb: "~/Documents/Acme Vault/Sub",
+        otherId: "acme",
+        otherKb: "~/Documents/Acme Vault",
       },
     ]);
   });
 
   test("a sibling directory sharing a string prefix is not a conflict", () => {
     const sibling: RawWorkspace = {
-      ...mate,
+      ...acme,
       id: "sibling",
-      match: ["~/Desktop/project2"],
-      kb: "~/Documents/Mate Vault2",
+      match: ["~/code/acme2"],
+      kb: "~/Documents/Acme Vault2",
     };
-    expect(validateNew(sibling, [mate], HOME)).toEqual([]);
+    expect(validateNew(sibling, [acme], HOME)).toEqual([]);
   });
 });
 
-describe("C1 — real registry.toml round-trip", () => {
+describe("C1 — registry.toml round-trip", () => {
   test("parse -> serialize -> parse is byte-identical and structurally identical", async () => {
     const fixturePath = new URL("../../fixtures/registry.toml", import.meta.url).pathname;
     const originalText = await Bun.file(fixturePath).text();

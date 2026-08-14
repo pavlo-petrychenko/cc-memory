@@ -130,7 +130,7 @@ describe("titleize", () => {
   });
 
   test("a single word is just capitalized", () => {
-    expect(titleize("personal")).toBe("Personal");
+    expect(titleize("homeserver")).toBe("Homeserver");
   });
 
   test("Python str.capitalize lowercases the rest of the word", () => {

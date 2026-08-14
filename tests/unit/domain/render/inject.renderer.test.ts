@@ -5,7 +5,7 @@ import { renderInjectContext } from "../../../../src/domain/render/inject.render
 describe("renderInjectContext (C4)", () => {
   test("golden: header, one note bullet, one worklog bullet", () => {
     const rendered = renderInjectContext({
-      workspaceId: "personal",
+      workspaceId: "homeserver",
       notes: [
         {
           title: "Wrap Gate",
@@ -23,7 +23,7 @@ describe("renderInjectContext (C4)", () => {
     });
     expect(rendered).toBe(
       [
-        "Relevant memory (auto-retrieved from workspace `personal` — pointers; " +
+        "Relevant memory (auto-retrieved from workspace `homeserver` — pointers; " +
           "open the file for detail, ignore if off-topic):",
         "- **Wrap Gate** — the …stop hook… escalates  ·  `CC-memory/Wrap Gate.md`",
         "- _(worklog)_ cc-memory: ported rank.ts  ·  `cc-memory/2026-08-14.md`",
@@ -33,12 +33,12 @@ describe("renderInjectContext (C4)", () => {
 
   test("no hits at all: just the header line", () => {
     const rendered = renderInjectContext({
-      workspaceId: "personal",
+      workspaceId: "homeserver",
       notes: [],
       worklogs: [],
     });
     expect(rendered).toBe(
-      "Relevant memory (auto-retrieved from workspace `personal` — pointers; " +
+      "Relevant memory (auto-retrieved from workspace `homeserver` — pointers; " +
         "open the file for detail, ignore if off-topic):",
     );
   });
