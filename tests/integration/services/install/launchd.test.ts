@@ -43,7 +43,7 @@ const EXPECTED_PLIST_PATH =
 const EXPECTED_REFLECTOR_LOG_PATH = "/home/test/.claude/memory/reflector.log" as AbsPath;
 // SAFETY: same reasoning as `EXPECTED_LAUNCH_AGENTS_DIR` above.
 const EXPECTED_PLIST_TEMPLATE_PATH =
-  "/repo/runners/dev.ccmemory.reflector.plist" as AbsPath;
+  "/repo/runners/dev.ccmemory.reflector.bun.plist" as AbsPath;
 
 describe("install/launchd.ts — path helpers", () => {
   test("defaultLaunchAgentsDir/defaultPlistPath/defaultReflectorLogPath are all ~-relative", () => {
@@ -66,7 +66,7 @@ describe("install/launchd.ts — path helpers", () => {
     );
   });
 
-  test("defaultPlistTemplatePath is <repoRoot>/runners/<label>.plist", () => {
+  test("defaultPlistTemplatePath is <repoRoot>/runners/<label>.bun.plist", () => {
     expect(defaultPlistTemplatePath(REPO_ROOT)).toBe(EXPECTED_PLIST_TEMPLATE_PATH);
   });
 });

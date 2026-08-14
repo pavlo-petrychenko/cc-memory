@@ -69,12 +69,12 @@ export function renderPlist(template: string, values: PlistTemplateValues): stri
     .replaceAll("@LOG@", values.logPath);
 }
 
-/** `<repoRoot>/runners/dev.ccmemory.reflector.plist` — the checked-in
+/** `<repoRoot>/runners/dev.ccmemory.reflector.bun.plist` — the checked-in
  * template `renderPlist` fills in. */
 export function defaultPlistTemplatePath(repoRoot: AbsPath): AbsPath {
   // SAFETY: appending a fixed literal relative path onto an already-absolute,
   // normalized `repoRoot`.
-  return `${repoRoot}/runners/${LAUNCHD_LABEL}.plist` as AbsPath;
+  return `${repoRoot}/runners/${LAUNCHD_LABEL}.bun.plist` as AbsPath;
 }
 
 /** `id -u` via `Proc` — `os.getuid()` (`tools/install.py:177`) has no direct
