@@ -137,12 +137,22 @@ describe("runCli dispatch", () => {
     expect(io.written[0]).toContain("registry:");
   });
 
-  test("hook dispatches to hook (fail-open: exit 0)", async () => {
-    const container = makeTestContainer({ stdio: makeIoFake() });
-    const outcome = await runCli(["hook", "session-start"], container, CONFIG);
-    expect(outcome.exitCode).toBe(0);
-    expect(outcome.stderrMessage).toContain("not implemented yet (P7)");
-  });
+  // `CliCommand.Hook` is deliberately NOT exercised via `runCli` here, unlike
+  // every other case in this file. `dispatch()`'s Hook branch calls
+  // `hook(parsed)` with no `Container`/`Config` (see `hook.command.ts`'s doc
+  // comment), so `hook()` always builds a REAL container/config from the
+  // actual process environment — the fake `container` built above is never
+  // what it uses. Worse, that real container's `Stdio` is the REAL adapter,
+  // whose `exit()` calls the actual `process.exit(0)`: calling `hook()`
+  // in-process (confirmed by direct repro) terminates the entire `bun test`
+  // process mid-run, silently, before any results print — exactly the
+  // failure mode the `Stdio` port exists to prevent, defeated here because
+  // `hook()` cannot accept an injected container at all. Dispatch wiring for
+  // `hook` is instead covered where a real `process.exit` is safe: spawned
+  // subprocesses in `tests/cli/e2e.test.ts` and
+  // `tests/contract/failopen.test.ts`. `dispatchHook` — the actual per-name
+  // dispatch logic `hook()` delegates to — is fully covered in-process with
+  // fakes by `tests/cli/commands/hook.command.test.ts`.
 
   test("install dispatches to install (fails loudly)", async () => {
     const container = makeTestContainer({ stdio: makeIoFake() });

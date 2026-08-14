@@ -1,12 +1,13 @@
 /**
- * Unit tests for the divergence allowlist lookup. DIVERGENCES itself is
- * empty in P1 (see its own doc comment), so a test against the real export
- * alone would never actually invoke findDivergence's search predicate —
- * these use an explicit allowlist to exercise both outcomes.
+ * Unit tests for the divergence allowlist lookup. DIVERGENCES itself was
+ * empty through P1-P6 (see its own doc comment) — the first real entries
+ * are P7's ([[bugfixes]] #1, wrap-state.json). These tests use an explicit
+ * allowlist fixture to exercise both outcomes independent of whatever the
+ * real export currently holds.
  */
 import { describe, expect, test } from "bun:test";
 
-import { DIVERGENCES, type Divergence, findDivergence } from "./divergences.ts";
+import { type Divergence, findDivergence } from "./divergences.ts";
 
 describe("findDivergence", () => {
   const allowlist: readonly Divergence[] = [
@@ -32,8 +33,10 @@ describe("findDivergence", () => {
     expect(findDivergence("cli/search-default-cwd", allowlist)).toBeUndefined();
   });
 
-  test("defaults to the (empty, for P1) real DIVERGENCES export", () => {
+  test("defaults to the real DIVERGENCES export", () => {
     expect(findDivergence("anything")).toBeUndefined();
-    expect(DIVERGENCES).toEqual([]);
+    expect(
+      findDivergence("hooks/wrap-gate/happy-path-first-nudge (ts-vs-python)")?.bugfix,
+    ).toBe(1);
   });
 });

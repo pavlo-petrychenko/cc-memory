@@ -13,9 +13,26 @@ import { join } from "node:path";
 
 import { spawnSync } from "bun";
 
+import { HookName } from "../../../src/cli/commands/hook.command.ts";
 import type { FixtureVault, FixtureWorkspace } from "../../fixtures/vault.ts";
 import type { HookCase } from "../harness.ts";
 import { HookScript } from "../harness.ts";
+
+/**
+ * Maps each Python hook SCRIPT (`HookScript`, `tests/parity/harness.ts`) to
+ * the CLI name `memory hook <name>` dispatches to on the TypeScript side
+ * (`hook.command.ts`'s `HookName`) — there is no Python precedent for these
+ * strings (`tools/install.py`'s own event->script map has no CLI names at
+ * all), so this is the one place P7's chosen names and the parity harness's
+ * existing per-script fixture table meet.
+ */
+export const HOOK_SCRIPT_TO_CLI_NAME = {
+  [HookScript.SessionStart]: HookName.SessionStart,
+  [HookScript.MemoryInject]: HookName.MemoryInject,
+  [HookScript.WrapGate]: HookName.WrapGate,
+  [HookScript.WorklogFloor]: HookName.WorklogFloor,
+  [HookScript.CompactCheckpoint]: HookName.CompactCheckpoint,
+} satisfies Readonly<Record<HookScript, HookName>>;
 
 function workspaceById(fixture: FixtureVault, id: string): FixtureWorkspace {
   const workspace = fixture.workspaces.find((candidate) => candidate.id === id);

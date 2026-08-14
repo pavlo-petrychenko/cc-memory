@@ -15,13 +15,47 @@ export type Divergence = {
   readonly expectedDiff: string;
 };
 
-// Empty for P1. This harness runs the PYTHON implementation on BOTH sides of
-// every case (tests/parity/self.test.ts) — there is no TypeScript yet, so
-// there is no intentional Python-vs-TypeScript difference to allowlist.
-// Packets P2-P10 append one entry per plan doc "bugfixes" row as their own
-// parity tests exercise a deliberate fix (e.g. bugfix #1's wrap-state.json
-// replacing per-session `.wrap-<id>` marker files).
-export const DIVERGENCES: readonly Divergence[] = [];
+// Empty for P1 (this harness ran the PYTHON implementation on both sides of
+// every case then — see tests/parity/self.test.ts). Each later packet appends
+// one entry per plan doc "bugfixes" row as its own parity tests exercise a
+// deliberate fix; P7 (hooks) is the first to add real entries, below.
+// The `(ts-vs-python)` suffix on every `case` below is deliberate, not a typo
+// of the real `HOOK_CASES` name: these three cases ALSO run through
+// `self.test.ts`'s Python-vs-Python self-consistency check under their plain
+// name, which (correctly) never produces this diff — running the SAME script
+// against itself can't disagree with itself about its own marker file name.
+// `tests/parity/ts.test.ts`'s `hookDivergenceCaseName` applies the identical
+// suffix on its lookup, so the two checks never collide over one shared key.
+export const DIVERGENCES: readonly Divergence[] = [
+  {
+    case: "hooks/wrap-gate/happy-path-first-nudge (ts-vs-python)",
+    reason:
+      "[[bugfixes]] #1: 142 leaked per-session `.wrap-<session_id>` marker files " +
+      "are replaced by one `wrap-state.json` per workspace, keyed by session id " +
+      "and pruned of entries older than 7 days on write. Internal file layout " +
+      "only — the stdout nudge/block text and escalation logic are unchanged.",
+    bugfix: 1,
+    expectedDiff:
+      "Python writes `.claude/memory/<id>/.wrap-<session_id>`; TypeScript writes " +
+      "`.claude/memory/<id>/wrap-state.json`",
+  },
+  {
+    case: "hooks/wrap-gate/missing-session-id-falls-back-to-nosession (ts-vs-python)",
+    reason: "Same as the happy-path row above — bugfix #1's marker-file replacement.",
+    bugfix: 1,
+    expectedDiff:
+      "Python writes `.claude/memory/<id>/.wrap-nosession`; TypeScript writes " +
+      "`.claude/memory/<id>/wrap-state.json`",
+  },
+  {
+    case: "hooks/wrap-gate/escalates-to-block-after-repeat-nudges (ts-vs-python)",
+    reason: "Same as the happy-path row above — bugfix #1's marker-file replacement.",
+    bugfix: 1,
+    expectedDiff:
+      "Python writes `.claude/memory/<id>/.wrap-<session_id>`; TypeScript writes " +
+      "`.claude/memory/<id>/wrap-state.json`",
+  },
+];
 
 /**
  * Behavior changes already SHIPPED in the domain layer that no parity case can
