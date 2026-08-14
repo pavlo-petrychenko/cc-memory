@@ -11,7 +11,8 @@
     "lint": "bun ./node_modules/.bin/oxlint",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "test:parity": "bun test tests/parity"
+    "test:parity": "bun test tests/parity",
+    "build": "bun build src/cli/main.ts --target=bun --outfile dist/memory.js"
   },
   "dependencies": {
     "smol-toml": "1.8.0",

@@ -5,7 +5,7 @@
  * file does, with synthetic data instead of spawned processes.
  */
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import type { TreeEntry } from "../helpers/tempdir.ts";
@@ -206,9 +206,32 @@ describe("runTs", () => {
   const distPath = join(new URL("../../", import.meta.url).pathname, "dist", "memory.js");
 
   test("fails clearly when dist/memory.js does not exist", async () => {
-    const result = await runTs(["workspace", "ls"], { env: {}, cwd: "/" });
-    expect(result.exitCode).not.toBe(0);
-    expect(result.stderr).toContain("not been built yet");
+    // Same rationale as self.test.ts's identically-named case: P6's `bun run
+    // build` means a real dist/memory.js may already be sitting there from
+    // ts.test.ts's beforeAll (same `bun test` process) — remove it here and
+    // rebuild afterwards so this file can exercise the "not built yet"
+    // fail-closed path without leaving a later file's `runTs` call broken.
+    const existedBefore = existsSync(distPath);
+    if (existedBefore) rmSync(distPath);
+    try {
+      const result = await runTs(["workspace", "ls"], { env: {}, cwd: "/" });
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("not been built yet");
+    } finally {
+      if (existedBefore) {
+        Bun.spawnSync(
+          [
+            "bun",
+            "build",
+            "src/cli/main.ts",
+            "--target=bun",
+            "--outfile",
+            "dist/memory.js",
+          ],
+          { cwd: new URL("../../", import.meta.url).pathname },
+        );
+      }
+    }
   });
 
   test("spawns bun against dist/memory.js once it exists", async () => {
