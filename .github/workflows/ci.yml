@@ -15,12 +15,6 @@ jobs:
         with:
           bun-version: latest
 
-      # The parity harness runs the Python implementation side by side with the
-      # TypeScript one, so it needs python3 until the cutover removes it.
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
       - run: bun install --frozen-lockfile
 
       - run: bun run fmt:check

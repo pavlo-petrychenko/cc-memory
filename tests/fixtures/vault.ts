@@ -1,5 +1,5 @@
 /**
- * Synthetic vault + registry.toml builder for the parity harness.
+ * Synthetic vault + registry.toml builder for tests that need a real vault on disk.
  *
  * An 8-note corpus across Alpha/Beta/Gamma exercising camelCase-vs-prose
  * matching, title-vs-body BM25 weighting, adjacent-vs-distant term pairs and
@@ -48,7 +48,7 @@ export type FixtureVault = {
  * case (workspace add's `git init`, `memory commit`, wrap-gate's `git
  * status`/`rev-parse`) need identity supplied via env rather than a config
  * file. The fixed author/committer DATE matters too: without it, two
- * independently-built fixtures (one per side of a parity comparison) commit
+ * independently-built fixtures commit
  * identical content at two different real timestamps, producing two
  * different commit hashes — and `worklog-floor.py`'s SessionEnd hook writes
  * `git log --oneline` (hash included) straight into a worklog file, which
@@ -57,9 +57,9 @@ export type FixtureVault = {
  * fully reproducible.
  */
 const GIT_ENV = {
-  GIT_AUTHOR_NAME: "cc-memory parity fixture",
+  GIT_AUTHOR_NAME: "cc-memory test fixture",
   GIT_AUTHOR_EMAIL: "fixture@example.invalid",
-  GIT_COMMITTER_NAME: "cc-memory parity fixture",
+  GIT_COMMITTER_NAME: "cc-memory test fixture",
   GIT_COMMITTER_EMAIL: "fixture@example.invalid",
   GIT_AUTHOR_DATE: "2026-01-01T00:00:00Z",
   GIT_COMMITTER_DATE: "2026-01-01T00:00:00Z",
@@ -198,7 +198,7 @@ function buildWorkspace(
 
 /**
  * Build a synthetic vault + registry.toml under `root` (a freshly created
- * temp dir — see tests/helpers/tempdir.ts) and return everything a parity
+ * temp dir — see tests/helpers/tempdir.ts) and return everything a
  * case needs to target it.
  *
  * `root` doubles as the sandboxed `$HOME`: every path cc-memory normally

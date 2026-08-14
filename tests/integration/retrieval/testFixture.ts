@@ -11,7 +11,7 @@ import { makeFsRealAdapter } from "../../../src/platform/fsReal.adapter.ts";
  * from this — `Db` is never faked, since FTS5's stemmer, bm25 weighting and
  * `NEAR` semantics are the behavior under test — and using the real disk
  * here (rather than the in-memory `fs` fake) means the same fixture module
- * backs both these tests and the parity harness.
+ * backs both these tests and the end-to-end tests.
  */
 import {
   buildFixtureVault,

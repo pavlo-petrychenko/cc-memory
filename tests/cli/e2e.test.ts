@@ -11,8 +11,8 @@ import { join } from "node:path";
 
 import { buildFixtureVault, type FixtureVault } from "../fixtures/vault.ts";
 import { ensureDistBuilt } from "../helpers/build.ts";
+import { normalizeText, runBuiltCli } from "../helpers/runCli.ts";
 import { createTempDir, type TempDir } from "../helpers/tempdir.ts";
-import { normalizeText, runTs } from "../parity/harness.ts";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 const GOLDEN_DIR = join(REPO_ROOT, "tests", "golden", "cli");
@@ -42,7 +42,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
   test("workspace ls, before any index exists", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
-      const result = await runTs(["workspace", "ls"], {
+      const result = await runBuiltCli(["workspace", "ls"], {
         env: fixture.env,
         cwd: fixture.root,
       });
@@ -60,7 +60,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
   test("resolve inside a workspace", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
-      const result = await runTs(["resolve"], {
+      const result = await runBuiltCli(["resolve"], {
         env: fixture.env,
         cwd: primaryCwd(fixture),
       });
@@ -76,7 +76,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
   test("resolve outside any workspace", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
-      const result = await runTs(["resolve"], {
+      const result = await runBuiltCli(["resolve"], {
         env: fixture.env,
         cwd: fixture.outsideDir,
       });
@@ -92,7 +92,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
   test("reindex builds both workspaces' indexes", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
-      const result = await runTs(["reindex"], {
+      const result = await runBuiltCli(["reindex"], {
         env: fixture.env,
         cwd: primaryCwd(fixture),
       });
@@ -110,8 +110,8 @@ describe("CLI e2e against the built dist/memory.js", () => {
   test("search returns the expected bullet + snippet shape", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
-      await runTs(["reindex"], { env: fixture.env, cwd: primaryCwd(fixture) });
-      const result = await runTs(["search", "kryptonite"], {
+      await runBuiltCli(["reindex"], { env: fixture.env, cwd: primaryCwd(fixture) });
+      const result = await runBuiltCli(["search", "kryptonite"], {
         env: fixture.env,
         cwd: primaryCwd(fixture),
       });
@@ -127,8 +127,8 @@ describe("CLI e2e against the built dist/memory.js", () => {
   test("notes --json is JSON.stringify(rows, null, 2) — the actualize-kb skill's contract", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
-      await runTs(["reindex"], { env: fixture.env, cwd: primaryCwd(fixture) });
-      const result = await runTs(["notes", "--json"], {
+      await runBuiltCli(["reindex"], { env: fixture.env, cwd: primaryCwd(fixture) });
+      const result = await runBuiltCli(["notes", "--json"], {
         env: fixture.env,
         cwd: primaryCwd(fixture),
       });
@@ -163,7 +163,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
         env: fixture.env,
       }).stdout.toString();
 
-      const result = await runTs(["commit", "primary", "-m", "e2e test commit"], {
+      const result = await runBuiltCli(["commit", "primary", "-m", "e2e test commit"], {
         env: fixture.env,
         cwd: primaryCwd(fixture),
       });
@@ -186,7 +186,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
     const { tempDir, fixture } = setUpFixture();
     try {
       const newProjectDir = join(fixture.root, "projects", "tertiary");
-      const result = await runTs(
+      const result = await runBuiltCli(
         ["workspace", "add", "tertiary", "--match", newProjectDir],
         {
           env: fixture.env,
@@ -208,10 +208,13 @@ describe("CLI e2e against the built dist/memory.js", () => {
   test("reflect runs the real reflector against the built binary", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
-      const result = await runTs(["reflect", "--workspace", "primary", "--headless"], {
-        env: fixture.env,
-        cwd: primaryCwd(fixture),
-      });
+      const result = await runBuiltCli(
+        ["reflect", "--workspace", "primary", "--headless"],
+        {
+          env: fixture.env,
+          cwd: primaryCwd(fixture),
+        },
+      );
       expect(result.exitCode).toBe(0);
       // The fixture's worklogs hold only `STATE.md` (gather.ts skips it),
       // so there is nothing to promote — the real, honest outcome, never a
@@ -225,7 +228,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
   test("hook session-start runs for real against the built artifact (fail-open: exit 0)", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
-      const result = await runTs(["hook", "session-start"], {
+      const result = await runBuiltCli(["hook", "session-start"], {
         env: fixture.env,
         cwd: primaryCwd(fixture),
       });
@@ -249,7 +252,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
   test("hook with an unknown name stays fail-open: exit 0, nothing on stdout", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
-      const result = await runTs(["hook", "not-a-real-hook"], {
+      const result = await runBuiltCli(["hook", "not-a-real-hook"], {
         env: fixture.env,
         cwd: primaryCwd(fixture),
       });
@@ -277,7 +280,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
   test("install --dry-run reports success without writing anything", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
-      const result = await runTs(["install", "--dry-run"], {
+      const result = await runBuiltCli(["install", "--dry-run"], {
         env: fixture.env,
         cwd: primaryCwd(fixture),
       });
@@ -291,7 +294,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
   test("uninstall with nothing installed under the fixture's $HOME reports nothing to do", async () => {
     const { tempDir, fixture } = setUpFixture();
     try {
-      const result = await runTs(["uninstall"], {
+      const result = await runBuiltCli(["uninstall"], {
         env: fixture.env,
         cwd: primaryCwd(fixture),
       });

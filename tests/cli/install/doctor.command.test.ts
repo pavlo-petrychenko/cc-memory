@@ -30,7 +30,7 @@ function doctorArgs(overrides: Partial<DoctorArgs> = {}): DoctorArgs {
  * `doctor` (`src/install/doctor.command.ts`) runs real diagnostics — see
  * `doctor.service.ts`'s doc comment for why this is a redesign rather than
  * spawning hooks to smoke-test them. The first two lines are the one thing
- * kept BYTE-IDENTICAL (the `cli/doctor-*` parity cases anchor on them even
+ * kept BYTE-IDENTICAL (they are the first thing a human reads, even
  * while skipped).
  */
 describe("doctor (real diagnostics, replacing the exit-0 hook smoke test)", () => {
