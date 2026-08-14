@@ -8,7 +8,7 @@
  */
 import { describe, expect, test } from "bun:test";
 
-import { CliCommand, parseArgs, type ParsedArgs } from "../../../src/cli/args.ts";
+import { CliCommand, parseArgs, type ParsedArgs } from "../../src/cli/args.ts";
 
 type Case = {
   readonly name: string;
@@ -270,9 +270,11 @@ describe("parseArgs — error paths", () => {
     expect(result.ok).toBe(false);
   });
 
-  test("no command at all", () => {
+  // No arguments is NOT an error: argparse printed usage and exited 0 for a bare
+  // `memory`, so it parses as the help command. See help.command.test.ts.
+  test("no command at all is help, not a parse error", () => {
     const result = parseArgs([]);
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: true, value: { command: CliCommand.Help } });
   });
 
   test("workspace add without --match fails", () => {

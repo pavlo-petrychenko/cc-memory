@@ -6,6 +6,7 @@ import { CliCommand, parseArgs, type ParsedArgs } from "./args.ts";
 import { type CliOutcome, cliFailure } from "./CliOutcome.ts";
 import { commit } from "./commands/commit.command.ts";
 import { doctor } from "./commands/doctor.command.ts";
+import { help, version } from "./commands/help.command.ts";
 import { hook } from "./commands/hook.command.ts";
 import { install, uninstall } from "./commands/install.command.ts";
 import { notes } from "./commands/notes.command.ts";
@@ -54,6 +55,10 @@ async function dispatch(
       return install(parsed);
     case CliCommand.Uninstall:
       return uninstall();
+    case CliCommand.Help:
+      return help(container.stdio);
+    case CliCommand.Version:
+      return version(container.stdio);
   }
 }
 

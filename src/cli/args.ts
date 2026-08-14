@@ -29,6 +29,9 @@ export enum CliCommand {
   Hook = "hook",
   Install = "install",
   Uninstall = "uninstall",
+  /** `-h`/`--help`, or no arguments at all. Python got this free from argparse. */
+  Help = "help",
+  Version = "version",
 }
 
 export type WorkspaceAddArgs = {
@@ -107,6 +110,10 @@ export type InstallArgs = {
 
 export type UninstallArgs = { readonly command: CliCommand.Uninstall };
 
+export type HelpArgs = { readonly command: CliCommand.Help };
+
+export type VersionArgs = { readonly command: CliCommand.Version };
+
 export type ParsedArgs =
   | WorkspaceAddArgs
   | WorkspaceRmArgs
@@ -120,7 +127,9 @@ export type ParsedArgs =
   | DoctorArgs
   | HookArgs
   | InstallArgs
-  | UninstallArgs;
+  | UninstallArgs
+  | HelpArgs
+  | VersionArgs;
 
 export type ArgsError = { readonly message: string };
 
@@ -352,7 +361,17 @@ export function parseArgs(argv: readonly string[]): Result<ParsedArgs, ArgsError
       return parseInstall(rest);
     case "uninstall":
       return ok({ command: CliCommand.Uninstall });
+    // argparse gave Python `-h`/`--help` (and a usage dump on no arguments) for
+    // free; hand-rolling the parser means handling them explicitly, or
+    // `memory --help` exits 2 with "unknown command: --help".
+    case "-h":
+    case "--help":
+    case undefined:
+      return ok({ command: CliCommand.Help });
+    case "-V":
+    case "--version":
+      return ok({ command: CliCommand.Version });
     default:
-      return fail(`unknown command: ${command ?? "(none)"}`);
+      return fail(`unknown command: ${command}`);
   }
 }

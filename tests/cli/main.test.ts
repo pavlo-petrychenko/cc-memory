@@ -155,4 +155,37 @@ describe("runCli dispatch", () => {
     const outcome = await runCli(["uninstall"], container, CONFIG);
     expect(outcome.exitCode).toBe(1);
   });
+
+  test("--help dispatches to help and exits 0", async () => {
+    const io = makeIoFake();
+    const container = makeTestContainer({ stdio: io });
+    const outcome = await runCli(["--help"], container, CONFIG);
+    expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
+    expect(io.written.join("")).toContain("memory workspace add");
+  });
+
+  test("a bare invocation dispatches to help, as argparse's usage dump did", async () => {
+    const io = makeIoFake();
+    const container = makeTestContainer({ stdio: io });
+    const outcome = await runCli([], container, CONFIG);
+    expect(outcome.exitCode).toBe(0);
+    expect(io.written.join("")).toContain("Usage:");
+  });
+
+  test("--version dispatches to version and exits 0", async () => {
+    const io = makeIoFake();
+    const container = makeTestContainer({ stdio: io });
+    const outcome = await runCli(["--version"], container, CONFIG);
+    expect(outcome.exitCode).toBe(0);
+    expect(io.written.join("")).toMatch(/^memory \d+\.\d+\.\d+\n$/);
+  });
+
+  test("an unknown command exits 2, matching argparse's parse-error code", async () => {
+    const container = makeTestContainer({ stdio: makeIoFake() });
+    const outcome = await runCli(["frobnicate"], container, CONFIG);
+    expect(outcome).toEqual({
+      exitCode: 2,
+      stderrMessage: "unknown command: frobnicate",
+    });
+  });
 });
