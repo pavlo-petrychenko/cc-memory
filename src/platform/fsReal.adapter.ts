@@ -6,10 +6,9 @@ import type { FileStat, FileSystem } from "./fileSystem.port.ts";
 /**
  * The real `FileSystem`, over `node:fs/promises` (works under Bun same as
  * Node). Thin on purpose: every method is a direct pass-through, no branching,
- * no defaults — `mkdir`/`remove` bake in `recursive: true` because every call
- * site this project ports used `exist_ok=True` (`os.makedirs`) or needed to
- * remove either a file or a directory (`shutil.rmtree`/`os.remove`,
- * `tools/install.py:64`) without the caller having to know which.
+ * no defaults — `mkdir`/`remove` bake in `recursive: true` so callers can
+ * create nested directories or remove either a file or a directory without
+ * knowing which up front.
  */
 export function makeFsRealAdapter(): FileSystem {
   return {

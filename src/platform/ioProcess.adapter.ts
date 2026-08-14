@@ -1,10 +1,6 @@
 import type { Stdio } from "./stdio.port.ts";
 
-/**
- * The real `Stdio`, over the actual process — `sys.stdin.read()`,
- * `print(...)` and `sys.exit(code)` (every `*.py` hook's `main()`/`__main__`
- * block, and `bin/memory`'s command dispatch).
- */
+/** The real `Stdio`, reading stdin, writing stdout, and exiting the process. */
 export function makeIoProcessAdapter(): Stdio {
   return {
     readStdin: () => Bun.stdin.text(),

@@ -23,12 +23,12 @@ import type { Stdio } from "./stdio.port.ts";
  * else (services, domain) receives a `Container` as a parameter, so a test can
  * pass `tests/helpers/container.ts`'s `makeTestContainer` instead.
  *
- * `openDb` is a factory rather than a single field: `index_db` is one path PER
- * WORKSPACE, so there is no single "the" database to bundle at container-build
- * time. It still satisfies "one handle per process" ([[bugfixes]] #6): calling it
+ * `openDb` is a factory rather than a single field: the index database path is
+ * per-workspace, so there is no single "the" database to bundle at
+ * container-build time. It still guarantees one handle per process: calling it
  * twice with the same path returns the SAME open handle, so a run that does
- * notes search + worklog search + inlink counts against one workspace shares one
- * connection instead of `lib/index.py`'s three.
+ * notes search + worklog search + inlink counts against one workspace shares
+ * one connection.
  */
 export type Container = {
   readonly fs: FileSystem;

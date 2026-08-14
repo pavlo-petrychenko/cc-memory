@@ -2,18 +2,15 @@ import type { AbsPath } from "../core/AbsPath.ts";
 import type { Git } from "./git.port.ts";
 import type { Proc } from "./proc.port.ts";
 
-// Exact timeouts from the Python this replaces — never re-derive (CLAUDE.md).
-const SHOW_TOPLEVEL_TIMEOUT_MS = 3000; // resolve.py:33
-const READ_TIMEOUT_MS = 5000; // wrap-gate.py:30, worklog-floor.py:22
-const WRITE_TIMEOUT_MS = 10_000; // worklog.py:109-113
+const SHOW_TOPLEVEL_TIMEOUT_MS = 3000;
+const READ_TIMEOUT_MS = 5000;
+const WRITE_TIMEOUT_MS = 10_000;
 
 /**
  * Run `git -C cwd <...args>`, returning raw stdout on a clean exit or `""` on a
- * non-zero exit or any thrown error (timeout, missing binary) — the exact
- * fail-to-empty-string semantics of every Python `_git` helper this replaces
- * (`wrap-gate.py:28-34`, `worklog-floor.py:19-25`). `Proc.run` rejecting on
- * timeout is what lets one `try/catch` cover both a `TimeoutExpired`-equivalent
- * and a spawn failure, matching Python's single `except Exception`.
+ * non-zero exit or any thrown error (timeout, missing binary). `Proc.run`
+ * rejecting on timeout is what lets one `try/catch` cover both a timeout and a
+ * spawn failure.
  */
 async function readGit(
   proc: Proc,
@@ -30,10 +27,8 @@ async function readGit(
 }
 
 /**
- * Run a git command whose exit code the caller doesn't inspect (`add`, `commit`
- * — `worklog.py:102-116`'s `git_commit_worklogs` never checks either
- * `subprocess.run`'s return code, only whether the call raised). Resolves
- * `false` only on a timeout or spawn failure.
+ * Run a git command whose exit code the caller doesn't inspect (`add`,
+ * `commit`). Resolves `false` only on a timeout or spawn failure.
  */
 async function writeGit(
   proc: Proc,

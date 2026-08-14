@@ -12,11 +12,10 @@ import type { AbsPath } from "../core/AbsPath.ts";
 import { LogLevel } from "../core/Config.ts";
 import type { Logger } from "./logger.port.ts";
 
-// New, additive behavior — there is no Python constant to port ([[bugfixes]] #2,
-// #9 both introduce rotation where none existed). 1 MiB, 2 kept generations:
-// <path> is the live file; a write that would push it over the cap rotates
-// <path>.1 -> <path>.2 (dropping any existing <path>.2) and <path> -> <path>.1
-// first, matching classic logrotate numbering (lower number = more recent).
+// 1 MiB, 2 kept generations: <path> is the live file; a write that would push
+// it over the cap rotates <path>.1 -> <path>.2 (dropping any existing
+// <path>.2) and <path> -> <path>.1 first, matching classic logrotate
+// numbering (lower number = more recent).
 const MAX_LOG_BYTES = 1_048_576;
 const KEPT_GENERATIONS = 2;
 
@@ -48,8 +47,8 @@ function rotate(path: AbsPath): void {
 /**
  * Append one line to `path`, rotating first if the write would push the file
  * past `MAX_LOG_BYTES`. Exported standalone (not only via the `Logger` port)
- * because the same primitive backs `inject.jsonl` rotation ([[bugfixes]] #2),
- * which isn't a leveled log message and doesn't go through `Logger` at all.
+ * because the same primitive backs `inject.jsonl` rotation, which isn't a
+ * leveled log message and doesn't go through `Logger` at all.
  */
 export function appendWithRotation(path: AbsPath, line: string): void {
   const encoded = `${line}\n`;
@@ -66,10 +65,9 @@ function formatLine(level: LogLevel, message: string): string {
 
 /**
  * The real `Logger`: a size-capped rotating file backing both the hook
- * fail-open diagnostics and the CLI's error path ([[bugfixes]] #9 — today's 15
- * silent `except: pass` blocks leave a broken memory system indistinguishable
- * from a quiet one). `minLevel` is `Config.logLevel` (`CCMEM_LOG_LEVEL`,
- * default `warn`), applied here rather than at every call site.
+ * fail-open diagnostics and the CLI's error path. `minLevel` is
+ * `Config.logLevel` (`CCMEM_LOG_LEVEL`, default `warn`), applied here rather
+ * than at every call site.
  */
 export function makeLoggerFileAdapter(path: AbsPath, minLevel: LogLevel): Logger {
   const write = (level: LogLevel, message: string): void => {
