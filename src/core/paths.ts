@@ -3,11 +3,10 @@ import type { AbsPath } from "./AbsPath.ts";
 const HOME_ALIAS = "~";
 
 /**
- * Python's `str.strip(chars)`: remove every leading/trailing character that
- * appears in `chars`, repeatedly, from both ends. JS's `String.prototype.trim`
- * only strips whitespace, so ports of `.strip("'\"")` (`index.py:77`), `.strip(
- * "[]")` (`index.py:89`) and `.strip(" -*")` (`reflector.py:76`) all go through
- * this instead of hand-rolled regexes.
+ * Remove every leading/trailing character that appears in `chars`, repeatedly,
+ * from both ends. `String.prototype.trim` only strips whitespace, so stripping
+ * an arbitrary character set (quotes, brackets, `" -*"`, etc.) goes through this
+ * instead of a hand-rolled regex.
  */
 export function stripChars(text: string, chars: string): string {
   let start = 0;
@@ -53,13 +52,12 @@ function normalize(path: string): string {
 }
 
 /**
- * Expand a leading `~` (and only a leading `~`, matching `os.path.expanduser`)
- * against `home`, then normalize. This is the sole constructor of `AbsPath` — the
- * the ONE place a type assertion is allowed (CLAUDE.md).
+ * Expand a leading `~` (and only a leading `~`) against `home`, then normalize.
+ * This is the sole constructor of `AbsPath` — the ONE place a type assertion is
+ * allowed.
  *
  * `home` arrives as a parameter rather than being read from the environment:
- * domain code has no I/O, so callers (services) resolve `$HOME` and pass it in
- * (`registry.py:17-19`, `bin/memory:20-21`).
+ * domain code has no I/O, so callers (services) resolve `$HOME` and pass it in.
  */
 export function expandPath(path: string, home: AbsPath): AbsPath {
   const expanded =
@@ -73,7 +71,7 @@ export function expandPath(path: string, home: AbsPath): AbsPath {
 }
 
 /**
- * Collapse `$HOME` back to `~` for tidy registry storage (`registry.py:22-30`).
+ * Collapse `$HOME` back to `~` for tidy registry storage.
  * The exact-match case (`p === home`) must be checked before the prefix case, or
  * a workspace whose path *is* the home directory would fall through unchanged.
  */
@@ -88,14 +86,14 @@ export function isUnder(child: AbsPath, parent: AbsPath): boolean {
   return child === parent || child.startsWith(`${parent}/`);
 }
 
-// Python's `str.isalnum()` is Unicode-aware (true for accented letters, digits in
-// other scripts, etc.), not ASCII-only — `\p{L}`/`\p{N}` are the closest JS match.
+// Unicode-aware alphanumeric check (true for accented letters, digits in other
+// scripts, etc.), not ASCII-only.
 const SLUG_ALLOWED_CHARACTER = /[\p{L}\p{N}_.-]/u;
 
 /**
  * Filter a worktree-relative slug candidate down to alphanumerics plus `-_.`,
- * replacing every other character with `-`, then trim leading/trailing `-`
- * (`resolve.py:42-43`). Empty after that -> `_root` (the repo-top-level worktree).
+ * replacing every other character with `-`, then trim leading/trailing `-`.
+ * Empty after that -> `_root` (the repo-top-level worktree).
  */
 export function sanitizeSlug(candidate: string): string {
   let filtered = "";
@@ -107,10 +105,9 @@ export function sanitizeSlug(candidate: string): string {
 }
 
 /**
- * `-`/`_`-separated identifier -> Title Case words (`bin/memory:20-21`). Each word
- * goes through Python `str.capitalize()` semantics: first character uppercased,
- * the REST lowercased (`"myAPI"` -> `"Myapi"`, not `"MyAPI"`) — a quirk worth
- * preserving since it's what the live vault's home-note titles already look like.
+ * `-`/`_`-separated identifier -> Title Case words. Each word has its first
+ * character uppercased and the REST lowercased (`"myAPI"` -> `"Myapi"`, not
+ * `"MyAPI"`), matching the vault's existing home-note titles.
  */
 export function titleize(id: string): string {
   return id
@@ -127,8 +124,8 @@ export function titleize(id: string): string {
 
 /**
  * Path relative to `base` with the `.md` extension stripped — the FTS index's
- * link-resolution key (`index.py:369-371`: `_relkey`). Falls back to the path
- * unchanged when it isn't under `base` at all.
+ * link-resolution key. Falls back to the path unchanged when it isn't under
+ * `base` at all.
  */
 export function relKey(path: AbsPath, base: AbsPath): string {
   const relative = path.startsWith(`${base}/`) ? path.slice(base.length + 1) : path;

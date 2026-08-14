@@ -1,16 +1,11 @@
 /**
  * A read-only snapshot of the process environment, as an adapter would hand it
  * to `parseConfig`. Domain code never reads `process.env`/`Bun.env` itself — dates,
- * times, paths and env vars all arrive as parameters (CLAUDE.md's layering rule).
+ * times, paths and env vars all arrive as parameters.
  */
 export type EnvSnapshot = Readonly<Record<string, string | undefined>>;
 
-/**
- * Log verbosity for the rotating `ccmem.log` ([[bugfixes]] #9 — new, additive:
- * today's 15 silent `except: pass` leave a broken memory system indistinguishable
- * from a quiet one). Not present in the Python; the set of levels is the
- * conventional one for this kind of file logger.
- */
+/** Log verbosity for the rotating `ccmem.log`. */
 export enum LogLevel {
   Debug = "debug",
   Info = "info",
@@ -18,28 +13,23 @@ export enum LogLevel {
   Error = "error",
 }
 
-/**
- * Every `CCMEM_*` tunable (C5), parsed once per entrypoint instead of read as
- * import-time module constants scattered across `index.py`, `memory-inject.py`,
- * `wrap-gate.py` and `reflector.py` — the PoC's constants could not be tested
- * without reloading modules.
- */
+/** Every `CCMEM_*` tunable, parsed once per entrypoint rather than read ad hoc. */
 export type Config = {
-  /** `CCMEM_INJECT_MIN_SCORE` — BM25-strength floor for auto-injected hits (`memory-inject.py:24`). */
+  /** `CCMEM_INJECT_MIN_SCORE` — BM25-strength floor for auto-injected hits. */
   readonly injectMinScore: number;
-  /** `CCMEM_LINK_BOOST` — RRF bonus per corroborating in-link (`index.py:243`). */
+  /** `CCMEM_LINK_BOOST` — RRF bonus per corroborating in-link. */
   readonly linkBoost: number;
-  /** `CCMEM_INJECT_LOG` — false only when set to exactly `"0"` (`memory-inject.py:34`). */
+  /** `CCMEM_INJECT_LOG` — false only when set to exactly `"0"`. */
   readonly injectLogEnabled: boolean;
-  /** `CCMEM_BLOCK_AFTER` — nudges required before the wrap-gate may block (`wrap-gate.py:23`). */
+  /** `CCMEM_BLOCK_AFTER` — nudges required before the wrap-gate may block. */
   readonly blockAfter: number;
-  /** `CCMEM_BLOCK_DRIFT` — dirty-file count required before the wrap-gate may block (`wrap-gate.py:24`). */
+  /** `CCMEM_BLOCK_DRIFT` — dirty-file count required before the wrap-gate may block. */
   readonly blockDrift: number;
-  /** `CCMEM_GATE_DISABLE` — true only when set to exactly `"1"` (`wrap-gate.py:25`). */
+  /** `CCMEM_GATE_DISABLE` — true only when set to exactly `"1"`. */
   readonly gateDisabled: boolean;
-  /** `CCMEM_CONSOLIDATE_CMD` — the `claude` invocation the reflector spawns in tmux (`reflector.py:237`). */
+  /** `CCMEM_CONSOLIDATE_CMD` — the `claude` invocation the reflector spawns in tmux. */
   readonly consolidateCmd: string;
-  /** `CCMEM_LOG_LEVEL` — new, additive ([[bugfixes]] #9). */
+  /** `CCMEM_LOG_LEVEL` — controls the rotating log's verbosity. */
   readonly logLevel: LogLevel;
 };
 
@@ -51,11 +41,8 @@ const CONSOLIDATE_CMD_DEFAULT = "claude --dangerously-skip-permissions";
 
 /**
  * A malformed numeric env var falls back to its default rather than propagating
- * a parse failure: the Python reads these as import-time module constants with a
- * bare `int(...)`/`float(...)` call, so a bad value there crashes the hook script
- * before its own `try/except` in `main()` can catch it — a latent violation of the
- * "hooks fail open" invariant, not a behavior worth reproducing. Errors are
- * returned/defaulted here, never thrown across a module boundary (CLAUDE.md).
+ * a parse failure — a bad tunable must never crash a hook, since hooks must
+ * always fail open.
  */
 function parseNumber(raw: string | undefined, fallback: number): number {
   if (raw === undefined) return fallback;
@@ -76,7 +63,7 @@ function parseLogLevel(raw: string | undefined): LogLevel {
   }
 }
 
-/** Build a `Config` from an env snapshot, applying every C5 default. */
+/** Build a `Config` from an env snapshot, applying every default. */
 export function parseConfig(env: EnvSnapshot): Config {
   return {
     injectMinScore: parseNumber(env["CCMEM_INJECT_MIN_SCORE"], INJECT_MIN_SCORE_DEFAULT),

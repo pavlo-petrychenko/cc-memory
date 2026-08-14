@@ -4,13 +4,12 @@
  * a test controls "now" via `fakes/clockFixed.fake.ts` instead of a real clock.
  */
 export type Clock = {
-  /** Milliseconds since epoch — `time.time() * 1000` (`wrap-gate.py:93`). */
+  /** Milliseconds since epoch. */
   readonly nowMs: () => number;
-  /** Local calendar date, `YYYY-MM-DD` — `datetime.date.today().isoformat()`
-   * (`worklog-floor.py:39`, `compact-checkpoint.py:32`). Local, not UTC: Python's
-   * `date.today()` reads the system's local calendar day. */
+  /** Local calendar date, `YYYY-MM-DD`. Local, not UTC: reads the system's
+   * local calendar day. */
   readonly today: () => string;
   /** Local 24-hour clock, `HH:MM`, zero-padded — fills the worklog entry
-   * template's `{time}` field (`worklog.py:30`, `ENTRY_TEMPLATE`). */
+   * template's `{time}` field. */
   readonly timeHHMM: () => string;
 };

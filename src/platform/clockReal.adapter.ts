@@ -4,11 +4,7 @@ function twoDigits(value: number): string {
   return value < 10 ? `0${value}` : String(value);
 }
 
-/**
- * The real `Clock`, reading the system clock in **local** time —
- * `datetime.date.today()`/`datetime.datetime.now()` both read the local
- * calendar, not UTC (`worklog-floor.py:39`, `memory-inject.py:38`).
- */
+/** The real `Clock`, reading the system clock in **local** time, not UTC. */
 export function makeClockRealAdapter(): Clock {
   return {
     nowMs: () => Date.now(),
