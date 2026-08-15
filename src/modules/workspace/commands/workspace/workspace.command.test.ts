@@ -6,6 +6,13 @@ import { expandPath } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { SqliteAdapter } from "@/gateways/index.ts";
 import type { Sqlite } from "@/gateways/index.ts";
+import { WorkspaceCommand } from "@/modules/workspace/commands/workspace/workspace.command.ts";
+import { WorkspaceFormatter } from "@/modules/workspace/commands/workspace/workspace.formatter.ts";
+import { RegistryTomlSerializer } from "@/modules/workspace/serializers/registryToml/registryToml.serializer.ts";
+import { RegistryService } from "@/modules/workspace/services/registry/registry.service.ts";
+import { WorkspaceResolverService } from "@/modules/workspace/services/resolver/resolver.service.ts";
+import { TargetResolutionService } from "@/modules/workspace/targetResolution/targetResolution.service.ts";
+import type { WorkspaceIndexBuilder } from "@/modules/workspace/workspace.typedefs.ts";
 import {
   IndexBuildService,
   IndexConnectionService,
@@ -14,13 +21,6 @@ import {
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import { WorkspaceCommand } from "@/workspace/commands/workspace/workspace.command.ts";
-import { WorkspaceFormatter } from "@/workspace/commands/workspace/workspace.formatter.ts";
-import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
-import { RegistryService } from "@/workspace/services/registry/registry.service.ts";
-import { WorkspaceResolverService } from "@/workspace/services/resolver/resolver.service.ts";
-import { TargetResolutionService } from "@/workspace/targetResolution/targetResolution.service.ts";
-import type { WorkspaceIndexBuilder } from "@/workspace/workspace.typedefs.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;

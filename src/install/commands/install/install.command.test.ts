@@ -7,10 +7,10 @@ import {
   InstallCommand,
   UninstallCommand,
 } from "@/install/commands/install/install.command.ts";
+import { defaultRegistryPath } from "@/modules/workspace/index.ts";
 import type { ProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import { defaultRegistryPath } from "@/workspace/index.ts";
 
 /**
  * `InstallCommand`/`UninstallCommand`

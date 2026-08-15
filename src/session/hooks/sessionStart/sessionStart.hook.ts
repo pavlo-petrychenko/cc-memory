@@ -1,5 +1,6 @@
 import type { Gateways } from "@/gateways/index.ts";
 import type { KbMapFormatter, KbMapService } from "@/knowledge/index.ts";
+import { worktreeSlug } from "@/modules/workspace/index.ts";
 import type { IndexBuildService } from "@/retrieval/index.ts";
 import { CONTEXT_SEPARATOR } from "@/session/hooks/sessionStart/sessionStart.constants.ts";
 import type { SessionStartPayload } from "@/session/payload/payload.typedefs.ts";
@@ -7,7 +8,6 @@ import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.
 import { HookEvent, HookResultKind } from "@/session/session.typedefs.ts";
 import type { HookResult } from "@/session/session.typedefs.ts";
 import type { WorkingMemoryFormatter, WorklogStoreService } from "@/worklog/index.ts";
-import { worktreeSlug } from "@/workspace/index.ts";
 
 /** `SessionStart`: run a fast incremental reindex, then inject the KB map + this
  * worktree's working memory, joined by a horizontal rule. Emits nothing when both

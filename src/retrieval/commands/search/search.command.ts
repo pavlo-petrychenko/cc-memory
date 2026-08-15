@@ -2,17 +2,17 @@ import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome, Config } from "@/core/index.ts";
 import { expandPath, relativeTo } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import { NO_HITS_MESSAGE } from "@/retrieval/commands/search/search.constants.ts";
-import { SearchFormatter } from "@/retrieval/commands/search/search.formatter.ts";
-import type { SearchArgs } from "@/retrieval/commands/search/search.typedefs.ts";
-import { SearchKind } from "@/retrieval/retrieval.typedefs.ts";
-import { SearchService } from "@/retrieval/store/search/search.service.ts";
 import {
   RegistryService,
   RegistryTomlSerializer,
   TargetResolutionService,
   WorkspaceResolverService,
-} from "@/workspace/index.ts";
+} from "@/modules/workspace/index.ts";
+import { NO_HITS_MESSAGE } from "@/retrieval/commands/search/search.constants.ts";
+import { SearchFormatter } from "@/retrieval/commands/search/search.formatter.ts";
+import type { SearchArgs } from "@/retrieval/commands/search/search.typedefs.ts";
+import { SearchKind } from "@/retrieval/retrieval.typedefs.ts";
+import { SearchService } from "@/retrieval/store/search/search.service.ts";
 
 export class SearchCommand {
   constructor(

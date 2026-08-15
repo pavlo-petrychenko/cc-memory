@@ -4,6 +4,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { WorklogFloorHook } from "@/session/hooks/worklogFloor/worklogFloor.hook.ts";
 import { PayloadParser } from "@/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts";
@@ -13,7 +14,6 @@ import { type GitFake, makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { WorklogFloorFormatter, WorklogStoreService } from "@/worklog/index.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 /**
  * `SessionEnd`: a deterministic, write-only git/command skeleton appended to

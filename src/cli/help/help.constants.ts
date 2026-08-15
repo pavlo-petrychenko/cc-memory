@@ -18,17 +18,17 @@ import {
   INSTALL_DESCRIPTOR,
   UNINSTALL_DESCRIPTOR,
 } from "@/install/commands/install/install.constants.ts";
+import { RESOLVE_DESCRIPTOR } from "@/modules/workspace/commands/resolve/resolve.constants.ts";
+import {
+  WORKSPACE_ADD_DESCRIPTOR,
+  WORKSPACE_LS_DESCRIPTOR,
+  WORKSPACE_RM_DESCRIPTOR,
+} from "@/modules/workspace/commands/workspace/workspace.constants.ts";
 import { NOTES_DESCRIPTOR } from "@/retrieval/commands/notes/notes.constants.ts";
 import { REINDEX_DESCRIPTOR } from "@/retrieval/commands/reindex/reindex.constants.ts";
 import { SEARCH_DESCRIPTOR } from "@/retrieval/commands/search/search.constants.ts";
 import { HOOK_DESCRIPTOR } from "@/session/commands/hookDispatch/hookDispatch.constants.ts";
 import { COMMIT_DESCRIPTOR } from "@/worklog/commands/commit/commit.constants.ts";
-import { RESOLVE_DESCRIPTOR } from "@/workspace/commands/resolve/resolve.constants.ts";
-import {
-  WORKSPACE_ADD_DESCRIPTOR,
-  WORKSPACE_LS_DESCRIPTOR,
-  WORKSPACE_RM_DESCRIPTOR,
-} from "@/workspace/commands/workspace/workspace.constants.ts";
 
 export const USAGE_HEADER = "memory — per-workspace memory for Claude Code";
 export const USAGE_SECTION_HEADING = "Usage:";

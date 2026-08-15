@@ -3,9 +3,9 @@ import type { Result } from "@/core/index.ts";
 import type { RawWorkspace, Workspace } from "@/core/index.ts";
 import { cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
-import type { RegistryService } from "@/workspace/services/registry/registry.service.ts";
-import type { WorkspaceResolverService } from "@/workspace/services/resolver/resolver.service.ts";
-import { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/workspace/targetResolution/targetResolution.constants.ts";
+import type { RegistryService } from "@/modules/workspace/services/registry/registry.service.ts";
+import type { WorkspaceResolverService } from "@/modules/workspace/services/resolver/resolver.service.ts";
+import { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/modules/workspace/targetResolution/targetResolution.constants.ts";
 
 export function noSuchWorkspaceMessage(id: string): string {
   return `no such workspace: ${id}`;

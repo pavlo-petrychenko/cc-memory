@@ -1,11 +1,11 @@
 import type { Gateways } from "@/gateways/index.ts";
+import { worktreeSlug } from "@/modules/workspace/index.ts";
 import type { CompactCheckpointFormatter } from "@/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";
 import type { CompactCheckpointPayload } from "@/session/payload/payload.typedefs.ts";
 import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.ts";
 import { HookResultKind } from "@/session/session.typedefs.ts";
 import type { HookResult } from "@/session/session.typedefs.ts";
 import type { WorklogStoreService } from "@/worklog/index.ts";
-import { worktreeSlug } from "@/workspace/index.ts";
 
 /** `PostCompact`: persists the compaction summary into today's worklog journal, so
  * distilled context survives the reset. Write-only. */

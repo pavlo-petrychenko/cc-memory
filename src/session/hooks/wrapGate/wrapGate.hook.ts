@@ -1,6 +1,7 @@
 import type { AbsPath, Config } from "@/core/index.ts";
 import { joinAbs, parentDir } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
+import { worktreeSlug } from "@/modules/workspace/index.ts";
 import {
   DEFAULT_SESSION_ID,
   HEAD_LENGTH,
@@ -20,7 +21,6 @@ import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.
 import { HookEvent, HookResultKind } from "@/session/session.typedefs.ts";
 import type { HookResult } from "@/session/session.typedefs.ts";
 import type { WorklogStoreService } from "@/worklog/index.ts";
-import { worktreeSlug } from "@/workspace/index.ts";
 
 /** `Stop`: the wrap-gate. Nudges (non-blocking) on the first stop(s) with
  * uncommitted work, escalating to a hard block only after repeated stops with

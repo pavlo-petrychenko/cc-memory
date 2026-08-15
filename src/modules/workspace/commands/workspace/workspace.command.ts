@@ -20,16 +20,16 @@ import {
   HOME_NOTE_HEADER_PREFIX,
   HOME_NOTE_HEADER_SUFFIX,
   NO_WORKSPACES_MESSAGE,
-} from "@/workspace/commands/workspace/workspace.constants.ts";
-import { WorkspaceFormatter } from "@/workspace/commands/workspace/workspace.formatter.ts";
+} from "@/modules/workspace/commands/workspace/workspace.constants.ts";
+import { WorkspaceFormatter } from "@/modules/workspace/commands/workspace/workspace.formatter.ts";
 import type {
   WorkspaceAddArgs,
   WorkspaceLsRow,
   WorkspaceRmArgs,
-} from "@/workspace/commands/workspace/workspace.typedefs.ts";
-import { RegistryService } from "@/workspace/services/registry/registry.service.ts";
-import { TargetResolutionService } from "@/workspace/targetResolution/targetResolution.service.ts";
-import type { WorkspaceIndexBuilder } from "@/workspace/workspace.typedefs.ts";
+} from "@/modules/workspace/commands/workspace/workspace.typedefs.ts";
+import { RegistryService } from "@/modules/workspace/services/registry/registry.service.ts";
+import { TargetResolutionService } from "@/modules/workspace/targetResolution/targetResolution.service.ts";
+import type { WorkspaceIndexBuilder } from "@/modules/workspace/workspace.typedefs.ts";
 
 function homeNoteContent(title: string, id: string): string {
   return (

@@ -7,6 +7,11 @@ import type { Config } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import {
+  expandWorkspace,
+  RegistryService,
+  RegistryTomlSerializer,
+} from "@/modules/workspace/index.ts";
+import {
   FtsQueryBuilder,
   IndexBuildService,
   IndexConnectionService,
@@ -24,11 +29,6 @@ import { HookRuntimeService } from "@/session/runtime/runtime.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import {
-  expandWorkspace,
-  RegistryService,
-  RegistryTomlSerializer,
-} from "@/workspace/index.ts";
 
 /**
  * `UserPromptSubmit`: gates in order (prompt length, salient-token count,

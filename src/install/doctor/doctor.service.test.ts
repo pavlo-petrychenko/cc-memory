@@ -6,6 +6,7 @@ import { DoctorService } from "@/install/doctor/doctor.service.ts";
 import { WorkspaceIndexStatus } from "@/install/doctor/doctor.typedefs.ts";
 import { ManifestService } from "@/install/steps/manifest/manifest.service.ts";
 import { SettingsService } from "@/install/steps/settings/settings.service.ts";
+import { RegistryErrorKind } from "@/modules/workspace/index.ts";
 import {
   IndexBuildService,
   IndexConnectionService,
@@ -13,7 +14,6 @@ import {
 } from "@/retrieval/index.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import { RegistryErrorKind } from "@/workspace/index.ts";
 
 function makeIndexBuildService(): IndexBuildService {
   return new IndexBuildService(new IndexConnectionService(new SchemaService()));

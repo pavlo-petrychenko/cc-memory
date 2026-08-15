@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { PayloadParser } from "@/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts";
 import { HookRuntimeService } from "@/session/runtime/runtime.service.ts";
@@ -13,7 +14,6 @@ import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeLoggerFake } from "@/testing/fakes/loggerCollect.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 /**
  * `HookRuntimeService.run`'s own shared preamble/postamble — the piece

@@ -4,17 +4,17 @@ import type {
   InstallArgs,
   UninstallArgs,
 } from "@/install/commands/install/install.typedefs.ts";
+import type { ResolveArgs } from "@/modules/workspace/commands/resolve/resolve.typedefs.ts";
+import type {
+  WorkspaceAddArgs,
+  WorkspaceLsArgs,
+  WorkspaceRmArgs,
+} from "@/modules/workspace/commands/workspace/workspace.typedefs.ts";
 import type { NotesArgs } from "@/retrieval/commands/notes/notes.typedefs.ts";
 import type { ReindexArgs } from "@/retrieval/commands/reindex/reindex.typedefs.ts";
 import type { SearchArgs } from "@/retrieval/commands/search/search.typedefs.ts";
 import type { HookArgs } from "@/session/commands/hookDispatch/hookDispatch.typedefs.ts";
 import type { CommitArgs } from "@/worklog/commands/commit/commit.typedefs.ts";
-import type { ResolveArgs } from "@/workspace/commands/resolve/resolve.typedefs.ts";
-import type {
-  WorkspaceAddArgs,
-  WorkspaceLsArgs,
-  WorkspaceRmArgs,
-} from "@/workspace/commands/workspace/workspace.typedefs.ts";
 
 export { CliCommand };
 

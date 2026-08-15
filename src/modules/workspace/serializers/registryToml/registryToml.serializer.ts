@@ -1,5 +1,5 @@
 import type { RawWorkspace } from "@/core/index.ts";
-import { REGISTRY_HEADER } from "@/workspace/serializers/registryToml/registryToml.constants.ts";
+import { REGISTRY_HEADER } from "@/modules/workspace/serializers/registryToml/registryToml.constants.ts";
 
 /** Escapes backslashes then double quotes, nothing else — a control character in
  * a path would produce invalid TOML, but paths never contain one in practice. */

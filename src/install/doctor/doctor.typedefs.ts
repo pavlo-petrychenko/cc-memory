@@ -1,5 +1,5 @@
 import type { AbsPath } from "@/core/index.ts";
-import type { RegistryError } from "@/workspace/index.ts";
+import type { RegistryError } from "@/modules/workspace/index.ts";
 
 export enum WorkspaceIndexStatus {
   Ok = "ok",

@@ -17,6 +17,17 @@ import {
   UninstallCommand,
 } from "@/install/index.ts";
 import {
+  RegistryService,
+  RegistryTomlSerializer,
+  ResolveCommand,
+  ResolveFormatter,
+  TargetResolutionService,
+  WorkspaceCommand,
+  WorkspaceFormatter,
+  WorkspaceResolverService,
+} from "@/modules/workspace/index.ts";
+import type { WorkspaceIndexBuilder } from "@/modules/workspace/index.ts";
+import {
   FtsQueryBuilder,
   IndexBuildService,
   IndexConnectionService,
@@ -35,17 +46,6 @@ import {
 } from "@/retrieval/index.ts";
 import { HookDispatchCommand } from "@/session/index.ts";
 import { CommitCommand, CommitFormatter } from "@/worklog/index.ts";
-import {
-  RegistryService,
-  RegistryTomlSerializer,
-  ResolveCommand,
-  ResolveFormatter,
-  TargetResolutionService,
-  WorkspaceCommand,
-  WorkspaceFormatter,
-  WorkspaceResolverService,
-} from "@/workspace/index.ts";
-import type { WorkspaceIndexBuilder } from "@/workspace/index.ts";
 
 /** The composition root: no command constructs its own dependencies, each is wired
  * here from the real `Gateways`. */

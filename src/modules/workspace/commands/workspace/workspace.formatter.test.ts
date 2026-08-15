@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { NO_WORKSPACES_MESSAGE } from "@/workspace/commands/workspace/workspace.constants.ts";
-import { WorkspaceFormatter } from "@/workspace/commands/workspace/workspace.formatter.ts";
+import { NO_WORKSPACES_MESSAGE } from "@/modules/workspace/commands/workspace/workspace.constants.ts";
+import { WorkspaceFormatter } from "@/modules/workspace/commands/workspace/workspace.formatter.ts";
 
 /**
  * Exact-output assertions. These strings are the CLI's contract: the skills parse

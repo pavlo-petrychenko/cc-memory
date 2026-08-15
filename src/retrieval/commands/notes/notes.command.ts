@@ -2,15 +2,15 @@ import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import { NotesFormatter } from "@/retrieval/commands/notes/notes.formatter.ts";
-import type { NotesArgs } from "@/retrieval/commands/notes/notes.typedefs.ts";
-import { NoteListService } from "@/retrieval/store/noteList/noteList.service.ts";
 import {
   RegistryService,
   RegistryTomlSerializer,
   TargetResolutionService,
   WorkspaceResolverService,
-} from "@/workspace/index.ts";
+} from "@/modules/workspace/index.ts";
+import { NotesFormatter } from "@/retrieval/commands/notes/notes.formatter.ts";
+import type { NotesArgs } from "@/retrieval/commands/notes/notes.typedefs.ts";
+import { NoteListService } from "@/retrieval/store/noteList/noteList.service.ts";
 
 /** An explicit empty `--folder ""` behaves like omitting the flag entirely. */
 function normalizedFolder(folder: string | null): string | null {

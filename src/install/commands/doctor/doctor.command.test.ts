@@ -8,6 +8,7 @@ import type { Gateways } from "@/gateways/index.ts";
 import { DoctorCommand } from "@/install/commands/doctor/doctor.command.ts";
 import { DoctorFormatter } from "@/install/doctor/doctor.formatter.ts";
 import { DoctorService } from "@/install/doctor/doctor.service.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import {
   IndexBuildService,
   IndexConnectionService,
@@ -15,7 +16,6 @@ import {
 } from "@/retrieval/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 // SAFETY: a fixed test fixture, matching tests/helpers/container.ts's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;

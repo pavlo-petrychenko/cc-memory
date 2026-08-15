@@ -6,6 +6,7 @@ import { expandPath } from "@/core/index.ts";
 import type { Config } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { WrapGateFormatter } from "@/session/hooks/wrapGate/wrapGate.formatter.ts";
 import { WrapGateHook } from "@/session/hooks/wrapGate/wrapGate.hook.ts";
 import { PayloadParser } from "@/session/payload/payload.parser.ts";
@@ -17,7 +18,6 @@ import { type GitFake, makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { WorklogStoreService } from "@/worklog/index.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 /**
  * `Stop`: the dirty-tree signature, the nudge->block escalation, and one

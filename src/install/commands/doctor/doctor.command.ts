@@ -12,7 +12,7 @@ import {
   RegistryTomlSerializer,
   TargetResolutionService,
   WorkspaceResolverService,
-} from "@/workspace/index.ts";
+} from "@/modules/workspace/index.ts";
 
 /** `memory doctor`'s CLI surface. The first two printed lines — registry status,
  * cwd resolution — must stay byte-identical across changes; tests anchor on them. */

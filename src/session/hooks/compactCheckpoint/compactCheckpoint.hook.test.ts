@@ -4,6 +4,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { CompactCheckpointFormatter } from "@/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";
 import { CompactCheckpointHook } from "@/session/hooks/compactCheckpoint/compactCheckpoint.hook.ts";
 import { PayloadParser } from "@/session/payload/payload.parser.ts";
@@ -13,7 +14,6 @@ import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { WorklogStoreService } from "@/worklog/index.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 /**
  * `PostCompact`: persist the compaction summary into today's dated journal —

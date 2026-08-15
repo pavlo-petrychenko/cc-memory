@@ -1,11 +1,11 @@
 import type { Gateways } from "@/gateways/index.ts";
+import { worktreeSlug } from "@/modules/workspace/index.ts";
 import { RECENT_COMMIT_COUNT } from "@/session/hooks/worklogFloor/worklogFloor.constants.ts";
 import type { WorklogFloorPayload } from "@/session/payload/payload.typedefs.ts";
 import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.ts";
 import { HookResultKind } from "@/session/session.typedefs.ts";
 import type { HookResult } from "@/session/session.typedefs.ts";
 import type { WorklogFloorFormatter, WorklogStoreService } from "@/worklog/index.ts";
-import { worktreeSlug } from "@/workspace/index.ts";
 
 function lastLineTrimmed(text: string): string {
   const lines = text.split(/\r\n|\r|\n/);

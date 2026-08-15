@@ -5,14 +5,14 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
+import { ResolveCommand } from "@/modules/workspace/commands/resolve/resolve.command.ts";
+import { ResolveFormatter } from "@/modules/workspace/commands/resolve/resolve.formatter.ts";
+import { RegistryTomlSerializer } from "@/modules/workspace/serializers/registryToml/registryToml.serializer.ts";
+import { RegistryService } from "@/modules/workspace/services/registry/registry.service.ts";
+import { WorkspaceResolverService } from "@/modules/workspace/services/resolver/resolver.service.ts";
+import { TargetResolutionService } from "@/modules/workspace/targetResolution/targetResolution.service.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import { ResolveCommand } from "@/workspace/commands/resolve/resolve.command.ts";
-import { ResolveFormatter } from "@/workspace/commands/resolve/resolve.formatter.ts";
-import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
-import { RegistryService } from "@/workspace/services/registry/registry.service.ts";
-import { WorkspaceResolverService } from "@/workspace/services/resolver/resolver.service.ts";
-import { TargetResolutionService } from "@/workspace/targetResolution/targetResolution.service.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;

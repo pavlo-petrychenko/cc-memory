@@ -6,13 +6,13 @@ import { absPath, expandPath, isUnder, parentDir, registryPath } from "@/core/in
 import type { Result } from "@/core/index.ts";
 import type { RawWorkspace, Workspace } from "@/core/index.ts";
 import type { FileSystem } from "@/gateways/index.ts";
-import type { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
+import type { RegistryTomlSerializer } from "@/modules/workspace/serializers/registryToml/registryToml.serializer.ts";
 import {
   type RegistryConflict,
   RegistryConflictKind,
   type RegistryError,
   RegistryErrorKind,
-} from "@/workspace/workspace.typedefs.ts";
+} from "@/modules/workspace/workspace.typedefs.ts";
 
 export function defaultRegistryPath(home: AbsPath): AbsPath {
   return registryPath(home);

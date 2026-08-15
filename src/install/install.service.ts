@@ -36,7 +36,7 @@ import {
   type JsonObject,
   type JsonValue,
 } from "@/install/utils/jsonFile/jsonFile.typedefs.ts";
-import { defaultRegistryPath } from "@/workspace/index.ts";
+import { defaultRegistryPath } from "@/modules/workspace/index.ts";
 
 /** `install`/`uninstall`/`--dry-run` orchestration: sequences CLI shim, skills,
  * hooks, and registry seed, in that order. */

@@ -3,11 +3,11 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace, Workspace } from "@/core/index.ts";
+import { RegistryTomlSerializer } from "@/modules/workspace/serializers/registryToml/registryToml.serializer.ts";
+import { RegistryService } from "@/modules/workspace/services/registry/registry.service.ts";
+import { WorkspaceResolverService } from "@/modules/workspace/services/resolver/resolver.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
-import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
-import { RegistryService } from "@/workspace/services/registry/registry.service.ts";
-import { WorkspaceResolverService } from "@/workspace/services/resolver/resolver.service.ts";
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup. Every
 // absolute-path literal in this file is a hand-written, already-absolute,

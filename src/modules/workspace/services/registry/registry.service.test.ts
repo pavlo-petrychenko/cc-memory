@@ -3,13 +3,13 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
-import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
-import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
-import { RegistryService } from "@/workspace/services/registry/registry.service.ts";
+import { RegistryTomlSerializer } from "@/modules/workspace/serializers/registryToml/registryToml.serializer.ts";
+import { RegistryService } from "@/modules/workspace/services/registry/registry.service.ts";
 import {
   RegistryConflictKind,
   RegistryErrorKind,
-} from "@/workspace/workspace.typedefs.ts";
+} from "@/modules/workspace/workspace.typedefs.ts";
+import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup.
 const HOME = "/home/test" as AbsPath;
@@ -391,7 +391,7 @@ describe("RegistryService.validateNew", () => {
 describe("registry.toml round-trip", () => {
   test("parse -> serialize -> parse is byte-identical and structurally identical", async () => {
     const fixturePath = new URL(
-      "../../../testing/fixtures/registry.toml",
+      "../../../../testing/fixtures/registry.toml",
       import.meta.url,
     ).pathname;
     const originalText = await Bun.file(fixturePath).text();

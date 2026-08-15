@@ -5,6 +5,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { ReindexCommand } from "@/retrieval/commands/reindex/reindex.command.ts";
 import { ReindexFormatter } from "@/retrieval/commands/reindex/reindex.formatter.ts";
 import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
@@ -13,7 +14,6 @@ import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;

@@ -3,13 +3,13 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
+import { RegistryTomlSerializer } from "@/modules/workspace/serializers/registryToml/registryToml.serializer.ts";
+import { RegistryService } from "@/modules/workspace/services/registry/registry.service.ts";
+import { WorkspaceResolverService } from "@/modules/workspace/services/resolver/resolver.service.ts";
+import { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/modules/workspace/targetResolution/targetResolution.constants.ts";
+import { TargetResolutionService } from "@/modules/workspace/targetResolution/targetResolution.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
-import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
-import { RegistryService } from "@/workspace/services/registry/registry.service.ts";
-import { WorkspaceResolverService } from "@/workspace/services/resolver/resolver.service.ts";
-import { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/workspace/targetResolution/targetResolution.constants.ts";
-import { TargetResolutionService } from "@/workspace/targetResolution/targetResolution.service.ts";
 
 // SAFETY: a fixed test fixture, same pattern as the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;

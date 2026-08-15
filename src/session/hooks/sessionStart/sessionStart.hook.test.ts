@@ -5,6 +5,7 @@ import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { KbMapFormatter, KbMapService, NoteParser } from "@/knowledge/index.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import {
   IndexBuildService,
   IndexConnectionService,
@@ -18,7 +19,6 @@ import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { WorkingMemoryFormatter, WorklogStoreService } from "@/worklog/index.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 /**
  * `SessionStart`: happy path (exact stdout string), cwd outside any

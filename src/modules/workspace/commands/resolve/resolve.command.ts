@@ -2,10 +2,10 @@ import { CLI_SUCCESS } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Env, Stdio } from "@/gateways/index.ts";
-import { ResolveFormatter } from "@/workspace/commands/resolve/resolve.formatter.ts";
-import type { ResolveArgs } from "@/workspace/commands/resolve/resolve.typedefs.ts";
-import { WorkspaceResolverService } from "@/workspace/services/resolver/resolver.service.ts";
-import { TargetResolutionService } from "@/workspace/targetResolution/targetResolution.service.ts";
+import { ResolveFormatter } from "@/modules/workspace/commands/resolve/resolve.formatter.ts";
+import type { ResolveArgs } from "@/modules/workspace/commands/resolve/resolve.typedefs.ts";
+import { WorkspaceResolverService } from "@/modules/workspace/services/resolver/resolver.service.ts";
+import { TargetResolutionService } from "@/modules/workspace/targetResolution/targetResolution.service.ts";
 
 /** No match here returns success (exit 0) with a message, unlike `search`/`notes`,
  * whose `--workspace`-less cwd miss exits 1. */

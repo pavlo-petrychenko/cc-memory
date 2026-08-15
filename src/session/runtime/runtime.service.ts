@@ -2,18 +2,18 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import type { PayloadParser } from "@/session/payload/payload.parser.ts";
-import type { JsonRecord } from "@/session/payload/payload.typedefs.ts";
-import type { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts";
-import type { HookHandler } from "@/session/runtime/runtime.typedefs.ts";
-import { type HookResult, HookResultKind } from "@/session/session.typedefs.ts";
 import {
   defaultRegistryPath,
   loadRegistry,
   RegistryService,
   RegistryTomlSerializer,
   WorkspaceResolverService,
-} from "@/workspace/index.ts";
+} from "@/modules/workspace/index.ts";
+import type { PayloadParser } from "@/session/payload/payload.parser.ts";
+import type { JsonRecord } from "@/session/payload/payload.typedefs.ts";
+import type { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts";
+import type { HookHandler } from "@/session/runtime/runtime.typedefs.ts";
+import { type HookResult, HookResultKind } from "@/session/session.typedefs.ts";
 
 /** The shared preamble/postamble every hook needs: resolve exactly one workspace
  * for the cwd or go silent, run the handler, and — no matter what happens — exit 0,

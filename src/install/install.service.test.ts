@@ -8,10 +8,10 @@ import { ManifestService } from "@/install/steps/manifest/manifest.service.ts";
 import { SettingsService } from "@/install/steps/settings/settings.service.ts";
 import { ShimService } from "@/install/steps/shim/shim.service.ts";
 import { SkillsService } from "@/install/steps/skills/skills.service.ts";
+import { defaultRegistryPath } from "@/modules/workspace/index.ts";
 import { HookEvent } from "@/session/index.ts";
 import { makeProcFake, type ProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import { defaultRegistryPath } from "@/workspace/index.ts";
 
 /**
  * `InstallService`'s `install`/`uninstall` orchestration — every scenario

@@ -1,15 +1,15 @@
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import { ReindexFormatter } from "@/retrieval/commands/reindex/reindex.formatter.ts";
-import type { ReindexArgs } from "@/retrieval/commands/reindex/reindex.typedefs.ts";
-import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
 import {
   RegistryService,
   RegistryTomlSerializer,
   TargetResolutionService,
   WorkspaceResolverService,
-} from "@/workspace/index.ts";
+} from "@/modules/workspace/index.ts";
+import { ReindexFormatter } from "@/retrieval/commands/reindex/reindex.formatter.ts";
+import type { ReindexArgs } from "@/retrieval/commands/reindex/reindex.typedefs.ts";
+import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
 
 export class ReindexCommand {
   constructor(

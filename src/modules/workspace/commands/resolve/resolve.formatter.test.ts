@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { ResolveFormatter } from "@/workspace/commands/resolve/resolve.formatter.ts";
+import { ResolveFormatter } from "@/modules/workspace/commands/resolve/resolve.formatter.ts";
 
 /**
  * Exact-output assertions: the `memory resolve` block is parsed by the remember,

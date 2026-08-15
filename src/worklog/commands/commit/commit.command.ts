@@ -3,17 +3,17 @@ import type { AbsPath, CliOutcome } from "@/core/index.ts";
 import { joinAbs } from "@/core/index.ts";
 import type { Env, FileSystem, Git, Proc, Stdio } from "@/gateways/index.ts";
 import {
+  RegistryService,
+  RegistryTomlSerializer,
+  TargetResolutionService,
+  WorkspaceResolverService,
+} from "@/modules/workspace/index.ts";
+import {
   DEFAULT_COMMIT_MESSAGE,
   GIT_TIMEOUT_MS,
 } from "@/worklog/commands/commit/commit.constants.ts";
 import { CommitFormatter } from "@/worklog/commands/commit/commit.formatter.ts";
 import type { CommitArgs } from "@/worklog/commands/commit/commit.typedefs.ts";
-import {
-  RegistryService,
-  RegistryTomlSerializer,
-  TargetResolutionService,
-  WorkspaceResolverService,
-} from "@/workspace/index.ts";
 
 /** Manual, local-only snapshot; never pushes. Stages the whole kb repo via
  * `git add -A`, straight through `Proc` rather than `Git.add`/`Git.commit`. */

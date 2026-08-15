@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { parse } from "smol-toml";
 
-import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
+import { RegistryTomlSerializer } from "@/modules/workspace/serializers/registryToml/registryToml.serializer.ts";
 
 const serializer = new RegistryTomlSerializer();
 
