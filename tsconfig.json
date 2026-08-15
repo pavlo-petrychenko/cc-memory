@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["esnext"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "types": ["bun"],
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+
+    // Absolute imports everywhere in src/: `@/session/session.typedefs.ts`, never
+    // `../../../session/...`. A file's imports then read the same wherever it sits,
+    // and moving a file no longer rewrites its import block.
+    // TypeScript 7 removed `baseUrl`; `paths` now resolves relative to this file.
+    "paths": { "@/*": ["./src/*"] },
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts", "tools/**/*.ts", "oxlint.config.ts"],
+  // Vendored third-party lint rules; they are typechecked upstream and do not satisfy
+  // our stricter flags. oxlint loads them directly at runtime via Bun.
+  "exclude": ["tools/oxlint/anti-slop/**"]
+}

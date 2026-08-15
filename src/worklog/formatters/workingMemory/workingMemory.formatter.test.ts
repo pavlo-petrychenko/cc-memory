@@ -1,0 +1,33 @@
+import { describe, expect, test } from "bun:test";
+
+import { WorkingMemoryFormatter } from "@/worklog/formatters/workingMemory/workingMemory.formatter.ts";
+
+describe("WorkingMemoryFormatter.format", () => {
+  test("with state: trims it and appends the wrap reminder", () => {
+    const formatter = new WorkingMemoryFormatter();
+    const rendered = formatter.format({
+      workspaceId: "homeserver",
+      slug: "cc-memory",
+      state: "\n## Current focus\nporting rank.ts\n\n",
+    });
+    expect(rendered).toBe(
+      "# Working memory — workspace `homeserver`, worktree `cc-memory`\n\n" +
+        "## Current focus\nporting rank.ts\n\n" +
+        "_(Update this at wrap with the `remember` skill.)_",
+    );
+  });
+
+  test("without state: the 'start one' variant", () => {
+    const formatter = new WorkingMemoryFormatter();
+    const rendered = formatter.format({
+      workspaceId: "homeserver",
+      slug: "cc-memory",
+      state: null,
+    });
+    expect(rendered).toBe(
+      "# Working memory — workspace `homeserver`, worktree `cc-memory`\n\n" +
+        "_No working memory yet for this worktree._ Start one with the `remember` " +
+        "skill (it writes `STATE.md` + a dated journal entry).",
+    );
+  });
+});

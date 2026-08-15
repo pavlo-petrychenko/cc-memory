@@ -1,0 +1,5 @@
+workspace: primary
+slug:      wt1
+kb:        <TMP>/vault-primary
+worklogs:  <TMP>/vault-primary/_Worklogs
+index_db:  <TMP>/.claude/memory/primary/index.db

@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 90,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": true,
+  "singleQuote": false,
+  "quoteProps": "as-needed",
+  "trailingComma": "all",
+  "arrowParens": "always",
+  "bracketSpacing": true,
+  "objectWrap": "preserve",
+  "endOfLine": "lf",
+  "insertFinalNewline": true,
+  "proseWrap": "preserve",
+  "sortImports": true,
+  "sortPackageJson": true,
+  "ignorePatterns": [
+    "dist/**",
+    "tools/oxlint/anti-slop/**",
+    "**/*.md",
+    "**/*.toml",
+    "src/skills/**"
+  ]
+}

@@ -1,0 +1,113 @@
+import { afterEach, describe, expect, test } from "bun:test";
+import { join } from "node:path";
+
+import type { AbsPath } from "@/core/index.ts";
+import { expandPath } from "@/core/index.ts";
+import type { Workspace } from "@/core/index.ts";
+import { FileSystemAdapter } from "@/platform/index.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
+import { SCHEMA_VERSION } from "@/retrieval/store/schema/index.ts";
+import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
+import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { createTempDir, type TempDir } from "@/testing/utils/tempDir.utils.ts";
+
+// SAFETY: fixed test fixture, mirrors the test container fixture's DEFAULT_HOME.
+const HOME = "/home/test" as AbsPath;
+// SAFETY: bun:sqlite's own in-memory-database identifier — an opaque key into
+// Container.openDatabase's per-path memoization, not a real filesystem path.
+const IN_MEMORY_DB = ":memory:" as AbsPath;
+
+const connectionService = new IndexConnectionService();
+
+function makeWorkspace(indexDb: AbsPath): Workspace {
+  const kb = expandPath("/home/test/kb", HOME);
+  const worklogs = expandPath("/home/test/kb/_Worklogs", HOME);
+  return {
+    id: "test",
+    match: [kb],
+    kb,
+    worklogs,
+    exclude: [],
+    indexDb,
+    matchedPrefix: kb,
+  };
+}
+
+describe("index/db IndexConnectionService.open — schema-version / shared-handle behavior", () => {
+  test("a fresh database gets SCHEMA_VERSION stamped via the initial full rebuild", async () => {
+    const container = makeTestContainer({ fs: makeFsMemoryFake() });
+    const workspace = makeWorkspace(IN_MEMORY_DB);
+
+    const { db, forcedFullRebuild } = await connectionService.open(container, workspace);
+
+    expect(forcedFullRebuild).toBe(true); // PRAGMA user_version starts at 0 < SCHEMA_VERSION
+    expect(db.getUserVersion()).toBe(SCHEMA_VERSION);
+  });
+
+  test("a database already at SCHEMA_VERSION does not force a rebuild on the next open", async () => {
+    const container = makeTestContainer({ fs: makeFsMemoryFake() });
+    const workspace = makeWorkspace(IN_MEMORY_DB);
+
+    await connectionService.open(container, workspace);
+    const second = await connectionService.open(container, workspace);
+
+    expect(second.forcedFullRebuild).toBe(false);
+  });
+
+  test("a stored version below SCHEMA_VERSION forces a full rebuild, wiping existing rows", async () => {
+    const container = makeTestContainer({ fs: makeFsMemoryFake() });
+    const workspace = makeWorkspace(IN_MEMORY_DB);
+
+    const first = await connectionService.open(container, workspace);
+    first.db.run(
+      "INSERT INTO notes(path,title,type,importance,mtime) VALUES(?,?,?,?,?)",
+      ["a.md", "A", "note", null, 1],
+    );
+    // Simulate a schema/tokenizer bump: the stored version is now behind
+    // SCHEMA_VERSION again.
+    first.db.setUserVersion(SCHEMA_VERSION - 1);
+
+    const second = await connectionService.open(container, workspace);
+
+    expect(second.forcedFullRebuild).toBe(true);
+    expect(second.db.getUserVersion()).toBe(SCHEMA_VERSION);
+    expect(second.db.query("SELECT * FROM notes", [])).toEqual([]);
+  });
+
+  test("repeated opens of the same path share one SqlDatabase handle", async () => {
+    const container = makeTestContainer({ fs: makeFsMemoryFake() });
+    const workspace = makeWorkspace(IN_MEMORY_DB);
+
+    const first = await connectionService.open(container, workspace);
+    first.db.run(
+      "INSERT INTO notes(path,title,type,importance,mtime) VALUES(?,?,?,?,?)",
+      ["a.md", "A", "note", null, 1],
+    );
+    const second = await connectionService.open(container, workspace);
+
+    expect(second.db.query("SELECT path FROM notes", [])).toEqual([{ path: "a.md" }]);
+  });
+});
+
+describe("index/db IndexConnectionService.open — real filesystem", () => {
+  let tempDir: TempDir | null = null;
+
+  afterEach(() => {
+    tempDir?.remove();
+    tempDir = null;
+  });
+
+  test("creates the index_db's parent directory before opening it", async () => {
+    tempDir = createTempDir("ccmem-index-db");
+    // SAFETY: `createTempDir` always returns an absolute, resolved path.
+    const root = tempDir.path as AbsPath;
+    const indexDbPath = expandPath(join(root, "nested", "idx", "index.db"), HOME);
+    const container = makeTestContainer({ fs: new FileSystemAdapter() });
+    const workspace = makeWorkspace(indexDbPath);
+
+    const { db } = await connectionService.open(container, workspace);
+
+    expect(db.getUserVersion()).toBe(SCHEMA_VERSION);
+    db.close();
+  });
+});
