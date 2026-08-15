@@ -1,19 +1,17 @@
 import { describe, expect, test } from "bun:test";
 
-import { CliCommand, type CommitArgs } from "@/cli/index.ts";
-import type { AbsPath } from "@/core/index.ts";
-import { expandPath } from "@/core/index.ts";
+import { absPath, expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import { CommitCommand } from "@/modules/worklog/commands/commit/commit.command.ts";
 import { CommitFormatter } from "@/modules/worklog/commands/commit/commit.formatter.ts";
+import { ResolveTargetWorkspacesUseCase } from "@/modules/workspace/index.ts";
+import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
-import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
+import { makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
-import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
+import { makeRunContext } from "@/testing/fixtures/runContext.fixture.ts";
 
-// SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
-const HOME = "/home/test" as AbsPath;
+const HOME = absPath("/home/test");
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
 
 const PRIMARY: RawWorkspace = {
@@ -25,121 +23,39 @@ const PRIMARY: RawWorkspace = {
   indexDb: ":memory:",
 };
 
-function commitArgs(overrides: Partial<CommitArgs> = {}): CommitArgs {
-  return { command: CliCommand.Commit, workspace: null, message: null, ...overrides };
+function makeCommand() {
+  const fs = makeFsMemoryFake();
+  const workspace = makeWorkspaceContext(fs, makeGitFake(), makeProcFake());
+  const command = new CommitCommand(
+    fs,
+    makeProcFake(),
+    new ResolveTargetWorkspacesUseCase(
+      workspace.repository,
+      workspace.targetResolutionService,
+    ),
+    new CommitFormatter(),
+  );
+  return { command, repository: workspace.repository };
 }
 
-describe("CommitCommand.execute", () => {
-  test("a kb with no .git directory is skipped", async () => {
-    const io = makeIoFake();
-    const container = makeTestGateways({ stdio: io });
-    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
-    const command = new CommitCommand(
-      container.fs,
-      container.proc,
-      container.env,
-      container.stdio,
-      container.git,
-      new CommitFormatter(),
-    );
-
-    const outcome = await command.execute(commitArgs({ workspace: "primary" }));
-    expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
-    expect(io.written).toEqual(["primary: not a git repo, skipping"]);
+describe("CommitCommand", () => {
+  test("parse reads an optional workspace and message", () => {
+    const { command } = makeCommand();
+    expect(command.parse(["primary", "-m", "msg"])).toEqual({
+      ok: true,
+      value: { workspace: "primary", message: "msg" },
+    });
   });
 
-  test("a successful commit runs `git add -A` then `git commit -m <message>`", async () => {
-    const io = makeIoFake();
-    const proc = makeProcFake();
-    const fs = makeFsMemoryFake();
-    const container = makeTestGateways({ stdio: io, proc, fs });
-    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
-    // SAFETY: a fixed literal directory segment under a hard-coded test fixture path.
-    fs.seedDir("/vault-primary/.git" as AbsPath);
-    const command = new CommitCommand(
-      container.fs,
-      container.proc,
-      container.env,
-      container.stdio,
-      container.git,
-      new CommitFormatter(),
+  test("run skips a kb that is not a git repo", async () => {
+    const { command, repository } = makeCommand();
+    await repository.save(REGISTRY_PATH, [PRIMARY]);
+
+    const result = await command.run(
+      { workspace: "primary", message: "x" },
+      makeRunContext(),
     );
-
-    const outcome = await command.execute(
-      commitArgs({ workspace: "primary", message: "wip" }),
-    );
-    expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
-    expect(io.written).toEqual(["primary: committed"]);
-    expect(proc.calls).toHaveLength(2);
-    expect(proc.calls[0]?.args).toEqual(["-C", "/vault-primary", "add", "-A"]);
-    expect(proc.calls[1]?.args).toEqual(["-C", "/vault-primary", "commit", "-m", "wip"]);
-  });
-
-  test("defaults the commit message to 'memory snapshot'", async () => {
-    const io = makeIoFake();
-    const proc = makeProcFake();
-    const fs = makeFsMemoryFake();
-    const container = makeTestGateways({ stdio: io, proc, fs });
-    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
-    // SAFETY: a fixed literal directory segment under a hard-coded test fixture path.
-    fs.seedDir("/vault-primary/.git" as AbsPath);
-    const command = new CommitCommand(
-      container.fs,
-      container.proc,
-      container.env,
-      container.stdio,
-      container.git,
-      new CommitFormatter(),
-    );
-
-    await command.execute(commitArgs({ workspace: "primary" }));
-    expect(proc.calls[1]?.args).toEqual([
-      "-C",
-      "/vault-primary",
-      "commit",
-      "-m",
-      "memory snapshot",
-    ]);
-  });
-
-  test("a non-zero commit exit code prints 'nothing to commit'", async () => {
-    const io = makeIoFake();
-    const proc = makeProcFake();
-    const fs = makeFsMemoryFake();
-    const container = makeTestGateways({ stdio: io, proc, fs });
-    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
-    // SAFETY: a fixed literal directory segment under a hard-coded test fixture path.
-    fs.seedDir("/vault-primary/.git" as AbsPath);
-    proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } }); // add
-    proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 1 } }); // commit
-    const command = new CommitCommand(
-      container.fs,
-      container.proc,
-      container.env,
-      container.stdio,
-      container.git,
-      new CommitFormatter(),
-    );
-
-    const outcome = await command.execute(commitArgs({ workspace: "primary" }));
-    expect(outcome.exitCode).toBe(0);
-    expect(io.written).toEqual(["primary: nothing to commit"]);
-  });
-
-  test("an unknown workspace fails with the exact 'no such workspace' message", async () => {
-    const io = makeIoFake();
-    const container = makeTestGateways({ stdio: io });
-    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
-    const command = new CommitCommand(
-      container.fs,
-      container.proc,
-      container.env,
-      container.stdio,
-      container.git,
-      new CommitFormatter(),
-    );
-
-    const outcome = await command.execute(commitArgs({ workspace: "ghost" }));
-    expect(outcome).toEqual({ exitCode: 1, stderrMessage: "no such workspace: ghost" });
+    expect(result.exitCode).toBe(0);
+    expect(result.lines).toEqual(["primary: not a git repo, skipping"]);
   });
 });

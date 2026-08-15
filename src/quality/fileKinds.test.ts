@@ -127,6 +127,9 @@ function moduleRootOf(directory: string): string {
   return segments[0] ?? directory;
 }
 
+/** `cli/` is the shell, not a module — it owns no `index.ts`. */
+const NO_BARREL_ROOTS: ReadonlySet<string> = new Set(["cli"]);
+
 test("every module root exposes an index.ts, and no directory below a module root does", async () => {
   const paths = [...new Glob("**/*.ts").scanSync(SOURCE_ROOT)].filter(isProductionFile);
 
@@ -143,6 +146,7 @@ test("every module root exposes an index.ts, and no directory below a module roo
   expect(moduleRoots.size).toBeGreaterThan(0);
 
   const missingRootBarrel = [...moduleRoots]
+    .filter((moduleName) => !NO_BARREL_ROOTS.has(moduleName))
     .filter((moduleName) => !withIndex.has(moduleName))
     .toSorted();
   expect(missingRootBarrel).toEqual([]);

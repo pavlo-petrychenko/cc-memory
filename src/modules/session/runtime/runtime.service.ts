@@ -31,6 +31,7 @@ export class HookRuntimeService {
     const { repository, resolverService } = makeWorkspaceContext(
       this.container.fs,
       this.container.git,
+      this.container.proc,
     );
     const registryResult = await repository.load(repository.defaultPath(home));
     if (!registryResult.ok) {

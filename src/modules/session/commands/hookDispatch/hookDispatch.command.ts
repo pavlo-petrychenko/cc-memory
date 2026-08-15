@@ -1,7 +1,11 @@
-import { CLI_SUCCESS, ConfigParser, cliOutcome } from "@/core/index.ts";
-import type { CliOutcome, Config } from "@/core/index.ts";
+import type { Command as CommandContract } from "@/core/entry/entry.typedefs.ts";
+import { Command } from "@/core/index.ts";
+import { CLI_SUCCESS, cliOutcome } from "@/core/index.ts";
+import type { ArgsError, CliOutcome, CommandResult, RunContext } from "@/core/index.ts";
 import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
-import { AppGateways, SearchIndexAdapter } from "@/gateways/index.ts";
+import type { Config } from "@/core/index.ts";
+import type { Result } from "@/core/index.ts";
+import { SearchIndexAdapter } from "@/gateways/index.ts";
 import type { Gateways, SearchIndex } from "@/gateways/index.ts";
 import {
   BuildKbMapUseCase,
@@ -14,7 +18,7 @@ import {
   ReprojectNotesUseCase,
   SearchNotesUseCase,
 } from "@/modules/note/index.ts";
-import type { HookArgs } from "@/modules/session/commands/hookDispatch/hookDispatch.typedefs.ts";
+import { HOOK_DESCRIPTOR } from "@/modules/session/commands/hookDispatch/hookDispatch.constants.ts";
 import { CompactCheckpointFormatter } from "@/modules/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";
 import { CompactCheckpointHook } from "@/modules/session/hooks/compactCheckpoint/compactCheckpoint.hook.ts";
 import { MemoryInjectFormatter } from "@/modules/session/hooks/memoryInject/memoryInject.formatter.ts";
@@ -28,22 +32,20 @@ import { HookResultSerializer } from "@/modules/session/runtime/hookResult.seria
 import { HookRuntimeService } from "@/modules/session/runtime/runtime.service.ts";
 import { HookName } from "@/modules/session/session.typedefs.ts";
 import {
-  WorkingMemoryFormatter,
-  WorklogFloorFormatter,
-  WorklogStoreService,
-} from "@/modules/worklog/index.ts";
-import {
   ReprojectWorklogUseCase,
   SearchWorklogUseCase,
+  WorkingMemoryFormatter,
+  WorklogFloorFormatter,
   WorklogProjection,
   WorklogQuery,
+  WorklogStoreService,
 } from "@/modules/worklog/index.ts";
+
+export type HookOptions = { readonly name: string };
 
 /** Exported so a test can pin it against the installer's registration table. */
 export const dispatchableHookNames: readonly HookName[] = Object.values(HookName);
 
-/** Every hook's real composition root: no hook constructs its own dependencies,
- * each is wired here from the real `Gateways` handed to `execute`. */
 function makeSearchIndex(container: Gateways): SearchIndex {
   return new SearchIndexAdapter(container.fs, (path) => container.openDatabase(path));
 }
@@ -73,14 +75,24 @@ function makeWorklogModule(container: Gateways, index: SearchIndex) {
   };
 }
 
-/** An unknown `name` stays fail-open: this same CLI path is what `settings.json`
- * invokes as a real hook, so a typo'd name must never turn into a non-zero exit
- * that breaks a session. */
-export class HookDispatchCommand {
+@Command(HOOK_DESCRIPTOR)
+export class HookDispatchCommand implements CommandContract<HookOptions> {
   constructor(
     private readonly container: Gateways,
     private readonly config: Config,
   ) {}
+
+  parse(tokens: readonly string[]): Result<HookOptions, ArgsError> {
+    const name = tokens[0];
+    if (name === undefined)
+      return { ok: false, error: { message: "hook: missing <name>" } };
+    return { ok: true, value: { name } };
+  }
+
+  async run(options: HookOptions, _context: RunContext): Promise<CommandResult> {
+    const outcome = await this.execute({ command: "hook", name: options.name });
+    return { lines: [], ...outcome };
+  }
 
   private parseHookName(raw: string): HookName | null {
     switch (raw) {
@@ -99,7 +111,10 @@ export class HookDispatchCommand {
     }
   }
 
-  async execute(args: HookArgs): Promise<CliOutcome> {
+  private async execute(args: {
+    readonly command: string;
+    readonly name: string;
+  }): Promise<CliOutcome> {
     const name = this.parseHookName(args.name);
     if (name === null) {
       return cliOutcome(0, `memory hook '${args.name}': unknown hook name`);
@@ -183,12 +198,4 @@ export class HookDispatchCommand {
     }
     return CLI_SUCCESS;
   }
-}
-
-/** Unlike every other command, this one is never handed a `Gateways`/`Config`
- * by `main.ts`, so it builds the real ones itself. */
-export async function hook(args: HookArgs): Promise<CliOutcome> {
-  const container = new AppGateways(process.env);
-  const config = new ConfigParser().parse(process.env);
-  return new HookDispatchCommand(container, config).execute(args);
 }

@@ -1,44 +1,52 @@
+import { REINDEX_DESCRIPTOR } from "@/cli/reindex.constants.ts";
 import { ReindexFormatter } from "@/cli/reindex.formatter.ts";
-import type { ReindexArgs } from "@/cli/reindex.typedefs.ts";
-import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
-import type { CliOutcome } from "@/core/index.ts";
-import type { Gateways } from "@/gateways/index.ts";
+import type { Command as CommandContract } from "@/core/entry/entry.typedefs.ts";
+import { Command } from "@/core/index.ts";
+import { CLI_SUCCESS, cliFailure, hasFlag } from "@/core/index.ts";
+import type { ArgsError, CommandResult, RunContext } from "@/core/index.ts";
+import type { Result } from "@/core/index.ts";
 import { ReprojectNotesUseCase } from "@/modules/note/index.ts";
 import { ReprojectWorklogUseCase } from "@/modules/worklog/index.ts";
-import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
+import { ResolveTargetWorkspacesUseCase } from "@/modules/workspace/index.ts";
 
-export class ReindexCommand {
+export type ReindexOptions = {
+  readonly workspace: string | null;
+  readonly full: boolean;
+};
+
+@Command(REINDEX_DESCRIPTOR)
+export class ReindexCommand implements CommandContract<ReindexOptions> {
   constructor(
+    private readonly resolveTargetWorkspaces: ResolveTargetWorkspacesUseCase,
     private readonly reprojectNotes: ReprojectNotesUseCase,
     private readonly reprojectWorklog: ReprojectWorklogUseCase,
     private readonly formatter: ReindexFormatter,
   ) {}
 
-  /** One line per target workspace, printed in registry order (`Promise.all`
-   * preserves that order in its result array even though the builds run
-   * concurrently). */
-  async execute(container: Gateways, args: ReindexArgs): Promise<CliOutcome> {
-    const home = container.env.home();
-    const { repository, targetResolutionService } = makeWorkspaceContext(
-      container.fs,
-      container.git,
-    );
-    const registryResult = await repository.load(repository.defaultPath(home));
-    if (!registryResult.ok) {
-      return cliFailure(`registry error: ${registryResult.error.message}`);
-    }
+  parse(tokens: readonly string[]): Result<ReindexOptions, ArgsError> {
+    const first = tokens[0];
+    const hasPositional = first !== undefined && !first.startsWith("-");
+    const rest = hasPositional ? tokens.slice(1) : tokens;
+    return {
+      ok: true,
+      value: {
+        workspace: hasPositional ? (first ?? null) : null,
+        full: hasFlag(rest, "--full"),
+      },
+    };
+  }
 
-    const targets = targetResolutionService.resolveTargetWorkspaces(
-      registryResult.value,
-      home,
-      args.workspace,
+  async run(options: ReindexOptions, context: RunContext): Promise<CommandResult> {
+    const resolved = await this.resolveTargetWorkspaces.run(
+      context.home,
+      options.workspace,
     );
-    if (!targets.ok) return cliFailure(targets.error);
+    if (!resolved.ok) return { lines: [], ...cliFailure(resolved.error) };
 
     const lines = await Promise.all(
-      targets.value.map(async (workspace) => {
+      resolved.value.map(async (workspace) => {
         const stats = await this.reprojectNotes.run(workspace, {
-          incremental: !args.full,
+          incremental: !options.full,
         });
         await this.reprojectWorklog.run(workspace);
         return this.formatter.line(
@@ -50,7 +58,6 @@ export class ReindexCommand {
         );
       }),
     );
-    for (const line of lines) container.stdio.write(line);
-    return CLI_SUCCESS;
+    return { lines, ...CLI_SUCCESS };
   }
 }

@@ -1,7 +1,6 @@
 export type { WrapStateEntry, WrapStateMap } from "@/modules/session/session.entity.ts";
 export {
   dispatchableHookNames,
-  hook,
   HookDispatchCommand,
 } from "@/modules/session/commands/hookDispatch/hookDispatch.command.ts";
 export { CompactCheckpointFormatter } from "@/modules/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";

@@ -1,6 +1,5 @@
 import { expect, test } from "bun:test";
 
-import { Command } from "@/core/entry/command.decorator.ts";
 import type {
   ArgsError,
   Command as CommandContract,
@@ -18,6 +17,7 @@ import {
   requirePositional,
   variadicValues,
 } from "@/core/entry/entry.utils.ts";
+import { Command } from "@/core/index.ts";
 import { LogLevel } from "@/core/index.ts";
 import { absPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";

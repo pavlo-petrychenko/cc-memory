@@ -1,6 +1,8 @@
 export { ResolveCommand } from "@/modules/workspace/commands/resolve/resolve.command.ts";
 export { ResolveFormatter } from "@/modules/workspace/commands/resolve/resolve.formatter.ts";
-export { WorkspaceCommand } from "@/modules/workspace/commands/workspace/workspace.command.ts";
+export { WorkspaceAddCommand } from "@/modules/workspace/commands/workspaceAdd.command.ts";
+export { WorkspaceRmCommand } from "@/modules/workspace/commands/workspaceRm.command.ts";
+export { WorkspaceLsCommand } from "@/modules/workspace/commands/workspaceLs.command.ts";
 export { WorkspaceFormatter } from "@/modules/workspace/commands/workspace/workspace.formatter.ts";
 export { WorkspaceParser } from "@/modules/workspace/workspace.parser.ts";
 export { WorkspaceRepository } from "@/modules/workspace/workspace.repository.ts";
@@ -17,6 +19,11 @@ export {
   validateNew,
   WorkspaceValidatorService,
 } from "@/modules/workspace/workspace.validator.service.ts";
+export { AddWorkspaceUseCase } from "@/modules/workspace/useCases/addWorkspace.useCase.ts";
+export { ListWorkspacesUseCase } from "@/modules/workspace/useCases/listWorkspaces.useCase.ts";
+export { RemoveWorkspaceUseCase } from "@/modules/workspace/useCases/removeWorkspace.useCase.ts";
+export { ResolveWorkspaceUseCase } from "@/modules/workspace/useCases/resolveWorkspace.useCase.ts";
+export { ResolveTargetWorkspacesUseCase } from "@/modules/workspace/useCases/resolveTargetWorkspaces.useCase.ts";
 export type {
   RegistryConflict,
   RegistryError,

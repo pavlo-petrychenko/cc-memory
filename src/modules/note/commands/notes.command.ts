@@ -1,62 +1,69 @@
-import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
-import type { CliOutcome } from "@/core/index.ts";
+import type { Command as CommandContract } from "@/core/entry/entry.typedefs.ts";
+import { Command } from "@/core/index.ts";
+import { CLI_SUCCESS, cliFailure, flagValue, hasFlag } from "@/core/index.ts";
+import type { ArgsError, CommandResult, RunContext } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
-import type { Gateways } from "@/gateways/index.ts";
-import type { NotesArgs } from "@/modules/note/commands/notes.typedefs.ts";
+import type { Result } from "@/core/index.ts";
+import { NOTES_DESCRIPTOR } from "@/modules/note/commands/notes.constants.ts";
+import { NotesFormatter } from "@/modules/note/index.ts";
 import { ListNotesUseCase } from "@/modules/note/index.ts";
-import { NotesFormatter } from "@/modules/note/services/notes.formatter.ts";
-import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
+import { ResolveWorkspaceUseCase } from "@/modules/workspace/index.ts";
 
-/** An explicit empty `--folder ""` behaves like omitting the flag entirely. */
+export type NotesOptions = {
+  readonly workspace: string | null;
+  readonly cwd: string | null;
+  readonly folder: string | null;
+  readonly json: boolean;
+};
+
 function normalizedFolder(folder: string | null): string | null {
   return folder === null || folder === "" ? null : folder;
 }
 
-export class NotesCommand {
+@Command(NOTES_DESCRIPTOR)
+export class NotesCommand implements CommandContract<NotesOptions> {
   constructor(
+    private readonly resolveWorkspace: ResolveWorkspaceUseCase,
     private readonly listNotes: ListNotesUseCase,
     private readonly formatter: NotesFormatter,
   ) {}
 
-  /** `--json` is checked BEFORE the "no notes" fallback: an empty `--json`
-   * result still prints `[]` rather than the plain-text "no notes" message. */
-  async execute(container: Gateways, args: NotesArgs): Promise<CliOutcome> {
-    const home = container.env.home();
-    const { repository, targetResolutionService } = makeWorkspaceContext(
-      container.fs,
-      container.git,
-    );
-    const registryResult = await repository.load(repository.defaultPath(home));
-    if (!registryResult.ok) {
-      return cliFailure(`registry error: ${registryResult.error.message}`);
-    }
+  parse(tokens: readonly string[]): Result<NotesOptions, ArgsError> {
+    return {
+      ok: true,
+      value: {
+        workspace: flagValue(tokens, "--workspace"),
+        cwd: flagValue(tokens, "--cwd"),
+        folder: flagValue(tokens, "--folder"),
+        json: hasFlag(tokens, "--json"),
+      },
+    };
+  }
 
-    const cwd = args.cwd !== null ? expandPath(args.cwd, home) : container.env.cwd();
-    const resolved = targetResolutionService.resolveWorkspaceForCwd(
-      registryResult.value,
-      home,
+  async run(options: NotesOptions, context: RunContext): Promise<CommandResult> {
+    const cwd =
+      options.cwd !== null ? expandPath(options.cwd, context.home) : context.cwd;
+    const resolved = await this.resolveWorkspace.run(context.home, {
       cwd,
-      args.workspace,
-    );
-    if (!resolved.ok) return cliFailure(resolved.error);
+      explicitId: options.workspace,
+    });
+    if (!resolved.ok) return { lines: [], ...cliFailure(resolved.error) };
     const workspace = resolved.value;
 
-    const folder = normalizedFolder(args.folder);
+    const folder = normalizedFolder(options.folder);
     const rows = await this.listNotes.run(workspace, folder ?? undefined);
 
-    if (args.json) {
-      container.stdio.write(JSON.stringify(rows, null, 2));
-      return CLI_SUCCESS;
+    if (options.json) {
+      return { lines: [JSON.stringify(rows, null, 2)], ...CLI_SUCCESS };
     }
     if (rows.length === 0) {
-      container.stdio.write(this.formatter.noNotes(folder));
-      return CLI_SUCCESS;
+      return { lines: [this.formatter.noNotes(folder)], ...CLI_SUCCESS };
     }
-    for (const row of rows) {
-      container.stdio.write(
+    return {
+      lines: rows.map((row) =>
         this.formatter.noteLine(row.importance, row.type, row.path, row.title),
-      );
-    }
-    return CLI_SUCCESS;
+      ),
+      ...CLI_SUCCESS,
+    };
   }
 }
