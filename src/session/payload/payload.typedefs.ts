@@ -1,7 +1,7 @@
 /**
  * A JSON value shape honest about what `JSON.parse` can hand back — the same
- * technique `domain/note.ts`'s `YamlValue`/`YamlMapping` uses for the analogous
- * YAML-boundary parse.
+ * technique the knowledge module's `YamlValue`/`YamlMapping` uses for the
+ * analogous YAML-boundary parse.
  */
 export type JsonValue =
   | string

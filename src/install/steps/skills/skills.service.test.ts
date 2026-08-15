@@ -5,7 +5,7 @@ import { SkillsService } from "@/install/steps/skills/skills.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — matches
-// `tests/helpers/container.ts`'s `DEFAULT_HOME`.
+// `testContainer.fixture.ts`'s `DEFAULT_HOME`.
 const SOURCE_DIR = "/repo/src/skills" as AbsPath;
 // SAFETY: same reasoning as `SOURCE_DIR` above.
 const TARGET_DIR = "/home/test/.claude/skills" as AbsPath;

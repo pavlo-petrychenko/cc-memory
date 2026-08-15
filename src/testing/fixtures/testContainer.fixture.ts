@@ -10,8 +10,7 @@ import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeLoggerFake } from "@/testing/fakes/loggerCollect.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 
-// SAFETY: fixed test fixtures, never a real filesystem lookup — the same
-// pattern `tests/unit/domain/paths.test.ts` uses for its `HOME` constant.
+// SAFETY: fixed test fixtures, never a real filesystem lookup.
 const DEFAULT_HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `DEFAULT_HOME` above — a fixed test fixture.
 const DEFAULT_CWD = "/home/test/project" as AbsPath;

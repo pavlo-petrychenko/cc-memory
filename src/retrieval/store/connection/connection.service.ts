@@ -19,8 +19,7 @@ function parentDirectory(path: AbsPath): AbsPath {
   const sliced = lastSlashIndex <= 0 ? "/" : path.slice(0, lastSlashIndex);
   // SAFETY: slicing an already-absolute, already-normalized `AbsPath` at a `/`
   // boundary can only yield another absolute, normalized path (or the root
-  // `/`) — the same reasoning `tests/helpers/fakes/fsMemory.fake.ts`'s
-  // `parentOf` documents for the identical operation.
+  // `/`).
   return sliced as AbsPath;
 }
 

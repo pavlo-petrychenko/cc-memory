@@ -6,9 +6,8 @@ import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
 import { WorklogStoreService } from "@/worklog/services/worklogStore/worklogStore.service.ts";
 
-// SAFETY: fixed test fixtures, never a real filesystem lookup — same pattern as
-// `tests/unit/domain/paths.test.ts`'s `HOME`. Every path literal below is already
-// absolute and normalized by construction.
+// SAFETY: fixed test fixtures, never a real filesystem lookup. Every path
+// literal below is already absolute and normalized by construction.
 function absPath(raw: string): AbsPath {
   // SAFETY: see the doc comment above.
   return raw as AbsPath;

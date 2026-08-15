@@ -11,7 +11,7 @@ import { WorkspaceResolverService } from "@/workspace/services/resolver/index.ts
 import { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/workspace/targetResolution/targetResolution.constants.ts";
 import { TargetResolutionService } from "@/workspace/targetResolution/targetResolution.service.ts";
 
-// SAFETY: a fixed test fixture, same pattern as tests/helpers/container.ts's DEFAULT_HOME.
+// SAFETY: a fixed test fixture, same pattern as the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
 
 function raw(id: string, matchPath: string): RawWorkspace {

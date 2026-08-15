@@ -10,8 +10,8 @@ import type { SqlDatabase } from "@/platform/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 
-/** Same rationale as `commands/workspace.command.test.ts`'s helper of the same
- * name: `workspace add`/`workspace rm --purge` derive `index_db` from `home` +
+/** Same rationale as `src/workspace/commands/workspace/workspace.command.test.ts`'s
+ * helper of the same name: `workspace add`/`workspace rm --purge` derive `index_db` from `home` +
  * the workspace id rather than accepting an override, so a plain in-memory
  * `Container` needs its `openDatabase` redirected to `:memory:` to avoid trying to
  * open a real SQLite file under a `home` that doesn't exist on disk — never a
@@ -151,10 +151,10 @@ describe("runCli dispatch", () => {
   // exists to prevent, defeated here because `hook()` cannot accept an
   // injected container at all. Dispatch wiring for `hook` is instead covered
   // where a real `process.exit` is safe: spawned subprocesses in
-  // `tests/cli/e2e.test.ts` and `tests/contract/failopen.test.ts`.
+  // `src/cli/cli.e2e.test.ts` and `src/session/session.failopen.test.ts`.
   // `dispatchHook` — the actual per-name dispatch logic `hook()` delegates
   // to — is fully covered in-process with fakes by
-  // `tests/cli/commands/hook.command.test.ts`.
+  // `src/session/commands/hookDispatch/hookDispatch.command.test.ts`.
 
   /**
    * `dispatch`'s `case CliCommand.Install`/`Uninstall` call
@@ -178,8 +178,8 @@ describe("runCli dispatch", () => {
    * exist first and refuses to run otherwise, rather than silently trusting
    * that assumption forever. Full behavioral coverage of both functions —
    * including every unsafe path (a real write to the user home) —
-   * lives in `tests/cli/commands/install.command.test.ts`, entirely against
-   * an explicit fake `Container` (`procFake`), never the real default.
+   * lives in `src/install/commands/install/install.command.test.ts`, entirely
+   * against an explicit fake `Container` (`procFake`), never the real default.
    */
   test("install --dry-run dispatches to install (always safe: dry-run never writes)", async () => {
     const container = makeTestContainer({ stdio: makeIoFake() });

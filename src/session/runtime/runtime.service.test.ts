@@ -25,7 +25,7 @@ import { saveRegistry } from "@/workspace/index.ts";
  * fail-open invariant.
  */
 
-// SAFETY: fixed test fixtures, matching `tests/helpers/container.ts`'s
+// SAFETY: fixed test fixtures, matching `testContainer.fixture.ts`'s
 // DEFAULT_HOME/DEFAULT_CWD.
 const HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `HOME` above.

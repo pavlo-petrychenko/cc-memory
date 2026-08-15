@@ -19,8 +19,7 @@ function joinUnderDir(dir: AbsPath, name: string): AbsPath {
   // SAFETY: `dir` is an already-absolute, normalized `AbsPath`; `name` is one
   // entry `FileSystem.readDir` returned for it (never a `..`/absolute
   // fragment), so appending `/${name}` yields another absolute, normalized
-  // path directly under `dir` — the same reasoning
-  // `tests/helpers/fakes/fsMemory.fake.ts`'s `rejoin` documents.
+  // path directly under `dir`.
   return `${dir}/${name}` as AbsPath;
 }
 

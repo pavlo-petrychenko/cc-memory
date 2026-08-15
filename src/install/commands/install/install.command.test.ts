@@ -24,7 +24,7 @@ import { defaultRegistryPath } from "@/workspace/index.ts";
  */
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — same
-// reasoning `tests/helpers/container.ts`'s `DEFAULT_HOME` documents.
+// reasoning `testContainer.fixture.ts`'s `DEFAULT_HOME` documents.
 const REAL_BUN_PATH = "/usr/local/bin/bun" as AbsPath;
 
 /** The shim path install/uninstall write, under a test container's fake

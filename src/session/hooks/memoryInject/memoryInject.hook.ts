@@ -36,8 +36,7 @@ function parentDir(path: AbsPath): AbsPath {
   const lastSlashIndex = path.lastIndexOf("/");
   const sliced = lastSlashIndex <= 0 ? "/" : path.slice(0, lastSlashIndex);
   // SAFETY: slicing an absolute, normalized path at a `/` boundary yields
-  // another absolute, normalized path — same reasoning as
-  // `services/registry.service.ts`'s `parentDir`.
+  // another absolute, normalized path.
   return sliced as AbsPath;
 }
 
@@ -54,8 +53,7 @@ function joinAbsPath(base: AbsPath, name: string): AbsPath {
 }
 
 /** Every indexed path is always under `ws.kb`/`ws.worklogs`, so this is
- * prefix-stripping, not full relpath resolution — the same duplication
- * `cli/commands/search.command.ts`'s `relativeToKb` documents. */
+ * prefix-stripping, not full relpath resolution. */
 function relativeOrAbsolute(path: AbsPath, base: AbsPath): string {
   const prefix = `${base}/`;
   return path.startsWith(prefix) ? path.slice(prefix.length) : path;

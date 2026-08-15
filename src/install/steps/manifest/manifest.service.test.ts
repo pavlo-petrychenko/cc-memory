@@ -6,7 +6,7 @@ import { ManifestService } from "@/install/steps/manifest/manifest.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 
 // SAFETY: fixed test fixture, never a real filesystem lookup — matches
-// `tests/helpers/container.ts`'s `DEFAULT_HOME`.
+// `testContainer.fixture.ts`'s `DEFAULT_HOME`.
 const HOME = "/home/test" as AbsPath;
 
 describe("ManifestService — ~/.claude/memory/installed.json", () => {

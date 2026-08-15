@@ -34,8 +34,7 @@ function parentDir(path: AbsPath): AbsPath {
   const lastSlashIndex = path.lastIndexOf("/");
   const sliced = lastSlashIndex <= 0 ? "/" : path.slice(0, lastSlashIndex);
   // SAFETY: slicing an absolute, normalized path at a `/` boundary yields
-  // another absolute, normalized path — same reasoning as
-  // `services/registry.service.ts`'s `parentDir`.
+  // another absolute, normalized path.
   return sliced as AbsPath;
 }
 

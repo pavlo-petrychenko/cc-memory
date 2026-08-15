@@ -12,11 +12,10 @@ import { NOTES_SEARCH_SQL } from "@/retrieval/index.ts";
  * why this project runs on Bun rather than Node. If this file ever goes red,
  * the runtime choice itself needs revisiting, not the code around it.
  *
- * `SCHEMA` and `NOTES_SEARCH_SQL` are IMPORTED from `retrieval/schema.ts` /
- * `search.ts` rather than kept as a second hand-copied transcription of the
- * index schema and search SQL, so this smoke test and the actual search SQL
- * (whose bm25 weights and tokenizer are frozen) can never silently drift
- * apart.
+ * `SCHEMA` and `NOTES_SEARCH_SQL` are IMPORTED from `retrieval` rather than
+ * transcribed here a second time, so this smoke test and the SQL actually
+ * running in production — whose bm25 weights and tokenizer are frozen — can
+ * never silently drift apart.
  */
 
 function insertNote(

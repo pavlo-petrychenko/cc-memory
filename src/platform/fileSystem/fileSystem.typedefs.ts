@@ -18,9 +18,10 @@ export type FileStat = {
  * `cli`/`hooks` entrypoints see a real or fake implementation.
  *
  * Every path in and out is an `AbsPath`: services resolve `~` and relative
- * fragments via `core/paths.ts` before calling here, so a port method never has
- * to guess what a bare string means (the same discipline that makes `Workspace`
- * vs `RawWorkspace` a compile-time distinction).
+ * fragments via `core/utils/paths/paths.utils.ts` before calling here, so a
+ * port method never has to guess what a bare string means (the same
+ * discipline that makes `Workspace` vs `RawWorkspace` a compile-time
+ * distinction).
  *
  * Content is always UTF-8 text; there is no binary I/O anywhere in the vault
  * or registry.

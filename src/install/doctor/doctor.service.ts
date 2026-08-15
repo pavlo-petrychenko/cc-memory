@@ -29,7 +29,7 @@ import { IndexBuildService } from "@/retrieval/index.ts";
  * that tend to grow unbounded.
  *
  * `doctor.command.ts` keeps printing the original two lines (registry status,
- * cwd resolution) byte-for-byte via `cli/format.ts`'s existing renderers
+ * cwd resolution) byte-for-byte via `DoctorFormatter`'s existing renderers
  * before calling into this class — those two lines are anchored by tests.
  */
 export class DoctorService {

@@ -24,10 +24,8 @@ import type {
  */
 
 // `typeof`/`Array.isArray` are avoided in favor of `Object.prototype.toString`
-// tags, the same idiom `services/registry.service.ts`'s `isTomlString`/
-// `isTomlTableValue` use for the analogous TOML-boundary check (anti-slop's
-// `no-runtime-typeof` rejects a bare `typeof` check as narrowing a
-// representation instead of decoding it).
+// tags: anti-slop's `no-runtime-typeof` rejects a bare `typeof` check as
+// narrowing a representation instead of decoding it.
 function isJsonRecord(value: JsonValue): value is JsonRecord {
   return value !== null && Object.prototype.toString.call(value) === "[object Object]";
 }

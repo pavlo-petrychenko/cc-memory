@@ -161,8 +161,8 @@ export async function runCli(
 }
 
 // No work at import time — everything below only runs when this module IS
-// the entrypoint, which `tests/unit/coverageSurface.test.ts` importing every
-// module does not trigger.
+// the entrypoint; a plain import of this module (as a test does to reach
+// `runCli`) never triggers it.
 if (import.meta.main) {
   const envSnapshot = process.env;
   const container = new AppContainer(envSnapshot);

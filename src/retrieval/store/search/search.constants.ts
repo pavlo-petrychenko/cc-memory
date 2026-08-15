@@ -4,7 +4,7 @@ import { SearchKind } from "@/retrieval/retrieval.typedefs.ts";
 // worklog = slug 3 / date 1 / body 1. `snippet()` draws from the body column
 // (index 1 for notes_fts, index 2 for worklog_fts).
 // Exported individually (rather than kept as a private `Record`) so
-// `tests/integration/adapters/fts5Smoke.test.ts` can import the REAL,
+// `platform/db/db.adapter.test.ts` can import the REAL,
 // currently-running query text instead of keeping its own hand-copied
 // transcription that could silently drift from this one.
 export const NOTES_SEARCH_SQL =

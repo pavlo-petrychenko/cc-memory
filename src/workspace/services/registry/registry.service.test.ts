@@ -11,8 +11,7 @@ import {
   RegistryErrorKind,
 } from "@/workspace/workspace.typedefs.ts";
 
-// SAFETY: fixed test fixtures, never a real filesystem lookup — same pattern as
-// `tests/unit/domain/paths.test.ts`'s `HOME`.
+// SAFETY: fixed test fixtures, never a real filesystem lookup.
 const HOME = "/home/test" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
 

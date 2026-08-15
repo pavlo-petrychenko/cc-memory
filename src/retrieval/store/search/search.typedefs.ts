@@ -17,6 +17,6 @@ export type SearchFusedOptions = SearchOptions & {
   readonly links?: boolean;
   /** RRF bonus per corroborating in-link — `Config.linkBoost`
    * (`CCMEM_LINK_BOOST`). Required rather than defaulted here: the default
-   * (`0.003`) is `core/Config.ts`'s to own, not re-derived in this file. */
+   * (`0.003`) is `core/config`'s to own, not re-derived in this file. */
   readonly linkBoost: number;
 };

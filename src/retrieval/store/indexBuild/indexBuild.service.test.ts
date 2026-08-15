@@ -11,7 +11,7 @@ import { SCHEMA_VERSION } from "@/retrieval/store/schema/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 
-// SAFETY: fixed test fixture, mirrors tests/helpers/container.ts's DEFAULT_HOME.
+// SAFETY: fixed test fixture, mirrors the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
 // SAFETY: bun:sqlite's own in-memory-database identifier — an opaque key into
 // Container.openDatabase's per-path memoization, not a real filesystem path.

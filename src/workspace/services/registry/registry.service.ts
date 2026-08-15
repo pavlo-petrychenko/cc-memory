@@ -36,8 +36,8 @@ function malformed(message: string): Result<RawWorkspace, RegistryError> {
 
 // `typeof` only distinguishes JS representations, not TOML's domain values (a
 // `TomlDate` is also `"object"`) — `Object.prototype.toString` gives the precise
-// tag instead, the same technique `domain/note.ts`'s `isYamlMapping` uses for the
-// analogous YAML-boundary check.
+// tag instead, the same technique the knowledge module's `isYamlMapping` uses
+// for the analogous YAML-boundary check.
 function isTomlString(value: TomlValue | undefined): value is string {
   return Object.prototype.toString.call(value) === "[object String]";
 }

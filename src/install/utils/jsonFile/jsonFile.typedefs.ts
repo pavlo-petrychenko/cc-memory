@@ -3,7 +3,7 @@
  * `~/.claude/memory/installed.json` — both files are read and written
  * without needing to understand every field (`settings.json` in particular
  * carries foreign top-level keys — `permissions`, other tools' config, … —
- * that must round-trip untouched). Mirrors `domain/note.ts`'s
+ * that must round-trip untouched). Mirrors `knowledge/note/note.typedefs.ts`'s
  * `YamlValue`/`YamlMapping` pair, the established pattern in this codebase for
  * "parse untrusted structured data without a `Record<string, unknown>` bag."
  */

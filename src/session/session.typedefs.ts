@@ -39,7 +39,8 @@ export type HookResult =
  *
  * This enum has two independent consumers that must agree exactly:
  * `commands/hookDispatch/hookDispatch.command.ts` (which accepts the name)
- * and `install/settings.ts` (which writes it into `~/.claude/settings.json`).
+ * and the install step that writes the settings registration (which writes
+ * it into `~/.claude/settings.json`).
  * A rename on one side without the other would silently register a name the
  * other rejects — and because hooks fail open, the symptom would not be an
  * error, it would be memory quietly not working in every session. Sharing one

@@ -23,7 +23,7 @@ import { expandWorkspace, saveRegistry } from "@/workspace/index.ts";
  * check, and is size-capped and rotated instead of growing unbounded.
  */
 
-// SAFETY: fixed test fixtures, matching `tests/helpers/container.ts`'s
+// SAFETY: fixed test fixtures, matching `testContainer.fixture.ts`'s
 // DEFAULT_HOME/DEFAULT_CWD.
 const HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `HOME` above.
@@ -66,7 +66,7 @@ function makeFixture(): Fixture {
 // EVERY indexed document (as it would with only one note in the whole
 // corpus) — a couple of unrelated filler notes are needed for the target
 // note's match to clear the score floor at all, the same shape the fixture
-// vault (`tests/fixtures/vault.ts`) uses for the same reason.
+// vault (`vault.fixture.ts`) uses for the same reason.
 async function seedIndexedWorkspace(fixture: Fixture): Promise<void> {
   // SAFETY: a fixed literal path under `PRIMARY.kb`, a hard-coded test fixture.
   fixture.fs.seedFile(
@@ -235,7 +235,7 @@ describe("UserPromptSubmit (memory-inject) hook", () => {
   test("fewer than 2 salient tokens: silent, no search, no log", async () => {
     const fixture = makeFixture();
     await seedIndexedWorkspace(fixture);
-    // "are"/"you"/"the" are all stopwords (`retrieval/tokenize.ts`'s STOPWORDS);
+    // "are"/"you"/"the" are all stopwords (the tokenizer's STOPWORDS list);
     // only "one" survives — a single salient token, under MIN_TOKENS (2).
     await runMemoryInject(
       fixture,

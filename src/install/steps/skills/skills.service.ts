@@ -28,7 +28,7 @@ export class SkillsService {
   }
 
   /** Join a name `readDir` returned onto an already-validated `AbsPath`
-   * directory — same reasoning as `index/build.ts`'s `joinUnderDir`. */
+   * directory — same reasoning as `indexBuild.service.ts`'s `joinUnderDir`. */
   private static joinUnderDir(dir: AbsPath, name: string): AbsPath {
     // SAFETY: `dir` is an already-absolute, normalized `AbsPath`; `name` is
     // one entry `FileSystem.readDir` returned for it, so the join is another
@@ -99,7 +99,7 @@ export class SkillsService {
     // Independent per name (own source/target paths, read-only manifest
     // lookup) — `Promise.all` runs them concurrently while `.map` preserves
     // `skillNames`' order in the result, same as
-    // `cli/commands/workspace.command.ts`'s `buildWorkspaceLsRow` fan-out.
+    // `workspace.command.ts`'s `buildWorkspaceLsRow` fan-out.
     const skills = await Promise.all(
       skillNames.map((name) =>
         this.installOne(

@@ -9,9 +9,9 @@ import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/ind
 import { RegistryService } from "@/workspace/services/registry/index.ts";
 import { WorkspaceResolverService } from "@/workspace/services/resolver/resolver.service.ts";
 
-// SAFETY: fixed test fixtures, never a real filesystem lookup — same pattern as
-// `tests/unit/domain/paths.test.ts`'s `HOME`. Every absolute-path literal in this
-// file is a hand-written, already-absolute, already-normalized POSIX path, so
+// SAFETY: fixed test fixtures, never a real filesystem lookup. Every
+// absolute-path literal in this file is a hand-written, already-absolute,
+// already-normalized POSIX path, so
 // casting it once here (rather than routing every one through `expandPath`) is
 // the one place this file trusts that by construction.
 function absPath(raw: string): AbsPath {

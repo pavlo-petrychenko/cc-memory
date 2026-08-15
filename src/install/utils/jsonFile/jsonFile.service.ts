@@ -19,7 +19,7 @@ export class JsonFileService {
   constructor(private readonly fs: FileSystem) {}
 
   // `Object.prototype.toString` gives the precise representation tag instead
-  // of `typeof`, the same technique `domain/note.ts`'s `isYamlMapping` and
+  // of `typeof`, the same technique `note.parser.ts`'s `isYamlMapping` and
   // `registry.service.ts`'s `isTomlTableValue` use for the identical boundary
   // check (a `typeof x === "object"` narrows a representation without
   // establishing a domain contract — anti-slop's `no-runtime-typeof`).

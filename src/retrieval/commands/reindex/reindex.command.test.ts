@@ -11,13 +11,13 @@ import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 import { saveRegistry } from "@/workspace/index.ts";
 
-// SAFETY: a fixed test fixture, matching tests/helpers/container.ts's DEFAULT_HOME.
+// SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
 
 // A registered workspace whose `index_db` is bun:sqlite's OWN in-memory
 // identifier, not a derived real path — the same `IN_MEMORY_DB` convention
-// `tests/integration/retrieval/build.test.ts` uses, satisfying "never
+// used across the retrieval store's tests, satisfying "never
 // fake SqlDatabase" (CLAUDE.md) without touching the real filesystem.
 const PRIMARY: RawWorkspace = {
   id: "primary",

@@ -29,9 +29,10 @@ function homeNoteContent(title: string, id: string): string {
 }
 
 /** The parent directory of an already-absolute, normalized `AbsPath` — the
- * same small utility `services/registry.service.ts`/`retrieval/db.ts`
- * each keep a private copy of rather than sharing (an established pattern in
- * this codebase for a 3-line path-slicing helper). */
+ * same small utility `workspace/services/registry` and
+ * `retrieval/store/connection` each keep a private copy of rather than
+ * sharing (an established pattern in this codebase for a 3-line
+ * path-slicing helper). */
 function parentDirectory(path: AbsPath): AbsPath {
   const lastSlashIndex = path.lastIndexOf("/");
   const sliced = lastSlashIndex <= 0 ? "/" : path.slice(0, lastSlashIndex);

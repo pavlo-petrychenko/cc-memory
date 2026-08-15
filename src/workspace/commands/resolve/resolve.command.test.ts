@@ -14,7 +14,7 @@ import { RegistryService } from "@/workspace/services/registry/index.ts";
 import { WorkspaceResolverService } from "@/workspace/services/resolver/index.ts";
 import { TargetResolutionService } from "@/workspace/targetResolution/index.ts";
 
-// SAFETY: a fixed test fixture, matching tests/helpers/container.ts's DEFAULT_HOME.
+// SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
 

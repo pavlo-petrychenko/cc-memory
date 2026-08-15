@@ -8,8 +8,8 @@ import type { Env } from "@/platform/env/env.typedefs.ts";
  *
  * SAFETY: `os.homedir()`/`process.cwd()` are always absolute, and the OS never
  * hands back a path needing further normalization here — this is the only place
- * outside `core/paths.ts` an `AbsPath` cast is warranted, because there is no
- * relative or `~`-prefixed input to run through `expandPath`.
+ * outside `core/utils/paths/paths.utils.ts` an `AbsPath` cast is warranted, because
+ * there is no relative or `~`-prefixed input to run through `expandPath`.
  */
 export class EnvAdapter implements Env {
   get(name: string): string | undefined {

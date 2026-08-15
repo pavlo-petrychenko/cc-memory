@@ -161,7 +161,7 @@ export function makeFsMemoryFake(): FsMemoryFake {
     },
     symlink: (target: AbsPath, linkPath: AbsPath) => {
       // Symlinks are represented as a file whose contents are the target —
-      // good enough for the one caller that cares (`install/skills.ts`),
+      // good enough for the one caller that cares (the skills install step),
       // which only ever checks existence/identity, never dereferences.
       ensureDirsUpTo(linkPath);
       entries.set(linkPath, { kind: "file", contents: target, mtimeMs: syntheticNowMs });

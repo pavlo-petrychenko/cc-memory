@@ -254,9 +254,9 @@ describe("CLI e2e against the built dist/memory.js", () => {
    * keyed by the REAL system user id, not by `$HOME` — a faked home only
    * protects file writes, not this one. Spawning the real built binary here
    * (rather than calling `install()` in-process with an injected
-   * `procFake`, as `tests/cli/commands/install.command.test.ts` does) would
-   * genuinely rewrite the real configuration of whatever machine runs this
-   * suite. `--dry-run` returns before any of `settings.json`/shim/skills/
+   * `procFake`, as `src/install/commands/install/install.command.test.ts`
+   * does) would genuinely rewrite the real configuration of whatever machine
+   * runs this suite. `--dry-run` returns before any of `settings.json`/shim/skills/
    * registry ever get touched, which is what makes it the one
    * `install` invocation this file may safely spawn.
    */

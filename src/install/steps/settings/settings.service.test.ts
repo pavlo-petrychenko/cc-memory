@@ -285,7 +285,7 @@ describe("SettingsService — surgerize", () => {
 
 describe("SettingsService — backupIfNeeded", () => {
   // SAFETY: fixed test fixtures, never a real filesystem lookup — matches
-  // `tests/helpers/container.ts`'s `DEFAULT_HOME`.
+  // `testContainer.fixture.ts`'s `DEFAULT_HOME`.
   const settingsPath = "/home/test/.claude/settings.json" as AbsPath;
   // SAFETY: same reasoning as `settingsPath` above.
   const backupPath = "/home/test/.claude/settings.json.pre-ccmemory.bak" as AbsPath;

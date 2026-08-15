@@ -11,7 +11,7 @@ import {
   type IndexFixture,
 } from "@/testing/fixtures/retrievalIndex.fixture.ts";
 
-// The default for CCMEM_LINK_BOOST (`core/Config.ts`'s LINK_BOOST_DEFAULT) —
+// The default for CCMEM_LINK_BOOST (`core/config`'s LINK_BOOST_DEFAULT) —
 // searchFused requires it explicitly rather than re-deriving its own copy.
 const LINK_BOOST = 0.003;
 

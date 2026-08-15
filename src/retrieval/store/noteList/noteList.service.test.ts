@@ -8,7 +8,7 @@ import {
   type IndexFixture,
 } from "@/testing/fixtures/retrievalIndex.fixture.ts";
 
-// The 8-note corpus (tests/fixtures/vault.ts's PRIMARY_NOTES) — kept here so
+// The 8-note corpus (the vault fixture's PRIMARY_NOTES) — kept here so
 // "exhaustive" is asserted against a named set, not just a count.
 const ALL_NOTE_PATHS = [
   "Alpha/Alpha.md",

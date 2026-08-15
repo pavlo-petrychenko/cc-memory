@@ -6,7 +6,7 @@ import { FileSystemAdapter } from "@/platform/index.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 /**
  * Shared setup for the retrieval integration tests: a REAL vault on disk
- * built by `tests/fixtures/vault.ts`'s `buildFixtureVault`, plus a second,
+ * built by `vault.fixture.ts`'s `buildFixtureVault`, plus a second,
  * unrelated workspace for isolation checks. A real `FileSystem`
  * (`fileSystem.adapter.ts`) and a real `bun:sqlite` file back every test built
  * from this — `SqlDatabase` is never faked, since FTS5's stemmer, bm25 weighting and

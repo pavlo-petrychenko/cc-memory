@@ -20,11 +20,11 @@ import { saveRegistry } from "@/workspace/index.ts";
  */
 
 // SAFETY: `"/home/test"` is a fixed test fixture (matching
-// `tests/helpers/container.ts`'s DEFAULT_HOME), not user input — no leading
+// `testContainer.fixture.ts`'s DEFAULT_HOME), not user input — no leading
 // `~` or relative segment to normalize.
 const HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `HOME` above — a fixed test fixture, matching
-// `tests/helpers/container.ts`'s DEFAULT_CWD.
+// `testContainer.fixture.ts`'s DEFAULT_CWD.
 const CWD = "/home/test/project" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
 
@@ -136,7 +136,7 @@ describe("SessionStart hook", () => {
     const { io, fs, container } = makeFixture();
     await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
     // `Env` fake defaults its `cwd()` to the same `/home/test/project` used
-    // above as `PRIMARY`'s match prefix — see `tests/helpers/container.ts`.
+    // above as `PRIMARY`'s match prefix — see `testContainer.fixture.ts`.
 
     await runSessionStart(container, io, "{}");
 

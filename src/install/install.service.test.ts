@@ -21,7 +21,7 @@ import { defaultRegistryPath } from "@/workspace/index.ts";
  */
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — matches
-// `tests/helpers/container.ts`'s `DEFAULT_HOME`/`DEFAULT_CWD`.
+// `testContainer.fixture.ts`'s `DEFAULT_HOME`/`DEFAULT_CWD`.
 const REPO_ROOT = "/repo" as AbsPath;
 // SAFETY: same reasoning as `REPO_ROOT` above.
 const OLD_REPO_ROOT = "/old-repo" as AbsPath;
