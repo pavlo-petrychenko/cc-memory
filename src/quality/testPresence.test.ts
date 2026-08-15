@@ -42,11 +42,11 @@ const COVERED_THROUGH_CALLERS: ReadonlyMap<string, string> = new Map([
     "every field it parses is asserted through the five hook contract tests, which feed real payloads",
   ],
   [
-    "modules/installation/steps/shim/shim.service.ts",
+    "modules/installation/steps/shim/shim.repository.ts",
     "the shim's exact contents are asserted by the installer's own end-to-end tests",
   ],
   [
-    "modules/installation/utils/jsonFile/jsonFile.service.ts",
+    "modules/installation/utils/jsonFile/jsonFile.repository.ts",
     "read/write behavior is asserted through settings.service and manifest.service, which are its only callers",
   ],
 ]);

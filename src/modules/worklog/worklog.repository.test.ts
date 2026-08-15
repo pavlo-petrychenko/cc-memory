@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { WorklogStoreService } from "@/modules/worklog/services/worklogStore/worklogStore.service.ts";
+import { WorklogStoreService } from "@/modules/worklog/worklog.repository.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
 

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { DoctorCommand } from "@/modules/installation/commands/doctor/doctor.command.ts";
 import { DoctorFormatter } from "@/modules/installation/doctor/doctor.formatter.ts";
-import { DoctorService } from "@/modules/installation/doctor/doctor.service.ts";
+import { DoctorService } from "@/modules/installation/doctor/doctor.useCase.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import {
   makeNoteModule,

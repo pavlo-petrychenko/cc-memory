@@ -4,8 +4,8 @@ import { absPath, expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { SearchIndexFake } from "@/gateways/index.ts";
 import { WorklogProjection } from "@/modules/worklog/projection/worklog.projection.ts";
-import { WorklogStoreService } from "@/modules/worklog/services/worklogStore/worklogStore.service.ts";
 import { ReprojectWorklogUseCase } from "@/modules/worklog/useCases/reprojectWorklog.useCase.ts";
+import { WorklogStoreService } from "@/modules/worklog/worklog.repository.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
 

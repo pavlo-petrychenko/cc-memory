@@ -1,7 +1,7 @@
 import type { Workspace } from "@/core/index.ts";
 import { WorklogProjection } from "@/modules/worklog/projection/worklog.projection.ts";
 import type { WorklogDocument } from "@/modules/worklog/projection/worklog.projection.ts";
-import { WorklogStoreService } from "@/modules/worklog/services/worklogStore/worklogStore.service.ts";
+import { WorklogStoreService } from "@/modules/worklog/worklog.repository.ts";
 
 const MTIME_EPSILON = 1e-6;
 

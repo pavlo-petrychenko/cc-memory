@@ -7,7 +7,7 @@ import type { Result } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { DOCTOR_DESCRIPTOR } from "@/modules/installation/commands/doctor/doctor.constants.ts";
 import { DoctorFormatter } from "@/modules/installation/doctor/doctor.formatter.ts";
-import { DoctorService } from "@/modules/installation/doctor/doctor.service.ts";
+import { DoctorService } from "@/modules/installation/doctor/doctor.useCase.ts";
 import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
 
 export type DoctorOptions = {

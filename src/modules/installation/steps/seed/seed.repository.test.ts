@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
 import { registryPath } from "@/core/index.ts";
-import { SeedService } from "@/modules/installation/steps/seed/seed.service.ts";
+import { SeedService } from "@/modules/installation/steps/seed/seed.repository.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — matches

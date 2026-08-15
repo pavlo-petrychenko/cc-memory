@@ -11,7 +11,7 @@ import type {
   PurgeHooksResult,
   RegisterHooksResult,
 } from "@/modules/installation/steps/settings/settings.typedefs.ts";
-import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.service.ts";
+import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.repository.ts";
 import type {
   JsonFileError,
   JsonObject,

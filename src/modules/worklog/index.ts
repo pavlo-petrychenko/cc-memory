@@ -7,4 +7,4 @@ export { CommitCommand } from "@/modules/worklog/commands/commit/commit.command.
 export { CommitFormatter } from "@/modules/worklog/commands/commit/commit.formatter.ts";
 export { WorklogFloorFormatter } from "@/modules/worklog/formatters/worklogFloor/worklogFloor.formatter.ts";
 export { WorkingMemoryFormatter } from "@/modules/worklog/formatters/workingMemory/workingMemory.formatter.ts";
-export { WorklogStoreService } from "@/modules/worklog/services/worklogStore/worklogStore.service.ts";
+export { WorklogStoreService } from "@/modules/worklog/worklog.repository.ts";

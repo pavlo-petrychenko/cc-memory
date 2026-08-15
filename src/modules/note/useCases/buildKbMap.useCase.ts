@@ -1,6 +1,6 @@
 import type { AbsPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { KbMapService } from "@/modules/note/services/kbMap.service.ts";
+import { KbMapService } from "@/modules/note/kbMap.repository.ts";
 import type { KbMapInput } from "@/modules/note/services/kbMap.typedefs.ts";
 
 /** One user-facing operation: build the KB top-level map for a workspace. */

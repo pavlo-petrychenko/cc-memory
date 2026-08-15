@@ -15,11 +15,11 @@ import {
   UNINSTALL_DESCRIPTOR,
   UNINSTALL_NOTHING_MESSAGE,
 } from "@/modules/installation/commands/install/install.constants.ts";
-import { InstallService } from "@/modules/installation/install.service.ts";
 import {
   InstallErrorKind,
   type InstallError,
 } from "@/modules/installation/install.typedefs.ts";
+import { InstallService } from "@/modules/installation/install.useCase.ts";
 
 export type InstallOptions = { readonly dryRun: boolean };
 export type UninstallOptions = Record<string, never>;

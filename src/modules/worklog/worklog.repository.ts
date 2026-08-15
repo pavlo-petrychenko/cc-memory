@@ -8,7 +8,7 @@ import {
   MARKDOWN_EXTENSION,
   PROPOSALS_DIR_NAME,
   STATE_FILENAME,
-} from "@/modules/worklog/services/worklogStore/worklogStore.constants.ts";
+} from "@/modules/worklog/worklog.constants.ts";
 import type { WorklogEntry } from "@/modules/worklog/worklog.typedefs.ts";
 
 export type WorklogFile = {

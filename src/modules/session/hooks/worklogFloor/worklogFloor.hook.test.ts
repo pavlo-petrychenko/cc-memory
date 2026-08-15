@@ -7,7 +7,7 @@ import type { Gateways } from "@/gateways/index.ts";
 import { WorklogFloorHook } from "@/modules/session/hooks/worklogFloor/worklogFloor.hook.ts";
 import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
-import { HookRuntimeService } from "@/modules/session/runtime/runtime.service.ts";
+import { HookRuntimeService } from "@/modules/session/session.runner.ts";
 import { WorklogFloorFormatter, WorklogStoreService } from "@/modules/worklog/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type GitFake, makeGitFake } from "@/testing/fakes/gitFake.fake.ts";

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
 import { MANIFEST_SCHEMA_VERSION } from "@/modules/installation/steps/manifest/manifest.constants.ts";
-import { ManifestService } from "@/modules/installation/steps/manifest/manifest.service.ts";
+import { ManifestService } from "@/modules/installation/steps/manifest/manifest.repository.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 
 // SAFETY: fixed test fixture, never a real filesystem lookup — matches

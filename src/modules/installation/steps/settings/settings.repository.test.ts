@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { SettingsService } from "@/modules/installation/steps/settings/settings.service.ts";
-import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.service.ts";
+import { SettingsService } from "@/modules/installation/steps/settings/settings.repository.ts";
+import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.repository.ts";
 import type { JsonObject } from "@/modules/installation/utils/jsonFile/jsonFile.typedefs.ts";
 import { HookEvent } from "@/modules/session/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";

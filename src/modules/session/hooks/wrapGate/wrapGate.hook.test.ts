@@ -10,7 +10,7 @@ import { WrapGateFormatter } from "@/modules/session/hooks/wrapGate/wrapGate.for
 import { WrapGateHook } from "@/modules/session/hooks/wrapGate/wrapGate.hook.ts";
 import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
-import { HookRuntimeService } from "@/modules/session/runtime/runtime.service.ts";
+import { HookRuntimeService } from "@/modules/session/session.runner.ts";
 import { WorklogStoreService } from "@/modules/worklog/index.ts";
 import { type ClockFake, makeClockFake } from "@/testing/fakes/clockFixed.fake.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";

@@ -8,7 +8,7 @@ import { KbMapFormatter } from "@/modules/note/index.ts";
 import { SessionStartHook } from "@/modules/session/hooks/sessionStart/sessionStart.hook.ts";
 import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
-import { HookRuntimeService } from "@/modules/session/runtime/runtime.service.ts";
+import { HookRuntimeService } from "@/modules/session/session.runner.ts";
 import { WorkingMemoryFormatter } from "@/modules/worklog/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";

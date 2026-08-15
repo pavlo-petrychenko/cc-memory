@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { BunPathService } from "@/modules/installation/steps/bunPath/bunPath.service.ts";
+import { BunPathService } from "@/modules/installation/steps/bunPath/bunPath.repository.ts";
 import { BunPathErrorKind } from "@/modules/installation/steps/bunPath/bunPath.typedefs.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";

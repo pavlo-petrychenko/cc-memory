@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 
 import { absPath, expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { KbMapService } from "@/modules/note/services/kbMap.service.ts";
+import { KbMapService } from "@/modules/note/kbMap.repository.ts";
 import { NoteParser } from "@/modules/note/services/note.parser.ts";
 import { BuildKbMapUseCase } from "@/modules/note/useCases/buildKbMap.useCase.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";

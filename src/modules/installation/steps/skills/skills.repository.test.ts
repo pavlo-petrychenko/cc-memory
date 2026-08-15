@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { SkillsService } from "@/modules/installation/steps/skills/skills.service.ts";
+import { SkillsService } from "@/modules/installation/steps/skills/skills.repository.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — matches

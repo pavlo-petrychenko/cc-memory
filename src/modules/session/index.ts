@@ -13,7 +13,7 @@ export { WrapGateFormatter } from "@/modules/session/hooks/wrapGate/wrapGate.for
 export { WrapGateHook } from "@/modules/session/hooks/wrapGate/wrapGate.hook.ts";
 export { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
 export { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
-export { HookRuntimeService } from "@/modules/session/runtime/runtime.service.ts";
+export { HookRuntimeService } from "@/modules/session/session.runner.ts";
 export type {
   HookContext,
   HookHandler,

@@ -10,10 +10,10 @@ import type {
   WorkspaceDiagnostic,
 } from "@/modules/installation/doctor/doctor.typedefs.ts";
 import { WorkspaceIndexStatus } from "@/modules/installation/doctor/doctor.typedefs.ts";
-import { InstallService } from "@/modules/installation/install.service.ts";
-import { ManifestService } from "@/modules/installation/steps/manifest/manifest.service.ts";
-import { SettingsService } from "@/modules/installation/steps/settings/settings.service.ts";
-import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.service.ts";
+import { InstallService } from "@/modules/installation/install.useCase.ts";
+import { ManifestService } from "@/modules/installation/steps/manifest/manifest.repository.ts";
+import { SettingsService } from "@/modules/installation/steps/settings/settings.repository.ts";
+import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.repository.ts";
 import type { JsonObject } from "@/modules/installation/utils/jsonFile/jsonFile.typedefs.ts";
 import type { ReprojectNotesUseCase } from "@/modules/note/index.ts";
 import { HOOK_DESCRIPTORS } from "@/modules/session/session.constants.ts";

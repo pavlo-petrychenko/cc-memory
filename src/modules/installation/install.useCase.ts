@@ -14,7 +14,7 @@ import {
   type InstallReport,
   type UninstallReport,
 } from "@/modules/installation/install.typedefs.ts";
-import { BunPathService } from "@/modules/installation/steps/bunPath/bunPath.service.ts";
+import { BunPathService } from "@/modules/installation/steps/bunPath/bunPath.repository.ts";
 import {
   type BunPathError,
   BunPathErrorKind,
@@ -23,13 +23,13 @@ import {
   MANIFEST_SCHEMA_VERSION,
   PRE_CCMEMORY_BACKUP_SUFFIX,
 } from "@/modules/installation/steps/manifest/manifest.constants.ts";
-import { ManifestService } from "@/modules/installation/steps/manifest/manifest.service.ts";
+import { ManifestService } from "@/modules/installation/steps/manifest/manifest.repository.ts";
 import type { InstalledManifest } from "@/modules/installation/steps/manifest/manifest.typedefs.ts";
-import { SeedService } from "@/modules/installation/steps/seed/seed.service.ts";
-import { SettingsService } from "@/modules/installation/steps/settings/settings.service.ts";
-import { ShimService } from "@/modules/installation/steps/shim/shim.service.ts";
-import { SkillsService } from "@/modules/installation/steps/skills/skills.service.ts";
-import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.service.ts";
+import { SeedService } from "@/modules/installation/steps/seed/seed.repository.ts";
+import { SettingsService } from "@/modules/installation/steps/settings/settings.repository.ts";
+import { ShimService } from "@/modules/installation/steps/shim/shim.repository.ts";
+import { SkillsService } from "@/modules/installation/steps/skills/skills.repository.ts";
+import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.repository.ts";
 import {
   type JsonFileError,
   JsonFileErrorKind,

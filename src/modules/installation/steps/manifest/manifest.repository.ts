@@ -5,7 +5,7 @@ import type {
   InstalledManifest,
   SkillManifestEntry,
 } from "@/modules/installation/steps/manifest/manifest.typedefs.ts";
-import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.service.ts";
+import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.repository.ts";
 import type {
   JsonObject,
   JsonValue,

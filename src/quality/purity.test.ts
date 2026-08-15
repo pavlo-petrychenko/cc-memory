@@ -28,6 +28,7 @@ const IMPURE_SUFFIXES = [
   ".repository.ts",
   ".projection.ts",
   ".query.ts",
+  ".useCase.ts",
   ".runner.ts",
   ".wiring.ts",
   ".container.ts",
