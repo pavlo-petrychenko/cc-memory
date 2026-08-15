@@ -4,7 +4,7 @@ import type { Workspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import type { Sqlite, SqlParameter } from "@/gateways/index.ts";
 import type { FileSystem } from "@/gateways/index.ts";
-import { NoteParser } from "@/knowledge/index.ts";
+import { NoteParser } from "@/modules/note/index.ts";
 import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
 import type {
   BuildOptions,

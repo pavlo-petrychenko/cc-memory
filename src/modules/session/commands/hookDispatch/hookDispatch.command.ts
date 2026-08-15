@@ -2,7 +2,7 @@ import { CLI_SUCCESS, ConfigParser, cliOutcome } from "@/core/index.ts";
 import type { CliOutcome, Config } from "@/core/index.ts";
 import { AppGateways } from "@/gateways/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import { KbMapFormatter, KbMapService, NoteParser } from "@/knowledge/index.ts";
+import { KbMapFormatter, KbMapService, NoteParser } from "@/modules/note/index.ts";
 import type { HookArgs } from "@/modules/session/commands/hookDispatch/hookDispatch.typedefs.ts";
 import { CompactCheckpointFormatter } from "@/modules/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";
 import { CompactCheckpointHook } from "@/modules/session/hooks/compactCheckpoint/compactCheckpoint.hook.ts";

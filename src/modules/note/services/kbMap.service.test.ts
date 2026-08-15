@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { KbMapService } from "@/knowledge/kbMap/kbMap.service.ts";
-import { NoteParser } from "@/knowledge/note/note.parser.ts";
+import { KbMapService } from "@/modules/note/services/kbMap.service.ts";
+import { NoteParser } from "@/modules/note/services/note.parser.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 
 /**

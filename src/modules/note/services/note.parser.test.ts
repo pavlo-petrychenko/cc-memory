@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { NoteParser } from "@/knowledge/note/note.parser.ts";
+import { NoteParser } from "@/modules/note/services/note.parser.ts";
 
 const parser = new NoteParser();
 

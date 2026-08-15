@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { KbMapFormatter } from "@/knowledge/kbMap/kbMap.formatter.ts";
+import { KbMapFormatter } from "@/modules/note/services/kbMap.formatter.ts";
 
 const formatter = new KbMapFormatter();
 

@@ -12,3 +12,12 @@ export const TITLE = /^#\s+(.+?)\s*$/m;
 export const KB_INDEX_TITLE_SUFFIX = /\s*[—-]\s*Knowledge Base Index\s*$/;
 
 export const INDEX_NOTE_DESCRIPTION_MAX_LENGTH = 200;
+
+// A top-level `.md` file matching this is a dated journal entry, excluded
+// from "loose top-level notes".
+export const DAILY_JOURNAL_FILENAME = /^\d{4}-\d{2}-\d{2}\.md$/;
+
+export const MARKDOWN_EXTENSION = ".md";
+
+/** Column weights (C7): title ×10, body ×1, tags ×5. */
+export const NOTE_BM25_WEIGHTS = [10, 1, 5] as const;

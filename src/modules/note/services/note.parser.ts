@@ -9,7 +9,7 @@ import {
   TITLE,
   TYPED_RELATION,
   WIKILINK,
-} from "@/knowledge/note/note.constants.ts";
+} from "@/modules/note/note.constants.ts";
 import type {
   Frontmatter,
   FrontmatterValue,
@@ -19,7 +19,7 @@ import type {
   ParsedNote,
   YamlMapping,
   YamlValue,
-} from "@/knowledge/note/note.typedefs.ts";
+} from "@/modules/note/note.entity.ts";
 
 function isYamlMapping(value: YamlValue): value is YamlMapping {
   return value !== null && Object.prototype.toString.call(value) === "[object Object]";

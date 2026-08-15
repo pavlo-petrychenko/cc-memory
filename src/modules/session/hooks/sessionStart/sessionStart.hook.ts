@@ -1,5 +1,5 @@
 import type { Gateways } from "@/gateways/index.ts";
-import type { KbMapFormatter, KbMapService } from "@/knowledge/index.ts";
+import type { KbMapFormatter, KbMapService } from "@/modules/note/index.ts";
 import { CONTEXT_SEPARATOR } from "@/modules/session/hooks/sessionStart/sessionStart.constants.ts";
 import type { SessionStartPayload } from "@/modules/session/payload/payload.typedefs.ts";
 import type {

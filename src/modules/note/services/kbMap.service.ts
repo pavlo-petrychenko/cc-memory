@@ -5,9 +5,9 @@ import type { FileSystem } from "@/gateways/index.ts";
 import {
   DAILY_JOURNAL_FILENAME,
   MARKDOWN_EXTENSION,
-} from "@/knowledge/kbMap/kbMap.constants.ts";
-import type { KbMapFeature, KbMapInput } from "@/knowledge/kbMap/kbMap.typedefs.ts";
-import { NoteParser } from "@/knowledge/note/note.parser.ts";
+} from "@/modules/note/note.constants.ts";
+import type { KbMapFeature, KbMapInput } from "@/modules/note/services/kbMap.typedefs.ts";
+import { NoteParser } from "@/modules/note/services/note.parser.ts";
 
 function compareCaseInsensitive(left: string, right: string): number {
   const lowerLeft = left.toLowerCase();

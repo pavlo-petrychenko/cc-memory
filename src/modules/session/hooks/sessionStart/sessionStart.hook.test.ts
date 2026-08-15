@@ -4,7 +4,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import { KbMapFormatter, KbMapService, NoteParser } from "@/knowledge/index.ts";
+import { KbMapFormatter, KbMapService, NoteParser } from "@/modules/note/index.ts";
 import { SessionStartHook } from "@/modules/session/hooks/sessionStart/sessionStart.hook.ts";
 import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
