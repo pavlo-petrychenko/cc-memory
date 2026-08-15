@@ -6,10 +6,9 @@ description: >-
   contradictions against the current code/decisions, then PROPOSE concrete
   ADD/UPDATE/INVALIDATE changes for approval. Use at the end of a substantial
   session ("actualize the KB", "update the docs for what we changed", "audit the
-  KB"), optionally scoped to parts the user names. Unlike `save-learning` (capture
-  one known fact) or `consolidate-review` (apply the reflector's worklog-derived
-  proposals), this proactively sweeps EXISTING notes to find what the session made
-  wrong or incomplete. Audits are read-only; KB writes ALWAYS need explicit approval.
+  KB"), optionally scoped to parts the user names. Unlike `save-learning`, which
+  captures one known fact, this proactively sweeps EXISTING notes to find what the
+  session made wrong or incomplete. Audits are read-only; KB writes ALWAYS need explicit approval.
 ---
 
 # actualize-kb

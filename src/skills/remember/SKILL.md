@@ -6,8 +6,8 @@ description: >-
   the end of a working session (the Stop-gate will also prompt for it), when the
   user says "save progress / note this / remember for next time", or before
   switching tasks. This is the episodic, per-worktree layer — NOT the durable KB
-  (that's `save-learning`). Worklog writes need no approval; they are scratch that
-  the nightly reflector later distils into the KB.
+  (that's `save-learning`). Worklog writes need no approval; they are scratch, and
+  what proves durable is later promoted to the KB by `save-learning`.
 ---
 
 # remember
@@ -41,8 +41,10 @@ Create the file/dir if needed. Append (never overwrite) one entry:
 ```
 - Be concrete (name modules/tables/flags). `**Changes:**` must be a real summary
   of everything you did, not "did some work".
-- Tag each genuinely durable, reusable fact with `#promote` so the reflector can
-  find it. Task-specific noise does NOT get `#promote`.
+- Tag each genuinely durable, reusable fact `#promote`. That marks it as a KB
+  candidate, so a later `save-learning` pass — or
+  `memory search --worklog promote` — can find it without re-reading every
+  journal. Task-specific noise does NOT get `#promote`.
 
 ### 3. Refresh `STATE.md`
 Overwrite so it reflects reality now:
