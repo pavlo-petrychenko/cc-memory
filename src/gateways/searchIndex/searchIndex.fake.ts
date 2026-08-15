@@ -15,6 +15,7 @@ export class SearchIndexFake implements SearchIndex {
   private resetResult = false;
   private nextHits: readonly Hit[] = [];
   private nextInlinks: InlinkCounts = new Map();
+  private nextExisting: ReadonlyMap<string, number> = new Map();
 
   readonly projected: {
     readonly collection: Collection;
@@ -33,6 +34,10 @@ export class SearchIndexFake implements SearchIndex {
     this.nextInlinks = inlinks;
   }
 
+  setNextExisting(existing: ReadonlyMap<string, number>): void {
+    this.nextExisting = existing;
+  }
+
   async resetIfStale(_workspace: Workspace): Promise<boolean> {
     return this.resetResult;
   }
@@ -43,6 +48,13 @@ export class SearchIndexFake implements SearchIndex {
     documents: readonly IndexDocument[],
   ): Promise<void> {
     this.projected.push({ collection, documents });
+  }
+
+  async listExisting(
+    _workspace: Workspace,
+    _collection: Collection,
+  ): Promise<ReadonlyMap<string, number>> {
+    return this.nextExisting;
   }
 
   async prune(

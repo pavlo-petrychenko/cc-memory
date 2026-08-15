@@ -2,8 +2,7 @@ import { expect, test } from "bun:test";
 
 import { absPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { Collection } from "@/gateways/index.ts";
-import { SearchIndexFake } from "@/gateways/index.ts";
+import { Collection, SearchIndexFake } from "@/gateways/index.ts";
 import { NoteProjection } from "@/modules/note/projection/note.projection.ts";
 
 const workspace: Workspace = {
@@ -16,29 +15,26 @@ const workspace: Workspace = {
   matchedPrefix: absPath("/repo"),
 };
 
-test("NoteProjection delegates to the SearchIndex with the Notes collection", async () => {
+test("NoteProjection maps Notes into the Notes collection", async () => {
   const index = new SearchIndexFake();
   const projection = new NoteProjection(index);
 
   index.setResetResult(true);
   expect(await projection.resetIfStale(workspace)).toBe(true);
 
-  const document = {
+  const note = {
     path: absPath("/kb/A.md"),
     title: "A",
-    body: "",
-    tags: "",
     type: "note",
     importance: null,
-    relations: [],
-    slug: "",
-    date: "",
-    mtimeMs: 1,
+    body: "body",
+    tags: "",
+    rels: [],
   };
-  await projection.project(workspace, [document]);
+  await projection.project(workspace, [{ note, mtimeMs: 1 }]);
   await projection.prune(workspace, new Set(["/kb/A.md"]));
 
-  expect(index.projected).toEqual([
-    { collection: Collection.Notes, documents: [document] },
-  ]);
+  expect(index.projected).toHaveLength(1);
+  expect(index.projected[0]?.collection).toBe(Collection.Notes);
+  expect(index.projected[0]?.documents[0]?.title).toBe("A");
 });

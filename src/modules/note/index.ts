@@ -17,3 +17,7 @@ export type { BuildStats, NoteSummary } from "@/modules/note/note.typedefs.ts";
 export { NoteRepository } from "@/modules/note/note.repository.ts";
 export { NoteProjection } from "@/modules/note/projection/note.projection.ts";
 export { NoteQuery } from "@/modules/note/projection/note.query.ts";
+export { BuildKbMapUseCase } from "@/modules/note/useCases/buildKbMap.useCase.ts";
+export { ListNotesUseCase } from "@/modules/note/useCases/listNotes.useCase.ts";
+export { ReprojectNotesUseCase } from "@/modules/note/useCases/reprojectNotes.useCase.ts";
+export { SearchNotesUseCase } from "@/modules/note/useCases/searchNotes.useCase.ts";

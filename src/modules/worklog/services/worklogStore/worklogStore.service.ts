@@ -11,6 +11,13 @@ import {
 } from "@/modules/worklog/services/worklogStore/worklogStore.constants.ts";
 import type { WorklogEntry } from "@/modules/worklog/worklog.typedefs.ts";
 
+export type WorklogFile = {
+  readonly path: AbsPath;
+  readonly slug: string;
+  readonly date: string;
+  readonly mtimeMs: number;
+};
+
 function relativePath(from: AbsPath, to: AbsPath): string {
   const fromParts = from.split("/").filter((part) => part !== "");
   const toParts = to.split("/").filter((part) => part !== "");
@@ -70,6 +77,54 @@ export class WorklogStoreService {
     } catch {
       return null;
     }
+  }
+
+  /** Every `.md` file under `<worklogs>/<slug>/`, for reprojection. */
+  async scanWorklogFiles(ws: Workspace): Promise<readonly WorklogFile[]> {
+    let slugs: readonly string[];
+    try {
+      slugs = await this.fs.readDir(ws.worklogs);
+    } catch {
+      return [];
+    }
+
+    const perSlug = await Promise.all(
+      slugs.map(async (slug): Promise<readonly WorklogFile[]> => {
+        if (slug.startsWith(".")) return [];
+        const slugDir = joinAbs(ws.worklogs, slug);
+        let names: readonly string[];
+        try {
+          names = await this.fs.readDir(slugDir);
+        } catch {
+          return [];
+        }
+        const markdownNames = names
+          .filter((name) => name.endsWith(MARKDOWN_EXTENSION))
+          .toSorted();
+        const files = await Promise.all(
+          markdownNames.map(async (name): Promise<WorklogFile | null> => {
+            const path = joinAbs(slugDir, name);
+            try {
+              const mtimeMs = (await this.fs.stat(path)).mtimeMs;
+              return {
+                path,
+                slug,
+                date: name === STATE_FILENAME ? "STATE" : name.slice(0, -3),
+                mtimeMs,
+              };
+            } catch {
+              return null;
+            }
+          }),
+        );
+        return files.filter((file): file is WorklogFile => file !== null);
+      }),
+    );
+    return perSlug.flat();
+  }
+
+  async readWorklogFile(path: AbsPath): Promise<string> {
+    return this.fs.readFile(path);
   }
 
   async recentEntries(

@@ -2,8 +2,7 @@ import { expect, test } from "bun:test";
 
 import { absPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { Collection } from "@/gateways/index.ts";
-import { SearchIndexFake } from "@/gateways/index.ts";
+import { Collection, SearchIndexFake } from "@/gateways/index.ts";
 import { WorklogProjection } from "@/modules/worklog/projection/worklog.projection.ts";
 
 const workspace: Workspace = {
@@ -16,25 +15,20 @@ const workspace: Workspace = {
   matchedPrefix: absPath("/repo"),
 };
 
-test("WorklogProjection delegates to the SearchIndex with the Worklog collection", async () => {
+test("WorklogProjection maps worklog files into the Worklog collection", async () => {
   const index = new SearchIndexFake();
   const projection = new WorklogProjection(index);
 
-  const document = {
-    path: absPath("/kb/_Worklogs/wt1/2026-01-01.md"),
-    title: "",
-    body: "rollback incident",
-    tags: "",
-    type: "",
-    importance: null,
-    relations: [],
-    slug: "wt1",
-    date: "2026-01-01",
-    mtimeMs: 1,
-  };
-  await projection.project(workspace, [document]);
-
-  expect(index.projected).toEqual([
-    { collection: Collection.Worklog, documents: [document] },
+  await projection.project(workspace, [
+    {
+      path: absPath("/kb/_Worklogs/wt1/2026-01-01.md"),
+      slug: "wt1",
+      date: "2026-01-01",
+      body: "rollback incident",
+      mtimeMs: 1,
+    },
   ]);
+
+  expect(index.projected[0]?.collection).toBe(Collection.Worklog);
+  expect(index.projected[0]?.documents[0]?.slug).toBe("wt1");
 });

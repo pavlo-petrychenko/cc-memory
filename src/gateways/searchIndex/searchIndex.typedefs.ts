@@ -52,6 +52,12 @@ export type SearchIndex = {
     collection: Collection,
     documents: readonly IndexDocument[],
   ) => Promise<void>;
+  /** The collection's currently indexed paths → stored mtime, for incremental
+   * reprojection and added/updated/removed counts. */
+  readonly listExisting: (
+    workspace: Workspace,
+    collection: Collection,
+  ) => Promise<ReadonlyMap<string, number>>;
   /** Deletes every row whose path is not in `keepPaths`. */
   readonly prune: (
     workspace: Workspace,

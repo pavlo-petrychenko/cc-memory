@@ -100,6 +100,20 @@ export class SearchIndexAdapter implements SearchIndex {
     }
   }
 
+  async listExisting(
+    workspace: Workspace,
+    collection: Collection,
+  ): Promise<ReadonlyMap<string, number>> {
+    const db = await this.open(workspace);
+    const rows = db.query<{ readonly path: string; readonly mtime: number }>(
+      collection === Collection.Notes
+        ? "SELECT path, mtime FROM notes"
+        : "SELECT path, mtime FROM worklog_files",
+      [],
+    );
+    return new Map(rows.map((row) => [row.path, row.mtime]));
+  }
+
   private projectNote(db: Sqlite, document: IndexDocument): void {
     const upsertParams: readonly SqlParameter[] = [
       document.path,
