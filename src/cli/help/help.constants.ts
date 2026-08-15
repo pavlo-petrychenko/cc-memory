@@ -38,14 +38,14 @@ export const COMMAND_SUMMARY_SEPARATOR = "  — ";
 export const ENV_NAME_COLUMN_PADDING = 2;
 
 export const HELP_DESCRIPTOR: CommandDescriptor = {
-  name: "-h",
+  path: ["-h"],
   usage: ["-h", "--help"],
   summary: "show this help text",
   hidden: false,
 };
 
 export const VERSION_DESCRIPTOR: CommandDescriptor = {
-  name: "-V",
+  path: ["-V"],
   usage: ["-V", "--version"],
   summary: "show the installed version",
   hidden: false,

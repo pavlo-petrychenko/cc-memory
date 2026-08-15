@@ -1,4 +1,4 @@
-import type { CliCommand } from "@/cli/args/args.typedefs.ts";
+import type { CliCommand } from "@/core/index.ts";
 
 export type ResolveArgs = {
   readonly command: CliCommand.Resolve;

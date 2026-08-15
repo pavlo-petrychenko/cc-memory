@@ -38,6 +38,32 @@ export type HookDescriptor = {
 
 export type ArgsError = { readonly message: string };
 
+/** The closed set of subcommands, shared by the CLI parser and every command's
+ * args type so a module never imports `cli/` just for a discriminant. */
+export enum CliCommand {
+  WorkspaceAdd = "workspace_add",
+  WorkspaceRm = "workspace_rm",
+  WorkspaceLs = "workspace_ls",
+  Resolve = "resolve",
+  Reindex = "reindex",
+  Search = "search",
+  Notes = "notes",
+  Commit = "commit",
+  Doctor = "doctor",
+  Hook = "hook",
+  Install = "install",
+  Uninstall = "uninstall",
+  /** `-h`/`--help`, or no arguments at all. */
+  Help = "help",
+  Version = "version",
+}
+
+/** One `CCMEM_*` tunable rendered in the `--help` environment section. */
+export type EnvVarDescriptor = {
+  readonly name: string;
+  readonly description: string;
+};
+
 /** The transport-agnostic shape every command implements: map raw tokens to a
  * typed options value, then run the operation. The runner owns argv, stdio and
  * exit codes. */

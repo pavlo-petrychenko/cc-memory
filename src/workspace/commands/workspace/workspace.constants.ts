@@ -1,9 +1,9 @@
-import type { CommandDescriptor } from "@/cli/help/help.typedefs.ts";
+import type { CommandDescriptor } from "@/core/index.ts";
 
 export const NO_WORKSPACES_MESSAGE = "(no workspaces)";
 
 export const WORKSPACE_ADD_DESCRIPTOR: CommandDescriptor = {
-  name: "workspace add",
+  path: ["workspace", "add"],
   usage: [
     "workspace add <id> --match <prefix>… [--kb PATH] [--worklogs PATH] [--exclude E…]",
   ],
@@ -12,14 +12,14 @@ export const WORKSPACE_ADD_DESCRIPTOR: CommandDescriptor = {
 };
 
 export const WORKSPACE_RM_DESCRIPTOR: CommandDescriptor = {
-  name: "workspace rm",
+  path: ["workspace", "rm"],
   usage: ["workspace rm <id> [--purge]"],
   summary: "remove a workspace registration",
   hidden: false,
 };
 
 export const WORKSPACE_LS_DESCRIPTOR: CommandDescriptor = {
-  name: "workspace ls",
+  path: ["workspace", "ls"],
   usage: ["workspace ls"],
   summary: "list registered workspaces",
   hidden: false,

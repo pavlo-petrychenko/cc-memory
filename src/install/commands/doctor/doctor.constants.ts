@@ -1,7 +1,7 @@
-import type { CommandDescriptor } from "@/cli/help/help.typedefs.ts";
+import type { CommandDescriptor } from "@/core/index.ts";
 
 export const DOCTOR_DESCRIPTOR: CommandDescriptor = {
-  name: "doctor",
+  path: ["doctor"],
   usage: ["doctor [--cwd PATH] [--prompt TEXT]"],
   summary: "self-test hooks and diagnose the install",
   hidden: false,

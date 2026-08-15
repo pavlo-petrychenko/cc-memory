@@ -23,13 +23,13 @@ describe("HelpFormatter.render", () => {
     expect(visible.length).toBeGreaterThan(0);
 
     for (const descriptor of visible) {
-      expect(rendered).toContain(`memory ${descriptor.name}`);
+      expect(rendered).toContain(`memory ${descriptor.path.join(" ")}`);
     }
   });
 
   test("a hidden descriptor is never rendered", () => {
     const hidden: CommandDescriptor = {
-      name: "internal-only",
+      path: ["internal-only"],
       usage: ["internal-only <secret>"],
       summary: "never shown",
       hidden: true,
@@ -50,7 +50,7 @@ describe("HelpFormatter.render", () => {
 
   test("a visible descriptor's summary is printed on its usage line", () => {
     const descriptor: CommandDescriptor = {
-      name: "frobnicate",
+      path: ["frobnicate"],
       usage: ["frobnicate <thing>"],
       summary: "does the thing",
       hidden: false,
@@ -62,7 +62,7 @@ describe("HelpFormatter.render", () => {
 
   test("multiple usage forms on one descriptor render joined by ' | '", () => {
     const descriptor: CommandDescriptor = {
-      name: "-h",
+      path: ["-h"],
       usage: ["-h", "--help"],
       summary: "show this help text",
       hidden: false,

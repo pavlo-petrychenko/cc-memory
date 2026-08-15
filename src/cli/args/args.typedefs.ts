@@ -1,3 +1,4 @@
+import { CliCommand } from "@/core/index.ts";
 import type { DoctorArgs } from "@/install/commands/doctor/doctor.typedefs.ts";
 import type {
   InstallArgs,
@@ -15,24 +16,7 @@ import type {
   WorkspaceRmArgs,
 } from "@/workspace/commands/workspace/workspace.typedefs.ts";
 
-/** The closed set of subcommands. */
-export enum CliCommand {
-  WorkspaceAdd = "workspace_add",
-  WorkspaceRm = "workspace_rm",
-  WorkspaceLs = "workspace_ls",
-  Resolve = "resolve",
-  Reindex = "reindex",
-  Search = "search",
-  Notes = "notes",
-  Commit = "commit",
-  Doctor = "doctor",
-  Hook = "hook",
-  Install = "install",
-  Uninstall = "uninstall",
-  /** `-h`/`--help`, or no arguments at all. */
-  Help = "help",
-  Version = "version",
-}
+export { CliCommand };
 
 export type HelpArgs = { readonly command: CliCommand.Help };
 
