@@ -1,5 +1,6 @@
 import { absPath, parentDir, relKey } from "@/core/index.ts";
 import type { AbsPath, Workspace } from "@/core/index.ts";
+import type { Hit } from "@/core/search/search.typedefs.ts";
 import type { FileSystem } from "@/gateways/fileSystem/fileSystem.typedefs.ts";
 import {
   NOTES_SEARCH_TEMPLATE,
@@ -10,7 +11,6 @@ import {
 } from "@/gateways/searchIndex/searchIndex.constants.ts";
 import {
   Collection,
-  type Hit,
   type IndexDocument,
   type InlinkCounts,
   type SearchIndex,

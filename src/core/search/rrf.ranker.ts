@@ -1,6 +1,6 @@
-import { RRF_K } from "@/retrieval/ranking/ranking.constants.ts";
-import type { FuseInput } from "@/retrieval/ranking/ranking.typedefs.ts";
-import type { FusedHit, Hit } from "@/retrieval/retrieval.typedefs.ts";
+import { RRF_K } from "@/core/search/search.constants.ts";
+import type { FuseInput } from "@/core/search/search.typedefs.ts";
+import type { FusedHit, Hit } from "@/core/search/search.typedefs.ts";
 
 export class Ranker {
   /** RRF (C7): for each token hit at rank `i`, `s = 1/(RRF_K + i + 1)`; if it also

@@ -4,10 +4,8 @@ export { ReindexCommand } from "@/retrieval/commands/reindex/reindex.command.ts"
 export { ReindexFormatter } from "@/retrieval/commands/reindex/reindex.formatter.ts";
 export { SearchCommand } from "@/retrieval/commands/search/search.command.ts";
 export { SearchFormatter } from "@/retrieval/commands/search/search.formatter.ts";
-export { FtsQueryBuilder } from "@/retrieval/query/ftsQuery/ftsQuery.builder.ts";
-export { TokenizerParser } from "@/retrieval/query/tokenizer/tokenizer.parser.ts";
-export { Ranker } from "@/retrieval/ranking/ranking.ranker.ts";
-export type { FusedHit } from "@/retrieval/retrieval.typedefs.ts";
+export { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
+export type { FusedHit } from "@/core/index.ts";
 export { SearchKind } from "@/retrieval/retrieval.typedefs.ts";
 export { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
 export { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";

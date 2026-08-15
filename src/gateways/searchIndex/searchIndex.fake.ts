@@ -1,7 +1,7 @@
 import type { Workspace } from "@/core/domain.typedefs.ts";
+import type { Hit } from "@/core/search/search.typedefs.ts";
 import type {
   Collection,
-  Hit,
   IndexDocument,
   InlinkCounts,
   SearchIndex,

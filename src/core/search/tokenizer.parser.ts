@@ -9,7 +9,7 @@ import {
   CHUNK,
   PURE_DIGITS,
   STOPWORDS,
-} from "@/retrieval/query/tokenizer/tokenizer.constants.ts";
+} from "@/core/search/search.constants.ts";
 
 export class TokenizerParser {
   private keep(token: string): boolean {

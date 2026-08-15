@@ -1,5 +1,6 @@
 import type { AbsPath } from "@/core/core.typedefs.ts";
 import type { Workspace } from "@/core/domain.typedefs.ts";
+import type { Hit } from "@/core/search/search.typedefs.ts";
 
 /** The two indexed corpora. `Notes` maps to the `notes`/`notes_fts`/`links` tables,
  * `Worklog` to `worklog_fts`/`worklog_files`. */
@@ -32,15 +33,6 @@ export type IndexDocument = {
 /** Ordered BM25 column weights, one per indexed column in the collection's FTS
  * table. `notes` is title/body/tags; `worklog` is slug/date/body. */
 export type ColumnWeights = readonly number[];
-
-/** A ranked hit. `score` is the raw negative bm25 value — lower is a stronger
- * match; "strength" is `-score`. */
-export type Hit = {
-  readonly path: AbsPath;
-  readonly title: string;
-  readonly snippet: string;
-  readonly score: number;
-};
 
 /** Path → number of in-candidate links pointing at it, feeding the RRF
  * corroboration bonus. */

@@ -2,8 +2,8 @@ import {
   MAX_NEAR_CLAUSES,
   MAX_QUERY_TOKENS,
   PHRASE_WINDOW,
-} from "@/retrieval/query/ftsQuery/ftsQuery.constants.ts";
-import { TokenizerParser } from "@/retrieval/query/tokenizer/tokenizer.parser.ts";
+} from "@/core/search/search.constants.ts";
+import { TokenizerParser } from "@/core/search/tokenizer.parser.ts";
 
 export class FtsQueryBuilder {
   constructor(private readonly tokenizerParser: TokenizerParser) {}

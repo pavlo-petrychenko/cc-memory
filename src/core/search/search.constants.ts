@@ -36,3 +36,12 @@ export const STOPWORDS: ReadonlySet<string> = new Set([
   "let",
   "lets",
 ]);
+
+/** NEAR proximity window, in tokens. */
+export const PHRASE_WINDOW = 8;
+
+export const MAX_QUERY_TOKENS = 32;
+export const MAX_NEAR_CLAUSES = 24;
+
+/** Standard Reciprocal Rank Fusion constant. */
+export const RRF_K = 60;

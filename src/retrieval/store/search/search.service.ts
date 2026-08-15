@@ -1,11 +1,10 @@
 import type { AbsPath } from "@/core/index.ts";
-import { absPath } from "@/core/index.ts";
+import { absPath, FtsQueryBuilder, Ranker } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
+import type { FusedHit, Hit } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import type { Sqlite } from "@/gateways/index.ts";
-import { FtsQueryBuilder } from "@/retrieval/query/ftsQuery/ftsQuery.builder.ts";
-import { Ranker } from "@/retrieval/ranking/ranking.ranker.ts";
-import { SearchKind, type FusedHit, type Hit } from "@/retrieval/retrieval.typedefs.ts";
+import { SearchKind } from "@/retrieval/retrieval.typedefs.ts";
 import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
 import { LinkGraphService } from "@/retrieval/store/graph/graph.service.ts";
 import {

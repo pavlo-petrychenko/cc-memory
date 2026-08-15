@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { FtsQueryBuilder } from "@/retrieval/query/ftsQuery/ftsQuery.builder.ts";
-import { TokenizerParser } from "@/retrieval/query/tokenizer/tokenizer.parser.ts";
+import { FtsQueryBuilder } from "@/core/search/ftsQuery.builder.ts";
+import { TokenizerParser } from "@/core/search/tokenizer.parser.ts";
 
 const ftsQueryBuilder = new FtsQueryBuilder(new TokenizerParser());
 

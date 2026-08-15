@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { RRF_K } from "@/retrieval/ranking/ranking.constants.ts";
-import { Ranker } from "@/retrieval/ranking/ranking.ranker.ts";
-import type { Hit } from "@/retrieval/retrieval.typedefs.ts";
+import { Ranker } from "@/core/search/rrf.ranker.ts";
+import { RRF_K } from "@/core/search/search.constants.ts";
+import type { Hit } from "@/core/search/search.typedefs.ts";
 
 // Test-only helper. These paths never touch a real filesystem — `rank` only
 // ever compares them for equality — so a literal string stands in for a real

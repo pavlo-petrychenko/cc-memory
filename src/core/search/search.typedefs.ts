@@ -1,4 +1,16 @@
-import type { Hit } from "@/retrieval/retrieval.typedefs.ts";
+import type { AbsPath } from "@/core/core.typedefs.ts";
+
+/** `score` is the raw negative bm25 value from SQLite — lower is a stronger match;
+ * "strength" is `-score`. */
+export type Hit = {
+  readonly path: AbsPath;
+  readonly title: string;
+  readonly snippet: string;
+  readonly score: number;
+};
+
+/** A `Hit` after Reciprocal Rank Fusion, carrying the fused score. */
+export type FusedHit = Hit & { readonly rankScore: number };
 
 export type FuseInput = {
   /** BM25 token-OR hits, already ranked (0-based rank = array index) — the complete

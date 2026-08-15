@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { STOPWORDS } from "@/retrieval/query/tokenizer/tokenizer.constants.ts";
-import { TokenizerParser } from "@/retrieval/query/tokenizer/tokenizer.parser.ts";
+import { STOPWORDS } from "@/core/search/search.constants.ts";
+import { TokenizerParser } from "@/core/search/tokenizer.parser.ts";
 
 const tokenizerParser = new TokenizerParser();
 

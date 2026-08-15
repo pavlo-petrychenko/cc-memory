@@ -2,9 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
 import { relKey } from "@/core/index.ts";
-import { FtsQueryBuilder } from "@/retrieval/query/ftsQuery/ftsQuery.builder.ts";
-import { TokenizerParser } from "@/retrieval/query/tokenizer/tokenizer.parser.ts";
-import { Ranker } from "@/retrieval/ranking/ranking.ranker.ts";
+import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
 import { SearchKind } from "@/retrieval/retrieval.typedefs.ts";
 import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
 import { LinkGraphService } from "@/retrieval/store/graph/graph.service.ts";

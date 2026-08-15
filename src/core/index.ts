@@ -48,3 +48,7 @@ export type {
 } from "@/core/entry/entry.typedefs.ts";
 export { Command } from "@/core/entry/command.decorator.ts";
 export { Hook } from "@/core/entry/hook.decorator.ts";
+export { TokenizerParser } from "@/core/search/tokenizer.parser.ts";
+export { FtsQueryBuilder } from "@/core/search/ftsQuery.builder.ts";
+export { Ranker } from "@/core/search/rrf.ranker.ts";
+export type { FusedHit, FuseInput, Hit } from "@/core/search/search.typedefs.ts";
