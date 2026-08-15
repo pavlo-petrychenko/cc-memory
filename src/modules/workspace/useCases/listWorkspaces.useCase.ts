@@ -1,8 +1,8 @@
 import type { AbsPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import { WorkspaceFormatter } from "@/modules/workspace/commands/workspace/workspace.formatter.ts";
-import type { WorkspaceLsRow } from "@/modules/workspace/commands/workspace/workspace.typedefs.ts";
 import { WorkspaceRepository } from "@/modules/workspace/workspace.repository.ts";
+import type { WorkspaceLsRow } from "@/modules/workspace/workspace.typedefs.ts";
 import type { WorkspaceIndexBuilder } from "@/modules/workspace/workspace.typedefs.ts";
 import { WorkspaceValidatorService } from "@/modules/workspace/workspace.validator.service.ts";
 

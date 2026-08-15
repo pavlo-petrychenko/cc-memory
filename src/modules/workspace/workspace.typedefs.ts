@@ -34,6 +34,8 @@ export type RegistryConflict =
       readonly otherKb: string;
     };
 
+export type WorkspaceLsRow = { readonly summaryLine: string; readonly matchLine: string };
+
 /** The one capability `commands/workspace` needs from the search index, injected
  * so this module never imports `@/retrieval` at runtime — `retrieval` itself
  * depends on `workspace`, so a direct import back would close a cycle. */

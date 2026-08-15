@@ -51,7 +51,7 @@ export const VERSION_DESCRIPTOR: CommandDescriptor = {
   hidden: false,
 };
 
-/** Every `CliCommand`'s descriptor, in the order `memory --help` lists them.
+/** Every command's descriptor, in the order `memory --help` lists them.
  * Adding a subcommand means adding its descriptor here. */
 export const COMMAND_DESCRIPTORS: readonly CommandDescriptor[] = [
   WORKSPACE_ADD_DESCRIPTOR,

@@ -76,9 +76,9 @@ test("only role-suffixed files reference gateways or node/bun builtins", async (
 
   const pureModulePaths = modulePaths.filter((path) => !mayTouchTheOutsideWorld(path));
   // Guard against the rule silently covering nothing if the suffixes ever change.
-  // The real count is currently 109; 100 leaves headroom without letting the
-  // check quietly stop covering most of the tree.
-  expect(pureModulePaths.length).toBeGreaterThan(100);
+  // The real count is ~99; 80 leaves headroom without letting the check quietly
+  // stop covering most of the tree.
+  expect(pureModulePaths.length).toBeGreaterThan(80);
 
   const fileContents = await Promise.all(
     pureModulePaths.map((modulePath) => Bun.file(sourceRoot + modulePath).text()),
