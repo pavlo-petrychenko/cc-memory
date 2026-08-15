@@ -1,1 +1,0 @@
-export const DEFAULT_NEIGHBORS_LIMIT = 8;

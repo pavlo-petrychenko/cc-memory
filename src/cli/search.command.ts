@@ -1,22 +1,23 @@
+import { NO_HITS_MESSAGE } from "@/cli/search.constants.ts";
+import type { SearchArgs } from "@/cli/search.typedefs.ts";
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome, Config } from "@/core/index.ts";
 import { expandPath, relativeTo } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
+import { SearchNotesUseCase } from "@/modules/note/index.ts";
+import { SearchFormatter } from "@/modules/note/index.ts";
+import { SearchWorklogUseCase } from "@/modules/worklog/index.ts";
 import {
   RegistryService,
   RegistryTomlSerializer,
   TargetResolutionService,
   WorkspaceResolverService,
 } from "@/modules/workspace/index.ts";
-import { NO_HITS_MESSAGE } from "@/retrieval/commands/search/search.constants.ts";
-import { SearchFormatter } from "@/retrieval/commands/search/search.formatter.ts";
-import type { SearchArgs } from "@/retrieval/commands/search/search.typedefs.ts";
-import { SearchKind } from "@/retrieval/retrieval.typedefs.ts";
-import { SearchService } from "@/retrieval/store/search/search.service.ts";
 
 export class SearchCommand {
   constructor(
-    private readonly searchService: SearchService,
+    private readonly searchNotes: SearchNotesUseCase,
+    private readonly searchWorklog: SearchWorklogUseCase,
     private readonly formatter: SearchFormatter,
   ) {}
 
@@ -48,11 +49,10 @@ export class SearchCommand {
     if (!resolved.ok) return cliFailure(resolved.error);
     const workspace = resolved.value;
 
-    const hits = await this.searchService.searchFused(container, workspace, args.query, {
-      limit: args.limit,
-      kind: args.worklog ? SearchKind.Worklog : SearchKind.Notes,
-      linkBoost: config.linkBoost,
-    });
+    const options = { limit: args.limit, linkBoost: config.linkBoost };
+    const hits = args.worklog
+      ? await this.searchWorklog.run(workspace, args.query, options)
+      : await this.searchNotes.run(workspace, args.query, options);
 
     if (hits.length === 0) {
       container.stdio.write(NO_HITS_MESSAGE);

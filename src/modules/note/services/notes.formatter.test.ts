@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { NotesFormatter } from "@/retrieval/commands/notes/notes.formatter.ts";
+import { NotesFormatter } from "@/modules/note/services/notes.formatter.ts";
 
 const notesFormatter = new NotesFormatter();
 

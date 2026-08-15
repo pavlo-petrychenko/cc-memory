@@ -9,12 +9,12 @@ import { DoctorCommand } from "@/modules/installation/commands/doctor/doctor.com
 import { DoctorFormatter } from "@/modules/installation/doctor/doctor.formatter.ts";
 import { DoctorService } from "@/modules/installation/doctor/doctor.service.ts";
 import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
-import {
-  IndexBuildService,
-  IndexConnectionService,
-  SchemaService,
-} from "@/retrieval/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
+import {
+  makeNoteModule,
+  makeSearchIndex,
+  makeWorklogModule,
+} from "@/testing/fixtures/retrievalModules.fixture.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 
 // SAFETY: a fixed test fixture, matching tests/helpers/container.ts's DEFAULT_HOME.
@@ -22,12 +22,12 @@ const HOME = "/home/test" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
 
 function makeDoctorCommand(container: Gateways): DoctorCommand {
-  const indexBuildService = new IndexBuildService(
-    new IndexConnectionService(new SchemaService()),
-  );
+  const index = makeSearchIndex(container);
+  const note = makeNoteModule(container, index);
+  const worklog = makeWorklogModule(container, index);
   return new DoctorCommand(
     container,
-    new DoctorService(container, indexBuildService),
+    new DoctorService(container, note.reprojectNotes, worklog.reprojectWorklog),
     new DoctorFormatter(),
   );
 }

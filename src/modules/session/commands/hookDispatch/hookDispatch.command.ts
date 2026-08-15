@@ -1,8 +1,19 @@
 import { CLI_SUCCESS, ConfigParser, cliOutcome } from "@/core/index.ts";
 import type { CliOutcome, Config } from "@/core/index.ts";
-import { AppGateways } from "@/gateways/index.ts";
-import type { Gateways } from "@/gateways/index.ts";
-import { KbMapFormatter, KbMapService, NoteParser } from "@/modules/note/index.ts";
+import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
+import { AppGateways, SearchIndexAdapter } from "@/gateways/index.ts";
+import type { Gateways, SearchIndex } from "@/gateways/index.ts";
+import {
+  BuildKbMapUseCase,
+  KbMapFormatter,
+  KbMapService,
+  NoteParser,
+  NoteProjection,
+  NoteQuery,
+  NoteRepository,
+  ReprojectNotesUseCase,
+  SearchNotesUseCase,
+} from "@/modules/note/index.ts";
 import type { HookArgs } from "@/modules/session/commands/hookDispatch/hookDispatch.typedefs.ts";
 import { CompactCheckpointFormatter } from "@/modules/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";
 import { CompactCheckpointHook } from "@/modules/session/hooks/compactCheckpoint/compactCheckpoint.hook.ts";
@@ -22,41 +33,44 @@ import {
   WorklogStoreService,
 } from "@/modules/worklog/index.ts";
 import {
-  FtsQueryBuilder,
-  IndexBuildService,
-  IndexConnectionService,
-  LinkGraphService,
-  Ranker,
-  SchemaService,
-  SearchService,
-  TokenizerParser,
-} from "@/retrieval/index.ts";
+  ReprojectWorklogUseCase,
+  SearchWorklogUseCase,
+  WorklogProjection,
+  WorklogQuery,
+} from "@/modules/worklog/index.ts";
 
 /** Exported so a test can pin it against the installer's registration table. */
 export const dispatchableHookNames: readonly HookName[] = Object.values(HookName);
 
 /** Every hook's real composition root: no hook constructs its own dependencies,
  * each is wired here from the real `Gateways` handed to `execute`. */
-function makeIndexConnectionService(): IndexConnectionService {
-  return new IndexConnectionService(new SchemaService());
+function makeSearchIndex(container: Gateways): SearchIndex {
+  return new SearchIndexAdapter(container.fs, (path) => container.openDatabase(path));
 }
 
-function makeIndexBuildService(): IndexBuildService {
-  return new IndexBuildService(makeIndexConnectionService());
+function makeNoteModule(container: Gateways, index: SearchIndex) {
+  const tokenizer = new TokenizerParser();
+  const repository = new NoteRepository(container.fs, new NoteParser());
+  const projection = new NoteProjection(index);
+  const query = new NoteQuery(index, new FtsQueryBuilder(tokenizer), new Ranker());
+  return {
+    reprojectNotes: new ReprojectNotesUseCase(repository, projection),
+    searchNotes: new SearchNotesUseCase(query),
+    buildKbMap: new BuildKbMapUseCase(new KbMapService(container.fs, new NoteParser())),
+    kbMapFormatter: new KbMapFormatter(),
+  };
 }
 
-function makeSearchService(): SearchService {
-  const connectionService = makeIndexConnectionService();
-  return new SearchService(
-    connectionService,
-    new FtsQueryBuilder(new TokenizerParser()),
-    new Ranker(),
-    new LinkGraphService(connectionService),
-  );
-}
-
-function makeWorklogStoreService(container: Gateways): WorklogStoreService {
-  return new WorklogStoreService(container.fs, container.git);
+function makeWorklogModule(container: Gateways, index: SearchIndex) {
+  const tokenizer = new TokenizerParser();
+  const store = new WorklogStoreService(container.fs, container.git);
+  const projection = new WorklogProjection(index);
+  const query = new WorklogQuery(index, new FtsQueryBuilder(tokenizer), new Ranker());
+  return {
+    store,
+    reprojectWorklog: new ReprojectWorklogUseCase(store, projection),
+    searchWorklog: new SearchWorklogUseCase(query),
+  };
 }
 
 /** An unknown `name` stays fail-open: this same CLI path is what `settings.json`
@@ -97,6 +111,9 @@ export class HookDispatchCommand {
       payloadParser,
       new HookResultSerializer(),
     );
+    const index = makeSearchIndex(this.container);
+    const note = makeNoteModule(this.container, index);
+    const worklog = makeWorklogModule(this.container, index);
 
     switch (name) {
       case HookName.SessionStart:
@@ -105,10 +122,11 @@ export class HookDispatchCommand {
           (record) => payloadParser.parseSessionStart(record),
           new SessionStartHook(
             this.container,
-            makeIndexBuildService(),
-            new KbMapService(this.container.fs, new NoteParser()),
-            new KbMapFormatter(),
-            makeWorklogStoreService(this.container),
+            note.reprojectNotes,
+            worklog.reprojectWorklog,
+            note.buildKbMap,
+            note.kbMapFormatter,
+            worklog.store,
             new WorkingMemoryFormatter(),
           ),
         );
@@ -121,7 +139,8 @@ export class HookDispatchCommand {
             this.container,
             this.config,
             new MemoryInjectFormatter(),
-            makeSearchService(),
+            note.searchNotes,
+            worklog.searchWorklog,
             new TokenizerParser(),
           ),
         );
@@ -135,7 +154,7 @@ export class HookDispatchCommand {
             this.config,
             payloadParser,
             new WrapGateFormatter(),
-            makeWorklogStoreService(this.container),
+            worklog.store,
           ),
         );
         break;
@@ -146,7 +165,7 @@ export class HookDispatchCommand {
           new WorklogFloorHook(
             this.container,
             new WorklogFloorFormatter(),
-            makeWorklogStoreService(this.container),
+            worklog.store,
           ),
         );
         break;
@@ -157,7 +176,7 @@ export class HookDispatchCommand {
           new CompactCheckpointHook(
             this.container,
             new CompactCheckpointFormatter(),
-            makeWorklogStoreService(this.container),
+            worklog.store,
           ),
         );
         break;

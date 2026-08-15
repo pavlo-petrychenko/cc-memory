@@ -2,15 +2,15 @@ import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
+import type { NotesArgs } from "@/modules/note/commands/notes.typedefs.ts";
+import { ListNotesUseCase } from "@/modules/note/index.ts";
+import { NotesFormatter } from "@/modules/note/services/notes.formatter.ts";
 import {
   RegistryService,
   RegistryTomlSerializer,
   TargetResolutionService,
   WorkspaceResolverService,
 } from "@/modules/workspace/index.ts";
-import { NotesFormatter } from "@/retrieval/commands/notes/notes.formatter.ts";
-import type { NotesArgs } from "@/retrieval/commands/notes/notes.typedefs.ts";
-import { NoteListService } from "@/retrieval/store/noteList/noteList.service.ts";
 
 /** An explicit empty `--folder ""` behaves like omitting the flag entirely. */
 function normalizedFolder(folder: string | null): string | null {
@@ -19,7 +19,7 @@ function normalizedFolder(folder: string | null): string | null {
 
 export class NotesCommand {
   constructor(
-    private readonly noteListService: NoteListService,
+    private readonly listNotes: ListNotesUseCase,
     private readonly formatter: NotesFormatter,
   ) {}
 
@@ -50,11 +50,7 @@ export class NotesCommand {
     const workspace = resolved.value;
 
     const folder = normalizedFolder(args.folder);
-    const rows = await this.noteListService.list(
-      container,
-      workspace,
-      folder ?? undefined,
-    );
+    const rows = await this.listNotes.run(workspace, folder ?? undefined);
 
     if (args.json) {
       container.stdio.write(JSON.stringify(rows, null, 2));

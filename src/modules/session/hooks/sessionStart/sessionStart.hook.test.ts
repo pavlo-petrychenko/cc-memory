@@ -4,20 +4,20 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import { KbMapFormatter, KbMapService, NoteParser } from "@/modules/note/index.ts";
+import { KbMapFormatter } from "@/modules/note/index.ts";
 import { SessionStartHook } from "@/modules/session/hooks/sessionStart/sessionStart.hook.ts";
 import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
 import { HookRuntimeService } from "@/modules/session/runtime/runtime.service.ts";
-import { WorkingMemoryFormatter, WorklogStoreService } from "@/modules/worklog/index.ts";
+import { WorkingMemoryFormatter } from "@/modules/worklog/index.ts";
 import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
-import {
-  IndexBuildService,
-  IndexConnectionService,
-  SchemaService,
-} from "@/retrieval/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
+import {
+  makeNoteModule,
+  makeSearchIndex,
+  makeWorklogModule,
+} from "@/testing/fixtures/retrievalModules.fixture.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 
 /**
@@ -72,14 +72,20 @@ async function runSessionStart(
   await hookRuntimeService.run(
     "session-start",
     (record) => payloadParser.parseSessionStart(record),
-    new SessionStartHook(
-      container,
-      new IndexBuildService(new IndexConnectionService(new SchemaService())),
-      new KbMapService(container.fs, new NoteParser()),
-      new KbMapFormatter(),
-      new WorklogStoreService(container.fs, container.git),
-      new WorkingMemoryFormatter(),
-    ),
+    (() => {
+      const index = makeSearchIndex(container);
+      const note = makeNoteModule(container, index);
+      const worklog = makeWorklogModule(container, index);
+      return new SessionStartHook(
+        container,
+        note.reprojectNotes,
+        worklog.reprojectWorklog,
+        note.buildKbMap,
+        new KbMapFormatter(),
+        worklog.store,
+        new WorkingMemoryFormatter(),
+      );
+    })(),
   );
 }
 

@@ -2,13 +2,17 @@ import { parseArgs } from "@/cli/args/args.parser.ts";
 import { CliCommand, type ParsedArgs } from "@/cli/args/args.typedefs.ts";
 import { HelpCommand } from "@/cli/help/help.command.ts";
 import { HelpFormatter } from "@/cli/help/help.formatter.ts";
+import { ReindexCommand } from "@/cli/reindex.command.ts";
+import { ReindexFormatter } from "@/cli/reindex.formatter.ts";
+import { SearchCommand } from "@/cli/search.command.ts";
 import type { Config } from "@/core/index.ts";
 import { ConfigParser } from "@/core/index.ts";
 import { cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import { ARGS_PARSE_ERROR_EXIT_CODE } from "@/core/index.ts";
-import type { Gateways } from "@/gateways/index.ts";
-import { AppGateways } from "@/gateways/index.ts";
+import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
+import { AppGateways, SearchIndexAdapter } from "@/gateways/index.ts";
+import type { Gateways, SearchIndex } from "@/gateways/index.ts";
 import {
   DoctorCommand,
   DoctorFormatter,
@@ -16,8 +20,30 @@ import {
   InstallCommand,
   UninstallCommand,
 } from "@/modules/installation/index.ts";
+import { NotesCommand } from "@/modules/note/index.ts";
+import {
+  BuildKbMapUseCase,
+  KbMapService,
+  ListNotesUseCase,
+  NoteParser,
+  NoteProjection,
+  NoteQuery,
+  NoteRepository,
+  ReprojectNotesUseCase,
+  SearchNotesUseCase,
+} from "@/modules/note/index.ts";
+import { NotesFormatter } from "@/modules/note/index.ts";
+import { SearchFormatter } from "@/modules/note/index.ts";
 import { HookDispatchCommand } from "@/modules/session/index.ts";
-import { CommitCommand, CommitFormatter } from "@/modules/worklog/index.ts";
+import {
+  CommitCommand,
+  CommitFormatter,
+  ReprojectWorklogUseCase,
+  SearchWorklogUseCase,
+  WorklogProjection,
+  WorklogQuery,
+  WorklogStoreService,
+} from "@/modules/worklog/index.ts";
 import {
   RegistryService,
   RegistryTomlSerializer,
@@ -29,66 +55,52 @@ import {
   WorkspaceResolverService,
 } from "@/modules/workspace/index.ts";
 import type { WorkspaceIndexBuilder } from "@/modules/workspace/index.ts";
-import {
-  FtsQueryBuilder,
-  IndexBuildService,
-  IndexConnectionService,
-  LinkGraphService,
-  NoteListService,
-  NotesCommand,
-  NotesFormatter,
-  Ranker,
-  ReindexCommand,
-  ReindexFormatter,
-  SchemaService,
-  SearchCommand,
-  SearchFormatter,
-  SearchService,
-  TokenizerParser,
-} from "@/retrieval/index.ts";
 
 /** The composition root: no command constructs its own dependencies, each is wired
  * here from the real `Gateways`. */
-function makeIndexConnectionService(): IndexConnectionService {
-  return new IndexConnectionService(new SchemaService());
+function makeSearchIndex(container: Gateways): SearchIndex {
+  return new SearchIndexAdapter(container.fs, (path) => container.openDatabase(path));
 }
 
-function makeIndexBuildService(): IndexBuildService {
-  return new IndexBuildService(makeIndexConnectionService());
-}
-
-function makeSearchService(): SearchService {
-  const connectionService = makeIndexConnectionService();
-  return new SearchService(
-    connectionService,
-    new FtsQueryBuilder(new TokenizerParser()),
-    new Ranker(),
-    new LinkGraphService(connectionService),
-  );
-}
-
-function makeNoteListService(): NoteListService {
-  return new NoteListService(makeIndexConnectionService());
-}
-
-/** Backed by `retrieval`, constructed here rather than inside `workspace` itself,
- * which would close a cycle (retrieval depends on workspace for target resolution). */
-function makeWorkspaceIndexBuilder(container: Gateways): WorkspaceIndexBuilder {
+function makeNoteModule(container: Gateways, index: SearchIndex) {
+  const tokenizer = new TokenizerParser();
+  const repository = new NoteRepository(container.fs, new NoteParser());
+  const projection = new NoteProjection(index);
+  const query = new NoteQuery(index, new FtsQueryBuilder(tokenizer), new Ranker());
   return {
-    buildIndex: async (workspace) =>
-      (await makeIndexBuildService().build(container, workspace)).total,
-    noteCount: async (workspace) => {
-      const { db } = await makeIndexConnectionService().open(container, workspace);
-      const row = db.query<{ readonly "COUNT(*)": number }>(
-        "SELECT COUNT(*) FROM notes",
-        [],
-      )[0];
-      return row?.["COUNT(*)"] ?? 0;
-    },
+    projection,
+    reprojectNotes: new ReprojectNotesUseCase(repository, projection),
+    searchNotes: new SearchNotesUseCase(query),
+    listNotes: new ListNotesUseCase(repository),
+    buildKbMap: new BuildKbMapUseCase(new KbMapService(container.fs, new NoteParser())),
   };
 }
 
-function makeWorkspaceCommand(container: Gateways): WorkspaceCommand {
+function makeWorklogModule(container: Gateways, index: SearchIndex) {
+  const tokenizer = new TokenizerParser();
+  const store = new WorklogStoreService(container.fs, container.git);
+  const projection = new WorklogProjection(index);
+  const query = new WorklogQuery(index, new FtsQueryBuilder(tokenizer), new Ranker());
+  return {
+    reprojectWorklog: new ReprojectWorklogUseCase(store, projection),
+    searchWorklog: new SearchWorklogUseCase(query),
+  };
+}
+
+function makeWorkspaceIndexBuilder(
+  note: ReturnType<typeof makeNoteModule>,
+): WorkspaceIndexBuilder {
+  return {
+    buildIndex: async (workspace) =>
+      (await note.reprojectNotes.run(workspace, { incremental: false })).total,
+    noteCount: async (workspace) => (await note.projection.listExisting(workspace)).size,
+  };
+}
+
+function makeWorkspaceCommand(
+  container: Gateways,
+  note: ReturnType<typeof makeNoteModule>,
+): WorkspaceCommand {
   const registryService = new RegistryService(container.fs, new RegistryTomlSerializer());
   const resolverService = new WorkspaceResolverService(registryService, container.git);
   const targetResolutionService = new TargetResolutionService(
@@ -102,7 +114,7 @@ function makeWorkspaceCommand(container: Gateways): WorkspaceCommand {
     container.stdio,
     registryService,
     targetResolutionService,
-    makeWorkspaceIndexBuilder(container),
+    makeWorkspaceIndexBuilder(note),
     new WorkspaceFormatter(),
   );
 }
@@ -131,28 +143,33 @@ async function dispatch(
   config: Config,
   parsed: ParsedArgs,
 ): Promise<CliOutcome> {
+  const index = makeSearchIndex(container);
+  const note = makeNoteModule(container, index);
+  const worklog = makeWorklogModule(container, index);
+
   switch (parsed.command) {
     case CliCommand.WorkspaceAdd:
-      return makeWorkspaceCommand(container).add(parsed);
+      return makeWorkspaceCommand(container, note).add(parsed);
     case CliCommand.WorkspaceRm:
-      return makeWorkspaceCommand(container).rm(parsed);
+      return makeWorkspaceCommand(container, note).rm(parsed);
     case CliCommand.WorkspaceLs:
-      return makeWorkspaceCommand(container).ls();
+      return makeWorkspaceCommand(container, note).ls();
     case CliCommand.Resolve:
       return makeResolveCommand(container).execute(parsed);
     case CliCommand.Reindex:
-      return new ReindexCommand(makeIndexBuildService(), new ReindexFormatter()).execute(
-        container,
-        parsed,
-      );
+      return new ReindexCommand(
+        note.reprojectNotes,
+        worklog.reprojectWorklog,
+        new ReindexFormatter(),
+      ).execute(container, parsed);
     case CliCommand.Search:
-      return new SearchCommand(makeSearchService(), new SearchFormatter()).execute(
-        container,
-        config,
-        parsed,
-      );
+      return new SearchCommand(
+        note.searchNotes,
+        worklog.searchWorklog,
+        new SearchFormatter(),
+      ).execute(container, config, parsed);
     case CliCommand.Notes:
-      return new NotesCommand(makeNoteListService(), new NotesFormatter()).execute(
+      return new NotesCommand(note.listNotes, new NotesFormatter()).execute(
         container,
         parsed,
       );
@@ -168,7 +185,7 @@ async function dispatch(
     case CliCommand.Doctor:
       return new DoctorCommand(
         container,
-        new DoctorService(container, makeIndexBuildService()),
+        new DoctorService(container, note.reprojectNotes, worklog.reprojectWorklog),
         new DoctorFormatter(),
       ).execute(parsed);
     case CliCommand.Hook:

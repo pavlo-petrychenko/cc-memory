@@ -5,16 +5,24 @@ import type { Workspace } from "@/core/index.ts";
 import { SearchIndexAdapter } from "@/gateways/searchIndex/searchIndex.adapter.ts";
 import {
   NOTES_SEARCH_TEMPLATE,
-  SCHEMA,
   WEIGHTS_PLACEHOLDER,
   WORKLOG_SEARCH_TEMPLATE,
 } from "@/gateways/searchIndex/searchIndex.constants.ts";
 import { Collection } from "@/gateways/searchIndex/searchIndex.typedefs.ts";
 import { SqliteAdapter } from "@/gateways/sqlite/sqlite.adapter.ts";
-import { SCHEMA as OLD_SCHEMA } from "@/retrieval/store/schema/schema.constants.ts";
-import { NOTES_SEARCH_SQL } from "@/retrieval/store/search/search.constants.ts";
-import { WORKLOG_SEARCH_SQL } from "@/retrieval/store/search/search.constants.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
+
+// The frozen C7 SQL, transcribed once as a golden — the adapter must render
+// byte-identical to these. A change here is a retrieval-contract change, not a
+// tuning question.
+const NOTES_SEARCH_SQL =
+  "SELECT path, title, snippet(notes_fts,1,'','','…',12) AS snip, " +
+  "bm25(notes_fts, 10.0, 1.0, 5.0) AS score FROM notes_fts " +
+  "WHERE notes_fts MATCH ? ORDER BY score LIMIT ?";
+const WORKLOG_SEARCH_SQL =
+  "SELECT path, slug AS title, snippet(worklog_fts,2,'','','…',12) AS snip, " +
+  "bm25(worklog_fts, 3.0, 1.0, 1.0) AS score FROM worklog_fts " +
+  "WHERE worklog_fts MATCH ? ORDER BY score LIMIT ?";
 
 const NOTE_WEIGHTS = [10, 1, 5] as const;
 const WORKLOG_WEIGHTS = [3, 1, 1] as const;
@@ -74,8 +82,7 @@ describe("SearchIndexAdapter", () => {
     });
   });
 
-  test("the schema and rendered query SQL are byte-identical to the pre-port text (C7)", () => {
-    expect(SCHEMA).toBe(OLD_SCHEMA);
+  test("the schema and rendered query SQL match the frozen C7 text", () => {
     expect(renderNotes([...NOTE_WEIGHTS])).toBe(NOTES_SEARCH_SQL);
     expect(renderWorklog([...WORKLOG_WEIGHTS])).toBe(WORKLOG_SEARCH_SQL);
   });

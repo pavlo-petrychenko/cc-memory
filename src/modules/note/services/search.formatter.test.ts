@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { NO_HITS_MESSAGE } from "@/retrieval/commands/search/search.constants.ts";
-import { SearchFormatter } from "@/retrieval/commands/search/search.formatter.ts";
+import { NO_HITS_MESSAGE } from "@/cli/search.constants.ts";
+import { SearchFormatter } from "@/modules/note/services/search.formatter.ts";
 
 const searchFormatter = new SearchFormatter();
 

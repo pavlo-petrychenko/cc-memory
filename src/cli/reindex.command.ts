@@ -1,19 +1,21 @@
+import { ReindexFormatter } from "@/cli/reindex.formatter.ts";
+import type { ReindexArgs } from "@/cli/reindex.typedefs.ts";
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
+import { ReprojectNotesUseCase } from "@/modules/note/index.ts";
+import { ReprojectWorklogUseCase } from "@/modules/worklog/index.ts";
 import {
   RegistryService,
   RegistryTomlSerializer,
   TargetResolutionService,
   WorkspaceResolverService,
 } from "@/modules/workspace/index.ts";
-import { ReindexFormatter } from "@/retrieval/commands/reindex/reindex.formatter.ts";
-import type { ReindexArgs } from "@/retrieval/commands/reindex/reindex.typedefs.ts";
-import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
 
 export class ReindexCommand {
   constructor(
-    private readonly indexBuildService: IndexBuildService,
+    private readonly reprojectNotes: ReprojectNotesUseCase,
+    private readonly reprojectWorklog: ReprojectWorklogUseCase,
     private readonly formatter: ReindexFormatter,
   ) {}
 
@@ -43,9 +45,10 @@ export class ReindexCommand {
 
     const lines = await Promise.all(
       targets.value.map(async (workspace) => {
-        const stats = await this.indexBuildService.build(container, workspace, {
+        const stats = await this.reprojectNotes.run(workspace, {
           incremental: !args.full,
         });
+        await this.reprojectWorklog.run(workspace);
         return this.formatter.line(
           workspace.id,
           stats.added,

@@ -4,6 +4,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { ConfigParser } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Config } from "@/core/index.ts";
+import { TokenizerParser } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { MemoryInjectFormatter } from "@/modules/session/hooks/memoryInject/memoryInject.formatter.ts";
@@ -16,18 +17,13 @@ import {
   RegistryService,
   RegistryTomlSerializer,
 } from "@/modules/workspace/index.ts";
-import {
-  FtsQueryBuilder,
-  IndexBuildService,
-  IndexConnectionService,
-  LinkGraphService,
-  Ranker,
-  SchemaService,
-  SearchService,
-  TokenizerParser,
-} from "@/retrieval/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
+import {
+  makeNoteModule,
+  makeSearchIndex,
+  makeWorklogModule,
+} from "@/testing/fixtures/retrievalModules.fixture.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 
 /**
@@ -35,20 +31,6 @@ import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
  * score floor). The `inject.jsonl` log is written before the emptiness
  * check, and is size-capped and rotated instead of growing unbounded.
  */
-
-function makeIndexBuildService(): IndexBuildService {
-  return new IndexBuildService(new IndexConnectionService(new SchemaService()));
-}
-
-function makeSearchService(): SearchService {
-  const connectionService = new IndexConnectionService(new SchemaService());
-  return new SearchService(
-    connectionService,
-    new FtsQueryBuilder(new TokenizerParser()),
-    new Ranker(),
-    new LinkGraphService(connectionService),
-  );
-}
 
 // SAFETY: fixed test fixtures, matching `testGateways.fixture.ts`'s
 // DEFAULT_HOME/DEFAULT_CWD.
@@ -95,6 +77,9 @@ function makeFixture(): Fixture {
 // note's match to clear the score floor at all, the same shape the fixture
 // vault (`vault.fixture.ts`) uses for the same reason.
 async function seedIndexedWorkspace(fixture: Fixture): Promise<void> {
+  const index = makeSearchIndex(fixture.container);
+  const note = makeNoteModule(fixture.container, index);
+  const worklog = makeWorklogModule(fixture.container, index);
   // SAFETY: a fixed literal path under `PRIMARY.kb`, a hard-coded test fixture.
   fixture.fs.seedFile(
     "/home/test/vault-primary/Injection Hook.md" as AbsPath,
@@ -117,7 +102,8 @@ async function seedIndexedWorkspace(fixture: Fixture): Promise<void> {
     REGISTRY_PATH,
     [PRIMARY],
   );
-  await makeIndexBuildService().build(fixture.container, expandWorkspace(PRIMARY, HOME));
+  await note.reprojectNotes.run(expandWorkspace(PRIMARY, HOME), { incremental: false });
+  await worklog.reprojectWorklog.run(expandWorkspace(PRIMARY, HOME));
 }
 
 async function runMemoryInject(
@@ -135,13 +121,19 @@ async function runMemoryInject(
   await hookRuntimeService.run(
     "memory-inject",
     (record) => payloadParser.parseMemoryInject(record),
-    new MemoryInjectHook(
-      fixture.container,
-      config,
-      new MemoryInjectFormatter(),
-      makeSearchService(),
-      new TokenizerParser(),
-    ),
+    (() => {
+      const index = makeSearchIndex(fixture.container);
+      const note = makeNoteModule(fixture.container, index);
+      const worklog = makeWorklogModule(fixture.container, index);
+      return new MemoryInjectHook(
+        fixture.container,
+        config,
+        new MemoryInjectFormatter(),
+        note.searchNotes,
+        worklog.searchWorklog,
+        new TokenizerParser(),
+      );
+    })(),
   );
 }
 
@@ -207,8 +199,12 @@ describe("UserPromptSubmit (memory-inject) hook", () => {
       "/home/test/vault-primary/_Worklogs/wt1/2026-01-03.md" as AbsPath,
       "## 08:00 — cleanup\n**Changes:** archived old build artifacts and logs.\n",
     );
-    await makeIndexBuildService().build(
-      fixture.container,
+    const index = makeSearchIndex(fixture.container);
+    await makeNoteModule(fixture.container, index).reprojectNotes.run(
+      expandWorkspace(PRIMARY, HOME),
+      { incremental: false },
+    );
+    await makeWorklogModule(fixture.container, index).reprojectWorklog.run(
       expandWorkspace(PRIMARY, HOME),
     );
 

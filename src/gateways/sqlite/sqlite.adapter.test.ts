@@ -1,9 +1,17 @@
 import { describe, expect, test } from "bun:test";
 
+import {
+  NOTES_SEARCH_TEMPLATE,
+  SCHEMA,
+  WEIGHTS_PLACEHOLDER,
+} from "@/gateways/searchIndex/searchIndex.constants.ts";
 import { SqliteAdapter } from "@/gateways/sqlite/sqlite.adapter.ts";
 import type { SqlParameter } from "@/gateways/sqlite/sqlite.typedefs.ts";
-import { SCHEMA } from "@/retrieval/index.ts";
-import { NOTES_SEARCH_SQL } from "@/retrieval/index.ts";
+
+const NOTES_SEARCH_SQL = NOTES_SEARCH_TEMPLATE.replace(
+  WEIGHTS_PLACEHOLDER,
+  "10.0, 1.0, 5.0",
+);
 
 /**
  * The load-bearing assumption of the entire runtime choice: `bun:sqlite`'s

@@ -1,6 +1,8 @@
 import type { AbsPath, Config, Workspace } from "@/core/index.ts";
 import { absPath, joinAbs, parentDir } from "@/core/index.ts";
+import type { FusedHit, TokenizerParser } from "@/core/index.ts";
 import type { Gateways, FileSystem } from "@/gateways/index.ts";
+import { SearchNotesUseCase } from "@/modules/note/index.ts";
 import {
   INJECT_LOG_FILENAME,
   KEPT_LOG_GENERATIONS,
@@ -25,8 +27,7 @@ import type {
 } from "@/modules/session/runtime/runtime.typedefs.ts";
 import { HookEvent, HookResultKind } from "@/modules/session/session.typedefs.ts";
 import type { HookResult } from "@/modules/session/session.typedefs.ts";
-import type { FusedHit, SearchService, TokenizerParser } from "@/retrieval/index.ts";
-import { SearchKind } from "@/retrieval/index.ts";
+import { SearchWorklogUseCase } from "@/modules/worklog/index.ts";
 
 /** `UserPromptSubmit`: auto-retrieve relevant memory via a fused BM25 search,
  * gated by prompt length, salient-token count and a score floor. `inject.jsonl`
@@ -104,7 +105,8 @@ export class MemoryInjectHook implements HookHandler<MemoryInjectPayload> {
     private readonly container: Gateways,
     private readonly config: Config,
     private readonly formatter: MemoryInjectFormatter,
-    private readonly searchService: SearchService,
+    private readonly searchNotes: SearchNotesUseCase,
+    private readonly searchWorklog: SearchWorklogUseCase,
     private readonly tokenizerParser: TokenizerParser,
   ) {}
 
@@ -153,21 +155,14 @@ export class MemoryInjectHook implements HookHandler<MemoryInjectPayload> {
     let notePool: readonly FusedHit[];
     let worklogPool: readonly FusedHit[];
     try {
-      notePool = await this.searchService.searchFused(this.container, workspace, prompt, {
+      notePool = await this.searchNotes.run(workspace, prompt, {
         limit: NOTES_POOL_SIZE,
-        kind: SearchKind.Notes,
         linkBoost: this.config.linkBoost,
       });
-      worklogPool = await this.searchService.searchFused(
-        this.container,
-        workspace,
-        prompt,
-        {
-          limit: MAX_INJECTED_WORKLOGS,
-          kind: SearchKind.Worklog,
-          linkBoost: this.config.linkBoost,
-        },
-      );
+      worklogPool = await this.searchWorklog.run(workspace, prompt, {
+        limit: MAX_INJECTED_WORKLOGS,
+        linkBoost: this.config.linkBoost,
+      });
     } catch {
       // a search failure returns silently, before any logging happens.
       return { kind: HookResultKind.Silent };

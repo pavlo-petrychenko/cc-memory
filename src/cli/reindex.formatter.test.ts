@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { ReindexFormatter } from "@/retrieval/commands/reindex/reindex.formatter.ts";
+import { ReindexFormatter } from "@/cli/reindex.formatter.ts";
 
 const reindexFormatter = new ReindexFormatter();
 

@@ -2,21 +2,29 @@ import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { DoctorService } from "@/modules/installation/doctor/doctor.service.ts";
 import { WorkspaceIndexStatus } from "@/modules/installation/doctor/doctor.typedefs.ts";
 import { ManifestService } from "@/modules/installation/steps/manifest/manifest.service.ts";
 import { SettingsService } from "@/modules/installation/steps/settings/settings.service.ts";
+import type { ReprojectNotesUseCase } from "@/modules/note/index.ts";
+import type { ReprojectWorklogUseCase } from "@/modules/worklog/index.ts";
 import { RegistryErrorKind } from "@/modules/workspace/index.ts";
-import {
-  IndexBuildService,
-  IndexConnectionService,
-  SchemaService,
-} from "@/retrieval/index.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
+import {
+  makeNoteModule,
+  makeSearchIndex,
+  makeWorklogModule,
+} from "@/testing/fixtures/retrievalModules.fixture.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 
-function makeIndexBuildService(): IndexBuildService {
-  return new IndexBuildService(new IndexConnectionService(new SchemaService()));
+function makeDoctorUseCases(
+  container: Gateways,
+): [ReprojectNotesUseCase, ReprojectWorklogUseCase] {
+  const index = makeSearchIndex(container);
+  const note = makeNoteModule(container, index);
+  const worklog = makeWorklogModule(container, index);
+  return [note.reprojectNotes, worklog.reprojectWorklog];
 }
 
 /**
@@ -55,7 +63,7 @@ describe("DoctorService — per-workspace diagnostics", () => {
 
     const report = await new DoctorService(
       container,
-      makeIndexBuildService(),
+      ...makeDoctorUseCases(container),
     ).gatherReport([workspaceFixture()], {
       repoRoot: REPO_ROOT,
       registryError: null,
@@ -80,7 +88,7 @@ describe("DoctorService — per-workspace diagnostics", () => {
 
     const report = await new DoctorService(
       container,
-      makeIndexBuildService(),
+      ...makeDoctorUseCases(container),
     ).gatherReport([workspaceFixture()], {
       repoRoot: REPO_ROOT,
       registryError: null,
@@ -102,7 +110,7 @@ describe("DoctorService — per-workspace diagnostics", () => {
 
     const report = await new DoctorService(
       container,
-      makeIndexBuildService(),
+      ...makeDoctorUseCases(container),
     ).gatherReport([brokenWorkspace], {
       repoRoot: REPO_ROOT,
       registryError: null,
@@ -120,7 +128,7 @@ describe("DoctorService — per-workspace diagnostics", () => {
 
     const report = await new DoctorService(
       container,
-      makeIndexBuildService(),
+      ...makeDoctorUseCases(container),
     ).gatherReport([workspace], {
       repoRoot: REPO_ROOT,
       registryError: null,
@@ -137,7 +145,7 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
 
     const report = await new DoctorService(
       container,
-      makeIndexBuildService(),
+      ...makeDoctorUseCases(container),
     ).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: null,
@@ -167,7 +175,7 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
 
     const report = await new DoctorService(
       container,
-      makeIndexBuildService(),
+      ...makeDoctorUseCases(container),
     ).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: null,
@@ -219,7 +227,7 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
 
     const report = await new DoctorService(
       container,
-      makeIndexBuildService(),
+      ...makeDoctorUseCases(container),
     ).gatherReport([], {
       repoRoot: REPO_ROOT, // the CURRENT repo root — different from settings.json's
       registryError: null,
@@ -273,7 +281,7 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
 
     const report = await new DoctorService(
       container,
-      makeIndexBuildService(),
+      ...makeDoctorUseCases(container),
     ).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: null,
@@ -293,7 +301,7 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
 
     const report = await new DoctorService(
       container,
-      makeIndexBuildService(),
+      ...makeDoctorUseCases(container),
     ).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: null,
@@ -307,7 +315,7 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
 
     const report = await new DoctorService(
       container,
-      makeIndexBuildService(),
+      ...makeDoctorUseCases(container),
     ).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: { kind: RegistryErrorKind.ParseError, message: "bad toml" },

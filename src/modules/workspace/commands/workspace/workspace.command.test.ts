@@ -13,13 +13,12 @@ import { RegistryService } from "@/modules/workspace/services/registry/registry.
 import { WorkspaceResolverService } from "@/modules/workspace/services/resolver/resolver.service.ts";
 import { TargetResolutionService } from "@/modules/workspace/targetResolution/targetResolution.service.ts";
 import type { WorkspaceIndexBuilder } from "@/modules/workspace/workspace.typedefs.ts";
-import {
-  IndexBuildService,
-  IndexConnectionService,
-  SchemaService,
-} from "@/retrieval/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
+import {
+  makeNoteModule,
+  makeSearchIndex,
+} from "@/testing/fixtures/retrievalModules.fixture.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
@@ -54,29 +53,17 @@ function makeInMemoryOnlyOpenDb(): (path: string) => Sqlite {
   };
 }
 
-/** The real retrieval index, wrapped as the minimal `WorkspaceIndexBuilder`
- * `WorkspaceCommand` needs — production code never imports `@/retrieval`
- * (that would close the workspace<->retrieval cycle), but a test may cross
- * module boundaries to assemble a scenario. */
+/** The real note projection, wrapped as the minimal `WorkspaceIndexBuilder`
+ * `WorkspaceCommand` needs — production code never imports `@/modules/note`
+ * from `workspace` (that would close the workspace<->note cycle), but a test
+ * may cross module boundaries to assemble a scenario. */
 function makeIndexBuilder(container: Gateways): WorkspaceIndexBuilder {
+  const index = makeSearchIndex(container);
+  const note = makeNoteModule(container, index);
   return {
     buildIndex: async (workspace) =>
-      (
-        await new IndexBuildService(
-          new IndexConnectionService(new SchemaService()),
-        ).build(container, workspace)
-      ).total,
-    noteCount: async (workspace) => {
-      const { db } = await new IndexConnectionService(new SchemaService()).open(
-        container,
-        workspace,
-      );
-      const row = db.query<{ readonly "COUNT(*)": number }>(
-        "SELECT COUNT(*) FROM notes",
-        [],
-      )[0];
-      return row?.["COUNT(*)"] ?? 0;
-    },
+      (await note.reprojectNotes.run(workspace, { incremental: false })).total,
+    noteCount: async (workspace) => (await note.projection.listExisting(workspace)).size,
   };
 }
 

@@ -21,3 +21,6 @@ export { BuildKbMapUseCase } from "@/modules/note/useCases/buildKbMap.useCase.ts
 export { ListNotesUseCase } from "@/modules/note/useCases/listNotes.useCase.ts";
 export { ReprojectNotesUseCase } from "@/modules/note/useCases/reprojectNotes.useCase.ts";
 export { SearchNotesUseCase } from "@/modules/note/useCases/searchNotes.useCase.ts";
+export { NotesCommand } from "@/modules/note/commands/notes.command.ts";
+export { NotesFormatter } from "@/modules/note/services/notes.formatter.ts";
+export { SearchFormatter } from "@/modules/note/services/search.formatter.ts";

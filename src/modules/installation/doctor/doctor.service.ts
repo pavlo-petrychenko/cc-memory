@@ -16,14 +16,16 @@ import { HOOK_REGISTRATION_ORDER } from "@/modules/installation/steps/settings/s
 import { SettingsService } from "@/modules/installation/steps/settings/settings.service.ts";
 import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.service.ts";
 import type { JsonObject } from "@/modules/installation/utils/jsonFile/jsonFile.typedefs.ts";
-import { IndexBuildService } from "@/retrieval/index.ts";
+import type { ReprojectNotesUseCase } from "@/modules/note/index.ts";
+import type { ReprojectWorklogUseCase } from "@/modules/worklog/index.ts";
 
 /** Checks the state a healthy install actually depends on: registry, vaults,
  * indexes, hook registrations, the recorded `bun` binary, log sizes. */
 export class DoctorService {
   constructor(
     private readonly container: Gateways,
-    private readonly indexBuildService: IndexBuildService,
+    private readonly reprojectNotes: ReprojectNotesUseCase,
+    private readonly reprojectWorklog: ReprojectWorklogUseCase,
   ) {}
 
   private async fileSizeOrZero(path: AbsPath): Promise<number> {
@@ -58,9 +60,8 @@ export class DoctorService {
     );
 
     try {
-      const stats = await this.indexBuildService.build(this.container, workspace, {
-        incremental: true,
-      });
+      const stats = await this.reprojectNotes.run(workspace, { incremental: true });
+      await this.reprojectWorklog.run(workspace);
       const drifted = stats.added > 0 || stats.updated > 0 || stats.removed > 0;
       return {
         id: workspace.id,

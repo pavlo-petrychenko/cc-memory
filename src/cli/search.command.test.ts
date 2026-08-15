@@ -1,26 +1,25 @@
 import { describe, expect, test } from "bun:test";
 
 import { CliCommand, type SearchArgs } from "@/cli/index.ts";
+import { SearchCommand } from "@/cli/search.command.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { LogLevel } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
-import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
+import { SearchFormatter } from "@/modules/note/index.ts";
 import {
   expandWorkspace,
   RegistryService,
   RegistryTomlSerializer,
 } from "@/modules/workspace/index.ts";
-import { SearchCommand } from "@/retrieval/commands/search/search.command.ts";
-import { SearchFormatter } from "@/retrieval/commands/search/search.formatter.ts";
-import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
-import { LinkGraphService } from "@/retrieval/store/graph/graph.service.ts";
-import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
-import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
-import { SearchService } from "@/retrieval/store/search/search.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake, type IoFake } from "@/testing/fakes/ioFake.fake.ts";
+import {
+  makeNoteModule,
+  makeSearchIndex,
+  makeWorklogModule,
+} from "@/testing/fixtures/retrievalModules.fixture.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
@@ -45,18 +44,6 @@ const PRIMARY: RawWorkspace = {
   indexDb: ":memory:",
 };
 
-const connectionService = new IndexConnectionService(new SchemaService());
-const indexBuildService = new IndexBuildService(connectionService);
-const searchCommand = new SearchCommand(
-  new SearchService(
-    connectionService,
-    new FtsQueryBuilder(new TokenizerParser()),
-    new Ranker(),
-    new LinkGraphService(connectionService),
-  ),
-  new SearchFormatter(),
-);
-
 function searchArgs(overrides: Partial<SearchArgs> = {}): SearchArgs {
   return {
     command: CliCommand.Search,
@@ -69,12 +56,20 @@ function searchArgs(overrides: Partial<SearchArgs> = {}): SearchArgs {
   };
 }
 
-type SeededFixture = { readonly container: Gateways; readonly io: IoFake };
+type SeededFixture = {
+  readonly container: Gateways;
+  readonly io: IoFake;
+  readonly command: SearchCommand;
+};
 
 async function seedIndexedWorkspace(): Promise<SeededFixture> {
   const io = makeIoFake();
   const fs = makeFsMemoryFake();
   const container = makeTestGateways({ stdio: io, fs });
+  const index = makeSearchIndex(container);
+  const note = makeNoteModule(container, index);
+  const worklog = makeWorklogModule(container, index);
+
   // SAFETY: a fixed literal filename joined onto a fixed literal directory
   // string, both hard-coded test fixtures.
   fs.seedFile(
@@ -84,15 +79,24 @@ async function seedIndexedWorkspace(): Promise<SeededFixture> {
   await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
     PRIMARY,
   ]);
-  await indexBuildService.build(container, expandWorkspace(PRIMARY, HOME));
-  return { container, io };
+  await note.reprojectNotes.run(expandWorkspace(PRIMARY, HOME), { incremental: false });
+
+  return {
+    container,
+    io,
+    command: new SearchCommand(
+      note.searchNotes,
+      worklog.searchWorklog,
+      new SearchFormatter(),
+    ),
+  };
 }
 
 describe("SearchCommand.execute", () => {
   test("prints a hit's title, relative path and snippet", async () => {
-    const { container, io } = await seedIndexedWorkspace();
+    const { container, io, command } = await seedIndexedWorkspace();
 
-    const outcome = await searchCommand.execute(
+    const outcome = await command.execute(
       container,
       CONFIG,
       searchArgs({ workspace: "primary" }),
@@ -103,9 +107,9 @@ describe("SearchCommand.execute", () => {
   });
 
   test("no hits prints '(no hits)'", async () => {
-    const { container, io } = await seedIndexedWorkspace();
+    const { container, io, command } = await seedIndexedWorkspace();
 
-    const outcome = await searchCommand.execute(
+    const outcome = await command.execute(
       container,
       CONFIG,
       searchArgs({ workspace: "primary", query: "nonexistentterm" }),
@@ -115,9 +119,9 @@ describe("SearchCommand.execute", () => {
   });
 
   test("an unknown --workspace fails with the exact 'no such workspace' message", async () => {
-    const { container } = await seedIndexedWorkspace();
+    const { container, command } = await seedIndexedWorkspace();
 
-    const outcome = await searchCommand.execute(
+    const outcome = await command.execute(
       container,
       CONFIG,
       searchArgs({ workspace: "ghost" }),
@@ -126,9 +130,9 @@ describe("SearchCommand.execute", () => {
   });
 
   test("no --workspace and a cwd under no workspace fails with the exact message", async () => {
-    const { container } = await seedIndexedWorkspace();
+    const { container, command } = await seedIndexedWorkspace();
 
-    const outcome = await searchCommand.execute(
+    const outcome = await command.execute(
       container,
       CONFIG,
       searchArgs({ cwd: "/nowhere/under/any/workspace" }),
