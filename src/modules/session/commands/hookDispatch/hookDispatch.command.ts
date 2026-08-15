@@ -23,8 +23,8 @@ import { CompactCheckpointFormatter } from "@/modules/session/hooks/compactCheck
 import { CompactCheckpointHook } from "@/modules/session/hooks/compactCheckpoint/compactCheckpoint.hook.ts";
 import { MemoryInjectFormatter } from "@/modules/session/hooks/memoryInject/memoryInject.formatter.ts";
 import { MemoryInjectHook } from "@/modules/session/hooks/memoryInject/memoryInject.hook.ts";
+import { SessionEndHook } from "@/modules/session/hooks/sessionEnd/sessionEnd.hook.ts";
 import { SessionStartHook } from "@/modules/session/hooks/sessionStart/sessionStart.hook.ts";
-import { WorklogFloorHook } from "@/modules/session/hooks/worklogFloor/worklogFloor.hook.ts";
 import { WrapGateFormatter } from "@/modules/session/hooks/wrapGate/wrapGate.formatter.ts";
 import { WrapGateHook } from "@/modules/session/hooks/wrapGate/wrapGate.hook.ts";
 import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
@@ -177,11 +177,7 @@ export class HookDispatchCommand implements CommandContract<HookOptions> {
         await hookRuntimeService.run(
           name,
           (record) => payloadParser.parseWorklogFloor(record),
-          new WorklogFloorHook(
-            this.container,
-            new WorklogFloorFormatter(),
-            worklog.store,
-          ),
+          new SessionEndHook(this.container, new WorklogFloorFormatter(), worklog.store),
         );
         break;
       case HookName.CompactCheckpoint:

@@ -29,7 +29,7 @@ import {
   SearchNotesUseCase,
   NotesCommand,
   NotesFormatter,
-  SearchFormatter,
+  SearchHitFormatter,
 } from "@/modules/note/index.ts";
 import { HookDispatchCommand } from "@/modules/session/index.ts";
 import {
@@ -156,7 +156,7 @@ export function wireCli(container: Gateways): Cli {
         resolveWorkspace,
         note.searchNotes,
         worklog.searchWorklog,
-        new SearchFormatter(),
+        new SearchHitFormatter(),
       ),
     ),
     registerCommand(

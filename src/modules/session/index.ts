@@ -8,7 +8,7 @@ export { CompactCheckpointHook } from "@/modules/session/hooks/compactCheckpoint
 export { MemoryInjectFormatter } from "@/modules/session/hooks/memoryInject/memoryInject.formatter.ts";
 export { MemoryInjectHook } from "@/modules/session/hooks/memoryInject/memoryInject.hook.ts";
 export { SessionStartHook } from "@/modules/session/hooks/sessionStart/sessionStart.hook.ts";
-export { WorklogFloorHook } from "@/modules/session/hooks/worklogFloor/worklogFloor.hook.ts";
+export { SessionEndHook } from "@/modules/session/hooks/sessionEnd/sessionEnd.hook.ts";
 export { WrapGateFormatter } from "@/modules/session/hooks/wrapGate/wrapGate.formatter.ts";
 export { WrapGateHook } from "@/modules/session/hooks/wrapGate/wrapGate.hook.ts";
 export { PayloadParser } from "@/modules/session/payload/payload.parser.ts";

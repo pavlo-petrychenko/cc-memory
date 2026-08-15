@@ -12,7 +12,7 @@ import {
 import type { ArgsError, CommandResult, RunContext } from "@/core/index.ts";
 import { expandPath, relativeTo } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
-import { SearchFormatter, SearchNotesUseCase } from "@/modules/note/index.ts";
+import { SearchHitFormatter, SearchNotesUseCase } from "@/modules/note/index.ts";
 import { SearchWorklogUseCase } from "@/modules/worklog/index.ts";
 import { ResolveWorkspaceUseCase } from "@/modules/workspace/index.ts";
 
@@ -30,7 +30,7 @@ export class SearchCommand implements CommandContract<SearchOptions> {
     private readonly resolveWorkspace: ResolveWorkspaceUseCase,
     private readonly searchNotes: SearchNotesUseCase,
     private readonly searchWorklog: SearchWorklogUseCase,
-    private readonly formatter: SearchFormatter,
+    private readonly formatter: SearchHitFormatter,
   ) {}
 
   parse(tokens: readonly string[]): Result<SearchOptions, ArgsError> {

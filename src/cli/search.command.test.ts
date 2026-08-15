@@ -5,7 +5,11 @@ import { absPath, expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
 import { SearchIndexFake } from "@/gateways/index.ts";
-import { NoteQuery, SearchNotesUseCase, SearchFormatter } from "@/modules/note/index.ts";
+import {
+  NoteQuery,
+  SearchNotesUseCase,
+  SearchHitFormatter,
+} from "@/modules/note/index.ts";
 import { SearchWorklogUseCase, WorklogQuery } from "@/modules/worklog/index.ts";
 import { ResolveWorkspaceUseCase } from "@/modules/workspace/index.ts";
 import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
@@ -50,7 +54,7 @@ function makeCommand() {
     new ResolveWorkspaceUseCase(workspace.repository, workspace.targetResolutionService),
     searchNotes,
     searchWorklog,
-    new SearchFormatter(),
+    new SearchHitFormatter(),
   );
   return { command, repository: workspace.repository };
 }

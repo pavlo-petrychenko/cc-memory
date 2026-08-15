@@ -1,6 +1,6 @@
 import { Hook } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import { RECENT_COMMIT_COUNT } from "@/modules/session/hooks/worklogFloor/worklogFloor.constants.ts";
+import { RECENT_COMMIT_COUNT } from "@/modules/session/hooks/sessionEnd/sessionEnd.constants.ts";
 import type { WorklogFloorPayload } from "@/modules/session/payload/payload.typedefs.ts";
 import type {
   HookHandler,
@@ -25,7 +25,7 @@ function lastLineTrimmed(text: string): string {
  * today's worklog journal, so even a killed session leaves a record. Write-only —
  * no stdout, ever. */
 @Hook(WORKLOG_FLOOR_HOOK)
-export class WorklogFloorHook implements HookHandler<WorklogFloorPayload> {
+export class SessionEndHook implements HookHandler<WorklogFloorPayload> {
   constructor(
     private readonly container: Gateways,
     private readonly worklogFloorFormatter: WorklogFloorFormatter,

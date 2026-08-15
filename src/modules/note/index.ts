@@ -23,4 +23,4 @@ export { ReprojectNotesUseCase } from "@/modules/note/useCases/reprojectNotes.us
 export { SearchNotesUseCase } from "@/modules/note/useCases/searchNotes.useCase.ts";
 export { NotesCommand } from "@/modules/note/commands/notes.command.ts";
 export { NotesFormatter } from "@/modules/note/services/notes.formatter.ts";
-export { SearchFormatter } from "@/modules/note/services/search.formatter.ts";
+export { SearchHitFormatter } from "@/modules/note/services/searchHit.formatter.ts";

@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
 import { NO_HITS_MESSAGE } from "@/cli/search.constants.ts";
-import { SearchFormatter } from "@/modules/note/services/search.formatter.ts";
+import { SearchHitFormatter } from "@/modules/note/services/searchHit.formatter.ts";
 
-const searchFormatter = new SearchFormatter();
+const searchFormatter = new SearchHitFormatter();
 
 describe("NO_HITS_MESSAGE", () => {
   test("is the exact fallback text", () => {
@@ -11,7 +11,7 @@ describe("NO_HITS_MESSAGE", () => {
   });
 });
 
-describe("SearchFormatter.hit", () => {
+describe("SearchHitFormatter.hit", () => {
   test("two lines: bullet with title/path, then indented snippet", () => {
     expect(
       searchFormatter.hit("Kryptonite Handbook", "Beta/Title Kryptonite.md", "…snippet…"),

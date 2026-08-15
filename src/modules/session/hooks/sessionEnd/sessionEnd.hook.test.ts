@@ -4,7 +4,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import { WorklogFloorHook } from "@/modules/session/hooks/worklogFloor/worklogFloor.hook.ts";
+import { SessionEndHook } from "@/modules/session/hooks/sessionEnd/sessionEnd.hook.ts";
 import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
 import { HookRuntimeService } from "@/modules/session/session.runner.ts";
@@ -67,7 +67,7 @@ async function runWorklogFloor(fixture: Fixture, stdin: string): Promise<void> {
   await hookRuntimeService.run(
     "worklog-floor",
     (record) => payloadParser.parseWorklogFloor(record),
-    new WorklogFloorHook(
+    new SessionEndHook(
       fixture.container,
       new WorklogFloorFormatter(),
       new WorklogStoreService(fixture.container.fs, fixture.container.git),
