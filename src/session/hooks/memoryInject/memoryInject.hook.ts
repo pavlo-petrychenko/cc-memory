@@ -1,6 +1,6 @@
 import type { AbsPath, Config, Workspace } from "@/core/index.ts";
 import { absPath, joinAbs, parentDir } from "@/core/index.ts";
-import type { Container, FileSystem } from "@/platform/index.ts";
+import type { Gateways, FileSystem } from "@/gateways/index.ts";
 import type { FusedHit, SearchService, TokenizerParser } from "@/retrieval/index.ts";
 import { SearchKind } from "@/retrieval/index.ts";
 import {
@@ -98,7 +98,7 @@ function toInjectedHit(hit: FusedHit, base: AbsPath): InjectedHit {
 
 export class MemoryInjectHook implements HookHandler<MemoryInjectPayload> {
   constructor(
-    private readonly container: Container,
+    private readonly container: Gateways,
     private readonly config: Config,
     private readonly formatter: MemoryInjectFormatter,
     private readonly searchService: SearchService,

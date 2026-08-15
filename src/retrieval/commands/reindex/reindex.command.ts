@@ -1,6 +1,6 @@
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { ReindexFormatter } from "@/retrieval/commands/reindex/reindex.formatter.ts";
 import type { ReindexArgs } from "@/retrieval/commands/reindex/reindex.typedefs.ts";
 import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
@@ -20,7 +20,7 @@ export class ReindexCommand {
   /** One line per target workspace, printed in registry order (`Promise.all`
    * preserves that order in its result array even though the builds run
    * concurrently). */
-  async execute(container: Container, args: ReindexArgs): Promise<CliOutcome> {
+  async execute(container: Gateways, args: ReindexArgs): Promise<CliOutcome> {
     const home = container.env.home();
     const registryService = new RegistryService(
       container.fs,

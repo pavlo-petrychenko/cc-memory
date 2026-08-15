@@ -1,8 +1,8 @@
 import { CLI_SUCCESS, ConfigParser, cliOutcome } from "@/core/index.ts";
 import type { CliOutcome, Config } from "@/core/index.ts";
+import { AppGateways } from "@/gateways/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { KbMapFormatter, KbMapService, NoteParser } from "@/knowledge/index.ts";
-import { AppContainer } from "@/platform/index.ts";
-import type { Container } from "@/platform/index.ts";
 import {
   FtsQueryBuilder,
   IndexBuildService,
@@ -36,7 +36,7 @@ import {
 export const dispatchableHookNames: readonly HookName[] = Object.values(HookName);
 
 /** Every hook's real composition root: no hook constructs its own dependencies,
- * each is wired here from the real `Container` handed to `execute`. */
+ * each is wired here from the real `Gateways` handed to `execute`. */
 function makeIndexConnectionService(): IndexConnectionService {
   return new IndexConnectionService(new SchemaService());
 }
@@ -55,7 +55,7 @@ function makeSearchService(): SearchService {
   );
 }
 
-function makeWorklogStoreService(container: Container): WorklogStoreService {
+function makeWorklogStoreService(container: Gateways): WorklogStoreService {
   return new WorklogStoreService(container.fs, container.git);
 }
 
@@ -64,7 +64,7 @@ function makeWorklogStoreService(container: Container): WorklogStoreService {
  * that breaks a session. */
 export class HookDispatchCommand {
   constructor(
-    private readonly container: Container,
+    private readonly container: Gateways,
     private readonly config: Config,
   ) {}
 
@@ -166,10 +166,10 @@ export class HookDispatchCommand {
   }
 }
 
-/** Unlike every other command, this one is never handed a `Container`/`Config`
+/** Unlike every other command, this one is never handed a `Gateways`/`Config`
  * by `main.ts`, so it builds the real ones itself. */
 export async function hook(args: HookArgs): Promise<CliOutcome> {
-  const container = new AppContainer(process.env);
+  const container = new AppGateways(process.env);
   const config = new ConfigParser().parse(process.env);
   return new HookDispatchCommand(container, config).execute(args);
 }

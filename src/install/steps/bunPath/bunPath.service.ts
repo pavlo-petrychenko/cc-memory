@@ -1,6 +1,8 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
+import type { FileSystem } from "@/gateways/index.ts";
+import type { Proc } from "@/gateways/index.ts";
 import {
   READLINK_TIMEOUT_MS,
   WHICH_TIMEOUT_MS,
@@ -9,8 +11,6 @@ import {
   type BunPathError,
   BunPathErrorKind,
 } from "@/install/steps/bunPath/bunPath.typedefs.ts";
-import type { FileSystem } from "@/platform/index.ts";
-import type { Proc } from "@/platform/index.ts";
 
 /** Resolves the REAL `bun` binary at install time — never the ephemeral path a
  * version manager (`fnm`, `asdf`, ...) hands out via a per-session `PATH` shim.

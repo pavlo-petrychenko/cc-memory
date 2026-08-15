@@ -12,7 +12,7 @@ import {
   SchemaService,
 } from "@/retrieval/index.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { RegistryErrorKind } from "@/workspace/index.ts";
 
 function makeIndexBuildService(): IndexBuildService {
@@ -49,7 +49,7 @@ function workspaceFixture(overrides: Partial<Workspace> = {}): Workspace {
 
 describe("DoctorService — per-workspace diagnostics", () => {
   test("a fully healthy workspace reports ok kb/worklogs and an ok, empty index", async () => {
-    const container = makeTestContainer({ proc: makeProcFake() });
+    const container = makeTestGateways({ proc: makeProcFake() });
     await container.fs.mkdir(workspaceFixture().kb);
     await container.fs.mkdir(workspaceFixture().worklogs);
 
@@ -75,7 +75,7 @@ describe("DoctorService — per-workspace diagnostics", () => {
   });
 
   test("reports MISSING for a kb/worklogs directory that was never created", async () => {
-    const container = makeTestContainer({ proc: makeProcFake() });
+    const container = makeTestGateways({ proc: makeProcFake() });
     // Neither directory is created this time.
 
     const report = await new DoctorService(
@@ -91,7 +91,7 @@ describe("DoctorService — per-workspace diagnostics", () => {
   });
 
   test("reports the index as unreachable rather than throwing, when the db can't be opened", async () => {
-    const container = makeTestContainer({ proc: makeProcFake() });
+    const container = makeTestGateways({ proc: makeProcFake() });
     // A real (never-faked) `bun:sqlite` handle, pointed at a REAL path whose
     // parent directory does not exist on the real filesystem — `fs.mkdir`
     // above only creates it in the in-memory FAKE, so the real sqlite open
@@ -113,7 +113,7 @@ describe("DoctorService — per-workspace diagnostics", () => {
   });
 
   test("reports wrap-state.json / inject.jsonl sizes from beside the index db", async () => {
-    const container = makeTestContainer({ proc: makeProcFake() });
+    const container = makeTestGateways({ proc: makeProcFake() });
     await container.fs.writeFile(fixturePath("/wsdir/wrap-state.json"), "{}");
     await container.fs.writeFile(fixturePath("/wsdir/inject.jsonl"), "one\ntwo\n");
     const workspace = workspaceFixture({ indexDb: fixturePath("/wsdir/index.db") });
@@ -133,7 +133,7 @@ describe("DoctorService — per-workspace diagnostics", () => {
 
 describe("DoctorService — install/hooks/bun diagnostics", () => {
   test("hooks is null (and bun unreported) when there is no installed.json manifest", async () => {
-    const container = makeTestContainer({ proc: makeProcFake() });
+    const container = makeTestGateways({ proc: makeProcFake() });
 
     const report = await new DoctorService(
       container,
@@ -149,7 +149,7 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
   });
 
   test("reports the recorded bun path missing when the file no longer exists", async () => {
-    const container = makeTestContainer({ proc: makeProcFake() });
+    const container = makeTestGateways({ proc: makeProcFake() });
     await new ManifestService(container.fs).save(
       ManifestService.defaultPath(container.env.home()),
       {
@@ -178,7 +178,7 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
   });
 
   test("reports a hook STALE when settings.json's dist path doesn't match the current repo root", async () => {
-    const container = makeTestContainer({ proc: makeProcFake() });
+    const container = makeTestGateways({ proc: makeProcFake() });
     const bunPath = "/usr/local/bin/bun";
     await new ManifestService(container.fs).save(
       ManifestService.defaultPath(container.env.home()),
@@ -231,7 +231,7 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
   });
 
   test("reports a hook ok when settings.json already points at the current bun/dist", async () => {
-    const container = makeTestContainer({ proc: makeProcFake() });
+    const container = makeTestGateways({ proc: makeProcFake() });
     const bunPath = "/usr/local/bin/bun";
     const distPath = `${REPO_ROOT}/dist/memory.js`;
     await new ManifestService(container.fs).save(
@@ -284,7 +284,7 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
   });
 
   test("flags an oversized ccmem.log", async () => {
-    const container = makeTestContainer({ proc: makeProcFake() });
+    const container = makeTestGateways({ proc: makeProcFake() });
     const oversizedContent = "x".repeat(1_048_577);
     await container.fs.writeFile(
       fixturePath("/home/test/.claude/memory/ccmem.log"),
@@ -303,7 +303,7 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
   });
 
   test("carries a registry parse error through for rendering", async () => {
-    const container = makeTestContainer({ proc: makeProcFake() });
+    const container = makeTestGateways({ proc: makeProcFake() });
 
     const report = await new DoctorService(
       container,

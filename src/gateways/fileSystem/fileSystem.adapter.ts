@@ -1,7 +1,7 @@
 import * as nodeFs from "node:fs/promises";
 
 import type { AbsPath } from "@/core/index.ts";
-import type { FileStat, FileSystem } from "@/platform/fileSystem/fileSystem.typedefs.ts";
+import type { FileStat, FileSystem } from "@/gateways/fileSystem/fileSystem.typedefs.ts";
 
 /** The real `FileSystem`, over `node:fs/promises`. Thin on purpose: every method
  * is a direct pass-through, no branching, no defaults. */

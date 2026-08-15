@@ -1,4 +1,4 @@
-import type { Sqlite } from "@/platform/index.ts";
+import type { Sqlite } from "@/gateways/index.ts";
 import { SCHEMA, SCHEMA_VERSION } from "@/retrieval/store/schema/schema.constants.ts";
 
 export class SchemaService {

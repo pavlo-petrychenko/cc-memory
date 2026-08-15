@@ -7,7 +7,7 @@ import {
 import { HelpFormatter } from "@/cli/help/help.formatter.ts";
 import { CLI_SUCCESS } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
-import type { Stdio } from "@/platform/index.ts";
+import type { Stdio } from "@/gateways/index.ts";
 import { CC_MEMORY_VERSION } from "@/version.ts";
 
 /**

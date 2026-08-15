@@ -1,7 +1,7 @@
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { AbsPath, CliOutcome } from "@/core/index.ts";
 import { joinAbs } from "@/core/index.ts";
-import type { Env, FileSystem, Git, Proc, Stdio } from "@/platform/index.ts";
+import type { Env, FileSystem, Git, Proc, Stdio } from "@/gateways/index.ts";
 import {
   DEFAULT_COMMIT_MESSAGE,
   GIT_TIMEOUT_MS,

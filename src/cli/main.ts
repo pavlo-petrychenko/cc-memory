@@ -7,6 +7,8 @@ import { ConfigParser } from "@/core/index.ts";
 import { cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import { ARGS_PARSE_ERROR_EXIT_CODE } from "@/core/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
+import { AppGateways } from "@/gateways/index.ts";
 import {
   DoctorCommand,
   DoctorFormatter,
@@ -14,8 +16,6 @@ import {
   InstallCommand,
   UninstallCommand,
 } from "@/install/index.ts";
-import type { Container } from "@/platform/index.ts";
-import { AppContainer } from "@/platform/index.ts";
 import {
   FtsQueryBuilder,
   IndexBuildService,
@@ -48,7 +48,7 @@ import {
 import type { WorkspaceIndexBuilder } from "@/workspace/index.ts";
 
 /** The composition root: no command constructs its own dependencies, each is wired
- * here from the real `Container`. */
+ * here from the real `Gateways`. */
 function makeIndexConnectionService(): IndexConnectionService {
   return new IndexConnectionService(new SchemaService());
 }
@@ -73,7 +73,7 @@ function makeNoteListService(): NoteListService {
 
 /** Backed by `retrieval`, constructed here rather than inside `workspace` itself,
  * which would close a cycle (retrieval depends on workspace for target resolution). */
-function makeWorkspaceIndexBuilder(container: Container): WorkspaceIndexBuilder {
+function makeWorkspaceIndexBuilder(container: Gateways): WorkspaceIndexBuilder {
   return {
     buildIndex: async (workspace) =>
       (await makeIndexBuildService().build(container, workspace)).total,
@@ -88,7 +88,7 @@ function makeWorkspaceIndexBuilder(container: Container): WorkspaceIndexBuilder 
   };
 }
 
-function makeWorkspaceCommand(container: Container): WorkspaceCommand {
+function makeWorkspaceCommand(container: Gateways): WorkspaceCommand {
   const registryService = new RegistryService(container.fs, new RegistryTomlSerializer());
   const resolverService = new WorkspaceResolverService(registryService, container.git);
   const targetResolutionService = new TargetResolutionService(
@@ -107,7 +107,7 @@ function makeWorkspaceCommand(container: Container): WorkspaceCommand {
   );
 }
 
-function makeResolveCommand(container: Container): ResolveCommand {
+function makeResolveCommand(container: Gateways): ResolveCommand {
   const registryService = new RegistryService(container.fs, new RegistryTomlSerializer());
   const resolverService = new WorkspaceResolverService(registryService, container.git);
   const targetResolutionService = new TargetResolutionService(
@@ -127,7 +127,7 @@ function makeResolveCommand(container: Container): ResolveCommand {
  * `Install`/`Uninstall`/`Hook` ignore `container` and act on the real machine (see
  * the root `CLAUDE.md`'s Traps). */
 async function dispatch(
-  container: Container,
+  container: Gateways,
   config: Config,
   parsed: ParsedArgs,
 ): Promise<CliOutcome> {
@@ -173,13 +173,13 @@ async function dispatch(
       ).execute(parsed);
     case CliCommand.Hook:
       return new HookDispatchCommand(
-        new AppContainer(process.env),
+        new AppGateways(process.env),
         new ConfigParser().parse(process.env),
       ).execute(parsed);
     case CliCommand.Install:
-      return new InstallCommand(new AppContainer(process.env)).execute(parsed);
+      return new InstallCommand(new AppGateways(process.env)).execute(parsed);
     case CliCommand.Uninstall:
-      return new UninstallCommand(new AppContainer(process.env)).execute();
+      return new UninstallCommand(new AppGateways(process.env)).execute();
     case CliCommand.Help:
     case CliCommand.Version:
       return new HelpCommand(container.stdio, new HelpFormatter()).execute(parsed);
@@ -187,11 +187,11 @@ async function dispatch(
 }
 
 /** Kept outside the `import.meta.main` guard so it's testable in-process with a
- * fake `Container`; the guard below only reads the real `process.argv`/`process.env`
+ * fake `Gateways`; the guard below only reads the real `process.argv`/`process.env`
  * and writes real stderr (`Stdio` has no stderr method). */
 export async function runCli(
   argv: readonly string[],
-  container: Container,
+  container: Gateways,
   config: Config,
 ): Promise<CliOutcome> {
   const parsed = parseArgs(argv);
@@ -201,7 +201,7 @@ export async function runCli(
 
 if (import.meta.main) {
   const envSnapshot = process.env;
-  const container = new AppContainer(envSnapshot);
+  const container = new AppGateways(envSnapshot);
   const config = new ConfigParser().parse(envSnapshot);
   const outcome = await runCli(process.argv.slice(2), container, config);
   if (outcome.stderrMessage !== null) {

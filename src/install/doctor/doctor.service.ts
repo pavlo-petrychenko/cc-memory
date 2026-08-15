@@ -1,6 +1,7 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, joinAbs, logPath, parentDir } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { LOG_SIZE_WARNING_BYTES } from "@/install/doctor/doctor.constants.ts";
 import type {
   DoctorReport,
@@ -15,14 +16,13 @@ import { HOOK_REGISTRATION_ORDER } from "@/install/steps/settings/settings.const
 import { SettingsService } from "@/install/steps/settings/settings.service.ts";
 import { JsonFileService } from "@/install/utils/jsonFile/jsonFile.service.ts";
 import type { JsonObject } from "@/install/utils/jsonFile/jsonFile.typedefs.ts";
-import type { Container } from "@/platform/index.ts";
 import { IndexBuildService } from "@/retrieval/index.ts";
 
 /** Checks the state a healthy install actually depends on: registry, vaults,
  * indexes, hook registrations, the recorded `bun` binary, log sizes. */
 export class DoctorService {
   constructor(
-    private readonly container: Container,
+    private readonly container: Gateways,
     private readonly indexBuildService: IndexBuildService,
   ) {}
 

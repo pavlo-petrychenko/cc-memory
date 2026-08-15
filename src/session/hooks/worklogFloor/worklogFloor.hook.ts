@@ -1,4 +1,4 @@
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { RECENT_COMMIT_COUNT } from "@/session/hooks/worklogFloor/worklogFloor.constants.ts";
 import type { WorklogFloorPayload } from "@/session/payload/payload.typedefs.ts";
 import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.ts";
@@ -18,7 +18,7 @@ function lastLineTrimmed(text: string): string {
  * no stdout, ever. */
 export class WorklogFloorHook implements HookHandler<WorklogFloorPayload> {
   constructor(
-    private readonly container: Container,
+    private readonly container: Gateways,
     private readonly worklogFloorFormatter: WorklogFloorFormatter,
     private readonly worklogStoreService: WorklogStoreService,
   ) {}

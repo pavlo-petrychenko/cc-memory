@@ -1,10 +1,10 @@
 import type { AbsPath } from "@/core/index.ts";
 import { joinAbs, stripChars } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
+import type { Sqlite, SqlParameter } from "@/gateways/index.ts";
+import type { FileSystem } from "@/gateways/index.ts";
 import { NoteParser } from "@/knowledge/index.ts";
-import type { Container } from "@/platform/index.ts";
-import type { Sqlite, SqlParameter } from "@/platform/index.ts";
-import type { FileSystem } from "@/platform/index.ts";
 import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
 import type {
   BuildOptions,
@@ -309,7 +309,7 @@ export class IndexBuildService {
   constructor(private readonly connectionService: IndexConnectionService) {}
 
   async build(
-    container: Container,
+    container: Gateways,
     workspace: Workspace,
     options: BuildOptions = {},
   ): Promise<BuildStats> {

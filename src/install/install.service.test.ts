@@ -1,27 +1,27 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { InstallService } from "@/install/install.service.ts";
 import { InstallErrorKind } from "@/install/install.typedefs.ts";
 import { ManifestService } from "@/install/steps/manifest/manifest.service.ts";
 import { SettingsService } from "@/install/steps/settings/settings.service.ts";
 import { ShimService } from "@/install/steps/shim/shim.service.ts";
 import { SkillsService } from "@/install/steps/skills/skills.service.ts";
-import type { Container } from "@/platform/index.ts";
 import { HookEvent } from "@/session/index.ts";
 import { makeProcFake, type ProcFake } from "@/testing/fakes/procFake.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { defaultRegistryPath } from "@/workspace/index.ts";
 
 /**
  * `InstallService`'s `install`/`uninstall` orchestration — every scenario
- * here runs against `makeTestContainer`'s in-memory `fs` and a `procFake`,
+ * here runs against `makeTestGateways`'s in-memory `fs` and a `procFake`,
  * NEVER a real `bun`. See `install.command.test.ts`'s doc comment for why
  * that distinction matters on THIS machine specifically.
  */
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — matches
-// `testContainer.fixture.ts`'s `DEFAULT_HOME`/`DEFAULT_CWD`.
+// `testGateways.fixture.ts`'s `DEFAULT_HOME`/`DEFAULT_CWD`.
 const REPO_ROOT = "/repo" as AbsPath;
 // SAFETY: same reasoning as `REPO_ROOT` above.
 const OLD_REPO_ROOT = "/old-repo" as AbsPath;
@@ -43,7 +43,7 @@ function fixturePath(...segments: readonly string[]): AbsPath {
  * branch — every "full apply" scenario below reaches that step and none of
  * them are testing `seed.ts` itself (that's `seed.service.test.ts`'s job).
  */
-async function setUpBunResolution(container: Container, proc: ProcFake): Promise<void> {
+async function setUpBunResolution(container: Gateways, proc: ProcFake): Promise<void> {
   proc.enqueue({
     kind: "resolve",
     result: { stdout: "/usr/bin/bun\n", stderr: "", exitCode: 0 },
@@ -60,15 +60,15 @@ async function setUpBunResolution(container: Container, proc: ProcFake): Promise
  * used to build a second "rerun" container that shares filesystem + home but
  * gets its OWN scripted `proc`, since a `ProcFake`'s queue is consumed by
  * the run it was built for. */
-function rerunContainer(base: Container, proc: ProcFake): Container {
-  return makeTestContainer({ fs: base.fs, env: base.env, proc });
+function rerunGateways(base: Gateways, proc: ProcFake): Gateways {
+  return makeTestGateways({ fs: base.fs, env: base.env, proc });
 }
 
 describe("InstallService — install error paths", () => {
   test("refuses when bun isn't on PATH", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 1 } });
-    const container = makeTestContainer({ proc });
+    const container = makeTestGateways({ proc });
 
     const result = await new InstallService(container).install({
       repoRoot: REPO_ROOT,
@@ -85,7 +85,7 @@ describe("InstallService — install error paths", () => {
       result: { stdout: "/usr/bin/bun\n", stderr: "", exitCode: 0 },
     });
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 1 } });
-    const container = makeTestContainer({ proc });
+    const container = makeTestGateways({ proc });
 
     const result = await new InstallService(container).install({
       repoRoot: REPO_ROOT,
@@ -98,7 +98,7 @@ describe("InstallService — install error paths", () => {
 
   test("reports a malformed settings.json as SettingsUnreadable rather than throwing", async () => {
     const proc = makeProcFake();
-    const container = makeTestContainer({ proc });
+    const container = makeTestGateways({ proc });
     await setUpBunResolution(container, proc);
     await container.fs.writeFile(
       SettingsService.defaultPath(container.env.home()),
@@ -123,7 +123,7 @@ describe("InstallService — install error paths", () => {
 describe("InstallService — install --dry-run", () => {
   test("writes nothing at all", async () => {
     const proc = makeProcFake();
-    const container = makeTestContainer({ proc });
+    const container = makeTestGateways({ proc });
     await setUpBunResolution(container, proc);
 
     const result = await new InstallService(container).install({
@@ -152,7 +152,7 @@ describe("InstallService — install --dry-run", () => {
 describe("InstallService — install full apply", () => {
   test("registers all 5 hooks, writes the shim, and records a manifest", async () => {
     const proc = makeProcFake();
-    const container = makeTestContainer({ proc });
+    const container = makeTestGateways({ proc });
     await setUpBunResolution(container, proc);
 
     const result = await new InstallService(container).install({
@@ -178,7 +178,7 @@ describe("InstallService — install full apply", () => {
 
   test("re-running twice is idempotent: identical settings.json, no duplicate hook groups", async () => {
     const firstProc = makeProcFake();
-    const container = makeTestContainer({ proc: firstProc });
+    const container = makeTestGateways({ proc: firstProc });
     await setUpBunResolution(container, firstProc);
 
     const first = await new InstallService(container).install({
@@ -191,9 +191,9 @@ describe("InstallService — install full apply", () => {
     );
 
     const secondProc = makeProcFake();
-    const secondContainer = rerunContainer(container, secondProc);
-    await setUpBunResolution(secondContainer, secondProc);
-    const second = await new InstallService(secondContainer).install({
+    const secondGateways = rerunGateways(container, secondProc);
+    await setUpBunResolution(secondGateways, secondProc);
+    const second = await new InstallService(secondGateways).install({
       repoRoot: REPO_ROOT,
       dryRun: false,
     });
@@ -214,7 +214,7 @@ describe("InstallService — install full apply", () => {
 
   test("preserves a foreign hook (buddy-reroll) across install", async () => {
     const proc = makeProcFake();
-    const container = makeTestContainer({ proc });
+    const container = makeTestGateways({ proc });
     await setUpBunResolution(container, proc);
     await container.fs.writeFile(
       SettingsService.defaultPath(container.env.home()),
@@ -249,7 +249,7 @@ describe("InstallService — install full apply", () => {
 
   test("a moved repo purges the old entries by manifest — no orphans", async () => {
     const firstProc = makeProcFake();
-    const container = makeTestContainer({ proc: firstProc });
+    const container = makeTestGateways({ proc: firstProc });
     await setUpBunResolution(container, firstProc);
     const firstInstall = await new InstallService(container).install({
       repoRoot: OLD_REPO_ROOT,
@@ -258,9 +258,9 @@ describe("InstallService — install full apply", () => {
     expect(firstInstall.ok).toBe(true);
 
     const secondProc = makeProcFake();
-    const movedContainer = rerunContainer(container, secondProc);
-    await setUpBunResolution(movedContainer, secondProc);
-    const secondInstall = await new InstallService(movedContainer).install({
+    const movedGateways = rerunGateways(container, secondProc);
+    await setUpBunResolution(movedGateways, secondProc);
+    const secondInstall = await new InstallService(movedGateways).install({
       repoRoot: REPO_ROOT,
       dryRun: false,
     });
@@ -280,7 +280,7 @@ describe("InstallService — install full apply", () => {
 
   test("cleans a legacy (pre-manifest) entry exactly once, not on every subsequent run", async () => {
     const firstProc = makeProcFake();
-    const container = makeTestContainer({ proc: firstProc });
+    const container = makeTestGateways({ proc: firstProc });
     await setUpBunResolution(container, firstProc);
     await container.fs.writeFile(
       SettingsService.defaultPath(container.env.home()),
@@ -311,9 +311,9 @@ describe("InstallService — install full apply", () => {
     }
 
     const secondProc = makeProcFake();
-    const secondContainer = rerunContainer(container, secondProc);
-    await setUpBunResolution(secondContainer, secondProc);
-    const second = await new InstallService(secondContainer).install({
+    const secondGateways = rerunGateways(container, secondProc);
+    await setUpBunResolution(secondGateways, secondProc);
+    const second = await new InstallService(secondGateways).install({
       repoRoot: REPO_ROOT,
       dryRun: false,
     });
@@ -329,7 +329,7 @@ describe("InstallService — install full apply", () => {
 
 describe("InstallService — uninstall", () => {
   test("reports nothing to do when there is no manifest", async () => {
-    const container = makeTestContainer({ proc: makeProcFake() });
+    const container = makeTestGateways({ proc: makeProcFake() });
     const report = await new InstallService(container).uninstall();
     expect(report).toEqual({
       uninstalled: false,
@@ -339,7 +339,7 @@ describe("InstallService — uninstall", () => {
 
   test("reverses exactly what the manifest recorded: shim, hooks, manifest", async () => {
     const installProc = makeProcFake();
-    const container = makeTestContainer({ proc: installProc });
+    const container = makeTestGateways({ proc: installProc });
     await setUpBunResolution(container, installProc);
     const installed = await new InstallService(container).install({
       repoRoot: REPO_ROOT,
@@ -349,7 +349,7 @@ describe("InstallService — uninstall", () => {
 
     const uninstallProc = makeProcFake();
     const report = await new InstallService(
-      rerunContainer(container, uninstallProc),
+      rerunGateways(container, uninstallProc),
     ).uninstall();
 
     expect(report.uninstalled).toBe(true);
@@ -367,7 +367,7 @@ describe("InstallService — uninstall", () => {
 
   test("uninstall preserves a foreign hook it never registered", async () => {
     const installProc = makeProcFake();
-    const container = makeTestContainer({ proc: installProc });
+    const container = makeTestGateways({ proc: installProc });
     await setUpBunResolution(container, installProc);
     await container.fs.writeFile(
       SettingsService.defaultPath(container.env.home()),
@@ -395,7 +395,7 @@ describe("InstallService — uninstall", () => {
 
     const uninstallProc = makeProcFake();
     const report = await new InstallService(
-      rerunContainer(container, uninstallProc),
+      rerunGateways(container, uninstallProc),
     ).uninstall();
     expect(report.uninstalled).toBe(true);
 
@@ -407,7 +407,7 @@ describe("InstallService — uninstall", () => {
 
   test("restores a backed-up skill directory on uninstall", async () => {
     const installProc = makeProcFake();
-    const container = makeTestContainer({ proc: installProc });
+    const container = makeTestGateways({ proc: installProc });
     await setUpBunResolution(container, installProc);
     const skillsTargetDir = SkillsService.defaultTargetDir(container.env.home());
     const targetPath = fixturePath(skillsTargetDir, "/remember");
@@ -430,7 +430,7 @@ describe("InstallService — uninstall", () => {
 
     const uninstallProc = makeProcFake();
     const report = await new InstallService(
-      rerunContainer(container, uninstallProc),
+      rerunGateways(container, uninstallProc),
     ).uninstall();
     expect(report.uninstalled).toBe(true);
     expect(await container.fs.exists(fixturePath(targetPath, "/SKILL.md"))).toBe(true);

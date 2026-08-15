@@ -12,7 +12,7 @@ import type { HookResult } from "@/session/session.typedefs.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeLoggerFake } from "@/testing/fakes/loggerCollect.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 /**
@@ -25,7 +25,7 @@ import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
  * fail-open invariant.
  */
 
-// SAFETY: fixed test fixtures, matching `testContainer.fixture.ts`'s
+// SAFETY: fixed test fixtures, matching `testGateways.fixture.ts`'s
 // DEFAULT_HOME/DEFAULT_CWD.
 const HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `HOME` above.
@@ -54,7 +54,7 @@ describe("HookRuntimeService.run (the shared per-hook preamble/postamble)", () =
     const io = makeIoFake();
     const fs = makeFsMemoryFake();
     const logger = makeLoggerFake();
-    const container = makeTestContainer({ stdio: io, fs, logger });
+    const container = makeTestGateways({ stdio: io, fs, logger });
     const payloadParser = new PayloadParser();
     const hookRuntimeService = new HookRuntimeService(
       container,
@@ -90,7 +90,7 @@ describe("HookRuntimeService.run (the shared per-hook preamble/postamble)", () =
     const io = makeIoFake();
     const fs = makeFsMemoryFake();
     const logger = makeLoggerFake();
-    const container = makeTestContainer({ stdio: io, fs, logger });
+    const container = makeTestGateways({ stdio: io, fs, logger });
     const payloadParser = new PayloadParser();
     const hookRuntimeService = new HookRuntimeService(
       container,
@@ -118,7 +118,7 @@ describe("HookRuntimeService.run (the shared per-hook preamble/postamble)", () =
   test("no resolved workspace never calls the handler at all: silent, exit 0", async () => {
     const io = makeIoFake();
     const fs = makeFsMemoryFake();
-    const container = makeTestContainer({ stdio: io, fs });
+    const container = makeTestGateways({ stdio: io, fs });
     const payloadParser = new PayloadParser();
     const hookRuntimeService = new HookRuntimeService(
       container,
@@ -147,7 +147,7 @@ describe("HookRuntimeService.run (the shared per-hook preamble/postamble)", () =
     const io = makeIoFake();
     const fs = makeFsMemoryFake();
     const logger = makeLoggerFake();
-    const container = makeTestContainer({ stdio: io, fs, logger });
+    const container = makeTestGateways({ stdio: io, fs, logger });
     const payloadParser = new PayloadParser();
     const hookRuntimeService = new HookRuntimeService(
       container,

@@ -1,7 +1,7 @@
 import { CLI_SUCCESS } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
-import type { Env, Stdio } from "@/platform/index.ts";
+import type { Env, Stdio } from "@/gateways/index.ts";
 import { ResolveFormatter } from "@/workspace/commands/resolve/resolve.formatter.ts";
 import type { ResolveArgs } from "@/workspace/commands/resolve/resolve.typedefs.ts";
 import { WorkspaceResolverService } from "@/workspace/services/resolver/resolver.service.ts";

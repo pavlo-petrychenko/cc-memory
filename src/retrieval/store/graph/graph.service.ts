@@ -1,7 +1,7 @@
 import type { AbsPath } from "@/core/index.ts";
 import { relKey } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
 import { DEFAULT_NEIGHBORS_LIMIT } from "@/retrieval/store/graph/graph.constants.ts";
 
@@ -20,7 +20,7 @@ export class LinkGraphService {
   constructor(private readonly connectionService: IndexConnectionService) {}
 
   async neighbors(
-    container: Container,
+    container: Gateways,
     workspace: Workspace,
     path: AbsPath,
     limit: number = DEFAULT_NEIGHBORS_LIMIT,
@@ -37,7 +37,7 @@ export class LinkGraphService {
    * one, feeding the RRF corroboration bonus. Returns an empty map for fewer than
    * 2 candidates — corroboration needs at least one other candidate. */
   async inlinkCounts(
-    container: Container,
+    container: Gateways,
     workspace: Workspace,
     candidatePaths: readonly AbsPath[],
   ): Promise<ReadonlyMap<AbsPath, number>> {

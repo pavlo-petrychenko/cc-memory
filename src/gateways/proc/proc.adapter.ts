@@ -1,5 +1,5 @@
-import { COMMAND_NOT_FOUND_EXIT_CODE } from "@/platform/proc/proc.constants.ts";
-import type { Proc, ProcResult, ProcRunOptions } from "@/platform/proc/proc.typedefs.ts";
+import { COMMAND_NOT_FOUND_EXIT_CODE } from "@/gateways/proc/proc.constants.ts";
+import type { Proc, ProcResult, ProcRunOptions } from "@/gateways/proc/proc.typedefs.ts";
 
 /** The real `Proc`, over `Bun.spawn`. Rejects on timeout — a killed process has no
  * meaningful exit code, so the rejection IS the signal. */

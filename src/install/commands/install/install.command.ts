@@ -1,5 +1,6 @@
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import {
   INSTALL_BANNER,
   INSTALL_DONE_MESSAGE,
@@ -12,11 +13,10 @@ import {
 import type { InstallArgs } from "@/install/commands/install/install.typedefs.ts";
 import { InstallService } from "@/install/install.service.ts";
 import { type InstallError, InstallErrorKind } from "@/install/install.typedefs.ts";
-import type { Container } from "@/platform/index.ts";
 
 /** `memory install [--dry-run]` / `memory uninstall`. Both classes take `container`
  * as a required constructor parameter, built from the real `process.env` at
- * `main.ts`'s dispatch; a test supplies `makeTestContainer(...)` instead and never
+ * `main.ts`'s dispatch; a test supplies `makeTestGateways(...)` instead and never
  * touches a real container. */
 function installErrorMessage(error: InstallError): string {
   switch (error.kind) {
@@ -33,7 +33,7 @@ function installErrorMessage(error: InstallError): string {
 }
 
 export class InstallCommand {
-  constructor(private readonly container: Container) {}
+  constructor(private readonly container: Gateways) {}
 
   async execute(args: InstallArgs): Promise<CliOutcome> {
     const result = await new InstallService(this.container).install({
@@ -57,7 +57,7 @@ export class InstallCommand {
 }
 
 export class UninstallCommand {
-  constructor(private readonly container: Container) {}
+  constructor(private readonly container: Gateways) {}
 
   async execute(): Promise<CliOutcome> {
     const report = await new InstallService(this.container).uninstall();

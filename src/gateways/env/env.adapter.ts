@@ -2,7 +2,7 @@ import { homedir } from "node:os";
 
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, parentDir } from "@/core/index.ts";
-import type { Env } from "@/platform/env/env.typedefs.ts";
+import type { Env } from "@/gateways/env/env.typedefs.ts";
 
 /** The real `Env`, reading the actual process for the home directory and cwd. */
 export class EnvAdapter implements Env {

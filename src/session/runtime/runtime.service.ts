@@ -1,7 +1,7 @@
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import type { PayloadParser } from "@/session/payload/payload.parser.ts";
 import type { JsonRecord } from "@/session/payload/payload.typedefs.ts";
 import type { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts";
@@ -20,7 +20,7 @@ import {
  * having LOGGED any failure instead of swallowing it blind. */
 export class HookRuntimeService {
   constructor(
-    private readonly container: Container,
+    private readonly container: Gateways,
     private readonly payloadParser: PayloadParser,
     private readonly hookResultSerializer: HookResultSerializer,
   ) {}

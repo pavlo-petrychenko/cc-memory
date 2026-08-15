@@ -4,9 +4,9 @@ import { CliCommand, type ResolveArgs } from "@/cli/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { ResolveCommand } from "@/workspace/commands/resolve/resolve.command.ts";
 import { ResolveFormatter } from "@/workspace/commands/resolve/resolve.formatter.ts";
 import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
@@ -31,7 +31,7 @@ function resolveArgs(overrides: Partial<ResolveArgs> = {}): ResolveArgs {
   return { command: CliCommand.Resolve, cwd: null, ...overrides };
 }
 
-function makeResolveCommand(container: Container): ResolveCommand {
+function makeResolveCommand(container: Gateways): ResolveCommand {
   const registryService = new RegistryService(container.fs, new RegistryTomlSerializer());
   const resolverService = new WorkspaceResolverService(registryService, container.git);
   const targetResolutionService = new TargetResolutionService(
@@ -50,7 +50,7 @@ function makeResolveCommand(container: Container): ResolveCommand {
 describe("ResolveCommand.execute", () => {
   test("inside a workspace prints the 5 key: value lines", async () => {
     const io = makeIoFake();
-    const container = makeTestContainer({ stdio: io });
+    const container = makeTestGateways({ stdio: io });
     const registryService = new RegistryService(
       container.fs,
       new RegistryTomlSerializer(),
@@ -71,7 +71,7 @@ describe("ResolveCommand.execute", () => {
 
   test("outside any workspace prints a plain message and still exits 0", async () => {
     const io = makeIoFake();
-    const container = makeTestContainer({ stdio: io });
+    const container = makeTestGateways({ stdio: io });
     const registryService = new RegistryService(
       container.fs,
       new RegistryTomlSerializer(),

@@ -1,13 +1,13 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, parentDir } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
+import type { FileSystem } from "@/gateways/index.ts";
 import {
   type JsonFileError,
   JsonFileErrorKind,
   type JsonObject,
   type JsonValue,
 } from "@/install/utils/jsonFile/jsonFile.typedefs.ts";
-import type { FileSystem } from "@/platform/index.ts";
 
 /** Reads and writes a JSON file whose top level is an object — `settings.json` and
  * `installed.json` both are. */

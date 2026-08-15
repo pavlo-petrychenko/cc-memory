@@ -1,10 +1,10 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, expandPath, joinAbs } from "@/core/index.ts";
+import type { FileSystem } from "@/gateways/index.ts";
 import { PRE_CCMEMORY_BACKUP_SUFFIX } from "@/install/steps/manifest/manifest.constants.ts";
 import type { SkillManifestEntry } from "@/install/steps/manifest/manifest.typedefs.ts";
 import { SKILLS_TARGET_HOME_RELATIVE_PATH } from "@/install/steps/skills/skills.constants.ts";
 import type { SkillInstallOutcome } from "@/install/steps/skills/skills.typedefs.ts";
-import type { FileSystem } from "@/platform/index.ts";
 
 /** Symlinks every skill under `<repo>/src/skills` into `~/.claude/skills`, backing
  * up a pre-existing REAL directory to `<name>.pre-ccmemory.bak` once. Idempotency

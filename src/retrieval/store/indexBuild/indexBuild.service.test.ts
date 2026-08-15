@@ -3,19 +3,19 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import type { FileSystem } from "@/platform/index.ts";
+import type { FileSystem } from "@/gateways/index.ts";
 import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
 import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
 import { NoteListService } from "@/retrieval/store/noteList/noteList.service.ts";
 import { SCHEMA_VERSION } from "@/retrieval/store/schema/schema.constants.ts";
 import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 
 // SAFETY: fixed test fixture, mirrors the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
 // SAFETY: bun:sqlite's own in-memory-database identifier — an opaque key into
-// Container.openDatabase's per-path memoization, not a real filesystem path.
+// Gateways.openDatabase's per-path memoization, not a real filesystem path.
 const IN_MEMORY_DB = ":memory:" as AbsPath;
 
 const connectionService = new IndexConnectionService(new SchemaService());
@@ -53,7 +53,7 @@ describe("index/build IndexBuildService.build — notes", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(under("A.md"), NOTE_A, 100);
     fs.seedFile(under("B.md"), NOTE_B, 100);
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
 
     const stats = await indexBuildService.build(container, makeWorkspace(), {
       incremental: false,
@@ -66,7 +66,7 @@ describe("index/build IndexBuildService.build — notes", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(under("A.md"), NOTE_A, 100);
     fs.seedFile(under("B.md"), NOTE_B, 100);
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
     await indexBuildService.build(container, makeWorkspace(), { incremental: false });
 
     const stats = await indexBuildService.build(container, makeWorkspace());
@@ -78,7 +78,7 @@ describe("index/build IndexBuildService.build — notes", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(under("A.md"), NOTE_A, 100);
     fs.seedFile(under("B.md"), NOTE_B, 100);
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
     await indexBuildService.build(container, makeWorkspace(), { incremental: false });
 
     fs.seedFile(under("A.md"), "---\ntype: note\n---\n# Alpha Renamed\nnew body.\n", 200);
@@ -94,7 +94,7 @@ describe("index/build IndexBuildService.build — notes", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(under("A.md"), NOTE_A, 100);
     fs.seedFile(under("B.md"), NOTE_B, 100);
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
     await indexBuildService.build(container, makeWorkspace(), { incremental: false });
 
     await fs.remove(under("B.md"));
@@ -109,7 +109,7 @@ describe("index/build IndexBuildService.build — notes", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(under("A.md"), NOTE_A, 100);
     fs.seedFile(under("B.md"), NOTE_B, 100);
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
     const workspace = makeWorkspace();
     await indexBuildService.build(container, workspace, { incremental: false });
 
@@ -129,7 +129,7 @@ describe("index/build IndexBuildService.build — notes", () => {
     fs.seedFile(under(".obsidian/Secret.md"), "# secret\n", 100);
     fs.seedFile(under("Archive/Old.md"), "# old\n", 100);
     fs.seedFile(under("_Worklogs/Not A Note.md"), "# not a note\n", 100);
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
 
     const stats = await indexBuildService.build(container, makeWorkspace(), {
       incremental: false,
@@ -144,7 +144,7 @@ describe("index/build IndexBuildService.build — notes", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(under("A.md"), NOTE_A, 100);
     fs.seedFile(under("Drafts/Skip.md"), "# skip\n", 100);
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
 
     const stats = await indexBuildService.build(
       container,
@@ -168,7 +168,7 @@ describe("index/build IndexBuildService.build — notes", () => {
         return fs.readFile(path);
       },
     };
-    const container = makeTestContainer({ fs: flakyFs });
+    const container = makeTestGateways({ fs: flakyFs });
 
     const stats = await indexBuildService.build(container, makeWorkspace(), {
       incremental: false,
@@ -183,7 +183,7 @@ describe("index/build IndexBuildService.build — notes", () => {
 
   test("a kb directory that does not exist on disk yields an empty (not throwing) build", async () => {
     const fs = makeFsMemoryFake();
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
 
     const stats = await indexBuildService.build(container, makeWorkspace(), {
       incremental: false,
@@ -202,7 +202,7 @@ describe("index/build IndexBuildService.build — worklogs (incremental by mtime
       "## 10:00 — incident\n**Changes:** deployment rollback incident on the gateway.\n",
       100,
     );
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
     const workspace = makeWorkspace();
 
     await indexBuildService.build(container, workspace, { incremental: false });
@@ -221,7 +221,7 @@ describe("index/build IndexBuildService.build — worklogs (incremental by mtime
   test("a dot-prefixed slug directory is skipped", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(underWorklogs(".hidden/2026-01-01.md"), "**Changes:** hidden.\n", 100);
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
     const workspace = makeWorkspace();
 
     await indexBuildService.build(container, workspace, { incremental: false });
@@ -242,7 +242,7 @@ describe("index/build IndexBuildService.build — worklogs (incremental by mtime
         return fs.readFile(path);
       },
     };
-    const container = makeTestContainer({ fs: countingFs });
+    const container = makeTestGateways({ fs: countingFs });
     const workspace = makeWorkspace();
     await indexBuildService.build(container, workspace, { incremental: false });
     expect(readCount).toBe(1);
@@ -256,7 +256,7 @@ describe("index/build IndexBuildService.build — worklogs (incremental by mtime
     const fs = makeFsMemoryFake();
     const statePath = underWorklogs("wt1/STATE.md");
     fs.seedFile(statePath, "# wt1\n## Current focus\nnothing\n", 100);
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
     const workspace = makeWorkspace();
     await indexBuildService.build(container, workspace, { incremental: false });
 
@@ -272,7 +272,7 @@ describe("index/build IndexBuildService.build — worklogs (incremental by mtime
     const fs = makeFsMemoryFake();
     const statePath = underWorklogs("wt1/STATE.md");
     fs.seedFile(statePath, "# wt1\n## Current focus\nnothing\n", 100);
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
     const workspace = makeWorkspace();
     await indexBuildService.build(container, workspace, { incremental: false });
 
@@ -287,7 +287,7 @@ describe("index/build IndexBuildService.build — worklogs (incremental by mtime
   test("a worklogs root that does not exist on disk yields no worklog rows", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(under("A.md"), NOTE_A, 100);
-    const container = makeTestContainer({ fs });
+    const container = makeTestGateways({ fs });
     const workspace = makeWorkspace();
 
     await indexBuildService.build(container, workspace, { incremental: false });

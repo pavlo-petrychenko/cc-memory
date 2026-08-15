@@ -1,7 +1,7 @@
 import { absPath } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
-import { SqliteAdapter } from "@/platform/index.ts";
-import type { Sqlite } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
+import { SqliteAdapter } from "@/gateways/index.ts";
+import type { Sqlite } from "@/gateways/index.ts";
 import { makeClockFake } from "@/testing/fakes/clockFixed.fake.ts";
 import { makeEnvFake } from "@/testing/fakes/envMap.fake.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
@@ -14,15 +14,15 @@ const DEFAULT_HOME = absPath("/home/test");
 const DEFAULT_CWD = absPath("/home/test/project");
 const DEFAULT_REPO_ROOT = absPath("/home/test/repo");
 
-/** Builds every fake at once, wired the way `AppContainer` wires the real adapters,
+/** Builds every fake at once, wired the way `AppGateways` wires the real adapters,
  * so a test only overrides what it cares about. `openDatabase` is the one exception
  * to "everything is a fake" — CLAUDE.md forbids a `Sqlite` fake, so this opens a
  * REAL `bun:sqlite` database, memoized by path like the real container. */
-export function makeTestContainer(overrides: Partial<Container> = {}): Container {
+export function makeTestGateways(overrides: Partial<Gateways> = {}): Gateways {
   const dbHandles = new Map<string, Sqlite>();
   const proc = makeProcFake();
 
-  const defaults: Container = {
+  const defaults: Gateways = {
     fs: makeFsMemoryFake(),
     git: makeGitFake(),
     proc,

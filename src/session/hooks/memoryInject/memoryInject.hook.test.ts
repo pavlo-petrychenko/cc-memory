@@ -5,7 +5,7 @@ import { ConfigParser } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Config } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import {
   FtsQueryBuilder,
   IndexBuildService,
@@ -23,7 +23,7 @@ import { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts
 import { HookRuntimeService } from "@/session/runtime/runtime.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import {
   expandWorkspace,
   RegistryService,
@@ -50,7 +50,7 @@ function makeSearchService(): SearchService {
   );
 }
 
-// SAFETY: fixed test fixtures, matching `testContainer.fixture.ts`'s
+// SAFETY: fixed test fixtures, matching `testGateways.fixture.ts`'s
 // DEFAULT_HOME/DEFAULT_CWD.
 const HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `HOME` above.
@@ -79,13 +79,13 @@ const INJECT_LOG_PATH = "/inject.jsonl" as AbsPath;
 type Fixture = {
   readonly io: IoFake;
   readonly fs: ReturnType<typeof makeFsMemoryFake>;
-  readonly container: Container;
+  readonly container: Gateways;
 };
 
 function makeFixture(): Fixture {
   const io = makeIoFake();
   const fs = makeFsMemoryFake();
-  const container = makeTestContainer({ stdio: io, fs });
+  const container = makeTestGateways({ stdio: io, fs });
   return { io, fs, container };
 }
 

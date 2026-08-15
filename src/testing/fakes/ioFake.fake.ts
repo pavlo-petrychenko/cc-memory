@@ -1,4 +1,4 @@
-import type { Stdio } from "@/platform/index.ts";
+import type { Stdio } from "@/gateways/index.ts";
 
 export type IoFake = Stdio & {
   readonly written: readonly string[];

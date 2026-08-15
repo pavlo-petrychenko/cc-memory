@@ -1,7 +1,7 @@
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { NotesFormatter } from "@/retrieval/commands/notes/notes.formatter.ts";
 import type { NotesArgs } from "@/retrieval/commands/notes/notes.typedefs.ts";
 import { NoteListService } from "@/retrieval/store/noteList/noteList.service.ts";
@@ -25,7 +25,7 @@ export class NotesCommand {
 
   /** `--json` is checked BEFORE the "no notes" fallback: an empty `--json`
    * result still prints `[]` rather than the plain-text "no notes" message. */
-  async execute(container: Container, args: NotesArgs): Promise<CliOutcome> {
+  async execute(container: Gateways, args: NotesArgs): Promise<CliOutcome> {
     const home = container.env.home();
     const registryService = new RegistryService(
       container.fs,

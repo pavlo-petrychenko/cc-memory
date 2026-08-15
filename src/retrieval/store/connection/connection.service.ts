@@ -1,7 +1,7 @@
 import { parentDir } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
-import type { Sqlite } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
+import type { Sqlite } from "@/gateways/index.ts";
 import { SCHEMA, SCHEMA_VERSION } from "@/retrieval/store/schema/schema.constants.ts";
 import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 
@@ -16,7 +16,7 @@ export type IndexConnection = {
 export class IndexConnectionService {
   constructor(private readonly schemaService: SchemaService) {}
 
-  async open(container: Container, workspace: Workspace): Promise<IndexConnection> {
+  async open(container: Gateways, workspace: Workspace): Promise<IndexConnection> {
     await container.fs.mkdir(parentDir(workspace.indexDb));
     const db = container.openDatabase(workspace.indexDb);
     db.exec(SCHEMA);

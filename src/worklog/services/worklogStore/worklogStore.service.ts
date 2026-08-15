@@ -1,8 +1,8 @@
 import type { AbsPath } from "@/core/index.ts";
 import { joinAbs } from "@/core/index.ts";
 import type { Workspace, WorktreeSlug } from "@/core/index.ts";
-import type { FileSystem } from "@/platform/index.ts";
-import type { Git } from "@/platform/index.ts";
+import type { FileSystem } from "@/gateways/index.ts";
+import type { Git } from "@/gateways/index.ts";
 import {
   DEFAULT_RECENT_ENTRIES_LIMIT,
   MARKDOWN_EXTENSION,

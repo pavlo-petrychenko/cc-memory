@@ -1,8 +1,8 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
-import type { Sqlite } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
+import type { Sqlite } from "@/gateways/index.ts";
 import { FtsQueryBuilder } from "@/retrieval/query/ftsQuery/ftsQuery.builder.ts";
 import { Ranker } from "@/retrieval/ranking/ranking.ranker.ts";
 import { SearchKind, type FusedHit, type Hit } from "@/retrieval/retrieval.typedefs.ts";
@@ -58,7 +58,7 @@ export class SearchService {
   ) {}
 
   async search(
-    container: Container,
+    container: Gateways,
     workspace: Workspace,
     query: string,
     options: SearchOptions = {},
@@ -76,7 +76,7 @@ export class SearchService {
    * wikilink-corroboration bonus. Returns `[]` early when the token query yields no
    * candidates — phrase hits are always a subset of token hits. */
   async searchFused(
-    container: Container,
+    container: Gateways,
     workspace: Workspace,
     query: string,
     options: SearchFusedOptions,

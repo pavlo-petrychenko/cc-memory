@@ -10,7 +10,7 @@ import {
   tildify,
 } from "@/core/index.ts";
 import type { RawWorkspace, Workspace } from "@/core/index.ts";
-import type { Env, FileSystem, Proc, Stdio } from "@/platform/index.ts";
+import type { Env, FileSystem, Proc, Stdio } from "@/gateways/index.ts";
 import {
   DEFAULT_EXCLUDE,
   GIT_INIT_TIMEOUT_MS,

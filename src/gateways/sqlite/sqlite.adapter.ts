@@ -1,6 +1,6 @@
 import { Database, type Statement } from "bun:sqlite";
 
-import type { Sqlite, SqlParameter } from "@/platform/sqlite/sqlite.typedefs.ts";
+import type { Sqlite, SqlParameter } from "@/gateways/sqlite/sqlite.typedefs.ts";
 
 /** One `bun:sqlite` handle per process, with a prepared-statement cache keyed by
  * the SQL string itself — safe and bounded because every SQL string this project

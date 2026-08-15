@@ -1,10 +1,10 @@
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath, parentDir } from "@/core/index.ts";
+import type { FileSystem } from "@/gateways/index.ts";
 import {
   SHIM_HOME_RELATIVE_PATH,
   SHIM_MODE,
 } from "@/install/steps/shim/shim.constants.ts";
-import type { FileSystem } from "@/platform/index.ts";
 
 /** `~/.local/bin/memory` — a 2-line `sh` shim with ABSOLUTE paths baked in, since
  * `#!/usr/bin/env bun` would only resolve when `bun` is on the caller's `PATH`,

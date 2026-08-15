@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { CompactCheckpointFormatter } from "@/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";
 import { CompactCheckpointHook } from "@/session/hooks/compactCheckpoint/compactCheckpoint.hook.ts";
 import { PayloadParser } from "@/session/payload/payload.parser.ts";
@@ -11,7 +11,7 @@ import { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts
 import { HookRuntimeService } from "@/session/runtime/runtime.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { WorklogStoreService } from "@/worklog/index.ts";
 import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
@@ -20,7 +20,7 @@ import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
  * write-only, no stdout.
  */
 
-// SAFETY: fixed test fixtures, matching `testContainer.fixture.ts`'s
+// SAFETY: fixed test fixtures, matching `testGateways.fixture.ts`'s
 // DEFAULT_HOME/DEFAULT_CWD.
 const HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `HOME` above.
@@ -43,13 +43,13 @@ const PRIMARY: RawWorkspace = {
 type Fixture = {
   readonly io: IoFake;
   readonly fs: ReturnType<typeof makeFsMemoryFake>;
-  readonly container: Container;
+  readonly container: Gateways;
 };
 
 async function makeFixture(): Promise<Fixture> {
   const io = makeIoFake();
   const fs = makeFsMemoryFake();
-  const container = makeTestContainer({ stdio: io, fs });
+  const container = makeTestGateways({ stdio: io, fs });
   await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
     PRIMARY,
   ]);

@@ -1,7 +1,7 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, isUnder, sanitizeSlug } from "@/core/index.ts";
 import type { RawWorkspace, Workspace, WorktreeSlug } from "@/core/index.ts";
-import type { Git } from "@/platform/index.ts";
+import type { Git } from "@/gateways/index.ts";
 import type { RegistryService } from "@/workspace/services/registry/registry.service.ts";
 import { PATH_SEPARATOR } from "@/workspace/services/resolver/resolver.constants.ts";
 

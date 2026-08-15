@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { GitAdapter } from "@/platform/git/git.adapter.ts";
+import { GitAdapter } from "@/gateways/git/git.adapter.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 
 // SAFETY: fixed test fixture, never a real filesystem lookup.

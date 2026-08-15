@@ -5,7 +5,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { LogLevel } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { SearchCommand } from "@/retrieval/commands/search/search.command.ts";
 import { SearchFormatter } from "@/retrieval/commands/search/search.formatter.ts";
 import { FtsQueryBuilder } from "@/retrieval/query/ftsQuery/ftsQuery.builder.ts";
@@ -18,7 +18,7 @@ import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 import { SearchService } from "@/retrieval/store/search/search.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake, type IoFake } from "@/testing/fakes/ioFake.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import {
   expandWorkspace,
   RegistryService,
@@ -71,12 +71,12 @@ function searchArgs(overrides: Partial<SearchArgs> = {}): SearchArgs {
   };
 }
 
-type SeededFixture = { readonly container: Container; readonly io: IoFake };
+type SeededFixture = { readonly container: Gateways; readonly io: IoFake };
 
 async function seedIndexedWorkspace(): Promise<SeededFixture> {
   const io = makeIoFake();
   const fs = makeFsMemoryFake();
-  const container = makeTestContainer({ stdio: io, fs });
+  const container = makeTestGateways({ stdio: io, fs });
   // SAFETY: a fixed literal filename joined onto a fixed literal directory
   // string, both hard-coded test fixtures.
   fs.seedFile(

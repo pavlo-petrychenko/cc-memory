@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { SqliteAdapter } from "@/platform/sqlite/sqlite.adapter.ts";
-import type { SqlParameter } from "@/platform/sqlite/sqlite.typedefs.ts";
+import { SqliteAdapter } from "@/gateways/sqlite/sqlite.adapter.ts";
+import type { SqlParameter } from "@/gateways/sqlite/sqlite.typedefs.ts";
 import { SCHEMA } from "@/retrieval/index.ts";
 import { NOTES_SEARCH_SQL } from "@/retrieval/index.ts";
 

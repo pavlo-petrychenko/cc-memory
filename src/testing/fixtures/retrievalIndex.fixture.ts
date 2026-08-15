@@ -1,9 +1,9 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
-import { FileSystemAdapter } from "@/platform/index.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import type { Gateways } from "@/gateways/index.ts";
+import { FileSystemAdapter } from "@/gateways/index.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import {
   buildFixtureVault,
   type FixtureVault,
@@ -16,7 +16,7 @@ import { createTempDir, type TempDir } from "@/testing/utils/tempDir.utils.ts";
 export type IndexFixture = {
   readonly tempDir: TempDir;
   readonly vault: FixtureVault;
-  readonly container: Container;
+  readonly container: Gateways;
   readonly primary: Workspace;
   readonly secondary: Workspace;
   readonly home: AbsPath;
@@ -47,7 +47,7 @@ export function setupIndexFixture(): IndexFixture {
   const tempDir = createTempDir("ccmem-index-fixture");
   const home = absPath(tempDir.path);
   const vault = buildFixtureVault(tempDir.path);
-  const container = makeTestContainer({ fs: new FileSystemAdapter() });
+  const container = makeTestGateways({ fs: new FileSystemAdapter() });
   return {
     tempDir,
     vault,

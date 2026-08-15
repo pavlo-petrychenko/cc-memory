@@ -1,4 +1,4 @@
-import type { Stdio } from "@/platform/stdio/stdio.typedefs.ts";
+import type { Stdio } from "@/gateways/stdio/stdio.typedefs.ts";
 
 /** The real `Stdio`, reading stdin, writing stdout, and exiting the process. */
 export class StdioAdapter implements Stdio {

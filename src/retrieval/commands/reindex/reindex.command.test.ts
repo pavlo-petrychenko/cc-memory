@@ -4,7 +4,7 @@ import { CliCommand, type ReindexArgs } from "@/cli/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { ReindexCommand } from "@/retrieval/commands/reindex/reindex.command.ts";
 import { ReindexFormatter } from "@/retrieval/commands/reindex/reindex.formatter.ts";
 import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
@@ -12,7 +12,7 @@ import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.servi
 import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
@@ -42,12 +42,12 @@ function reindexArgs(overrides: Partial<ReindexArgs> = {}): ReindexArgs {
 }
 
 async function seedRegistry(): Promise<{
-  readonly container: Container;
+  readonly container: Gateways;
   readonly io: { readonly written: readonly string[] };
 }> {
   const io = makeIoFake();
   const fs = makeFsMemoryFake();
-  const container = makeTestContainer({ stdio: io, fs });
+  const container = makeTestGateways({ stdio: io, fs });
   // SAFETY: a fixed literal filename joined onto a fixed literal directory
   // string, both hard-coded test fixtures.
   fs.seedFile("/vault-primary/A.md" as AbsPath, "# A\nsome text\n");

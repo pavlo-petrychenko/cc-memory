@@ -2,20 +2,20 @@ import { describe, expect, test } from "bun:test";
 
 import { CliCommand } from "@/cli/index.ts";
 import type { AbsPath } from "@/core/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import {
   InstallCommand,
   UninstallCommand,
 } from "@/install/commands/install/install.command.ts";
-import type { Container } from "@/platform/index.ts";
 import type { ProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { defaultRegistryPath } from "@/workspace/index.ts";
 
 /**
  * `InstallCommand`/`UninstallCommand`
  * (`src/install/commands/install/install.command.ts`) ALWAYS get an explicit
- * fake `Container` here — never the real default `main.ts` uses in
+ * fake `Gateways` here — never the real default `main.ts` uses in
  * production. `InstallService`'s `install`/`uninstall` write to real paths
  * through the injected ports; on the real container that is a REAL mutation
  * of this machine, which a test must never trigger. `procFake` records
@@ -24,12 +24,12 @@ import { defaultRegistryPath } from "@/workspace/index.ts";
  */
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — same
-// reasoning `testContainer.fixture.ts`'s `DEFAULT_HOME` documents.
+// reasoning `testGateways.fixture.ts`'s `DEFAULT_HOME` documents.
 const REAL_BUN_PATH = "/usr/local/bin/bun" as AbsPath;
 
 /** The shim path install/uninstall write, under a test container's fake
  * `$HOME`. */
-function shimPathFor(container: Container): AbsPath {
+function shimPathFor(container: Gateways): AbsPath {
   // SAFETY: same reasoning as `REAL_BUN_PATH` above — built from a fixed
   // fake `$HOME`, never a real path.
   return `${container.env.home()}/.local/bin/memory` as AbsPath;
@@ -43,7 +43,7 @@ function shimPathFor(container: Container): AbsPath {
  * that codepath's "already exists, left as-is" branch instead, matching what
  * a real second install run looks like anyway.
  */
-async function seedExistingRegistry(container: Container): Promise<void> {
+async function seedExistingRegistry(container: Gateways): Promise<void> {
   await container.fs.writeFile(defaultRegistryPath(container.env.home()), "");
 }
 
@@ -63,7 +63,7 @@ function scriptedBunProc(): ProcFake {
 describe("install command (fake container — never the real default)", () => {
   test("install writes the shim and reports success", async () => {
     const proc = scriptedBunProc();
-    const container = makeTestContainer({ proc });
+    const container = makeTestGateways({ proc });
     await container.fs.writeFile(REAL_BUN_PATH, "");
     await seedExistingRegistry(container);
 
@@ -80,7 +80,7 @@ describe("install command (fake container — never the real default)", () => {
 
   test("install --dry-run writes nothing", async () => {
     const proc = scriptedBunProc();
-    const container = makeTestContainer({ proc });
+    const container = makeTestGateways({ proc });
     await container.fs.writeFile(REAL_BUN_PATH, "");
 
     const outcome = await new InstallCommand(container).execute({
@@ -96,7 +96,7 @@ describe("install command (fake container — never the real default)", () => {
   test("install fails loudly (never writes anything) when bun can't be found", async () => {
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 1 } });
-    const container = makeTestContainer({ proc });
+    const container = makeTestGateways({ proc });
 
     const outcome = await new InstallCommand(container).execute({
       command: CliCommand.Install,
@@ -110,7 +110,7 @@ describe("install command (fake container — never the real default)", () => {
   });
 
   test("uninstall with no prior install reports nothing to do", async () => {
-    const container = makeTestContainer({ proc: makeProcFake() });
+    const container = makeTestGateways({ proc: makeProcFake() });
     const outcome = await new UninstallCommand(container).execute();
     expect(outcome.exitCode).toBe(0);
     expect(outcome.stderrMessage).toBeNull();
@@ -118,7 +118,7 @@ describe("install command (fake container — never the real default)", () => {
 
   test("install then uninstall removes the shim it wrote", async () => {
     const proc = scriptedBunProc();
-    const container = makeTestContainer({ proc });
+    const container = makeTestGateways({ proc });
     await container.fs.writeFile(REAL_BUN_PATH, "");
     await seedExistingRegistry(container);
     await new InstallCommand(container).execute({

@@ -1,7 +1,7 @@
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome, Config } from "@/core/index.ts";
 import { expandPath, relativeTo } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { NO_HITS_MESSAGE } from "@/retrieval/commands/search/search.constants.ts";
 import { SearchFormatter } from "@/retrieval/commands/search/search.formatter.ts";
 import type { SearchArgs } from "@/retrieval/commands/search/search.typedefs.ts";
@@ -21,7 +21,7 @@ export class SearchCommand {
   ) {}
 
   async execute(
-    container: Container,
+    container: Gateways,
     config: Config,
     args: SearchArgs,
   ): Promise<CliOutcome> {

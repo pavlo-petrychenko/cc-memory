@@ -3,9 +3,9 @@ import { describe, expect, test } from "bun:test";
 import { CliCommand } from "@/cli/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
-import { SqliteAdapter } from "@/platform/index.ts";
-import type { Sqlite } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
+import { SqliteAdapter } from "@/gateways/index.ts";
+import type { Sqlite } from "@/gateways/index.ts";
 import {
   IndexBuildService,
   IndexConnectionService,
@@ -13,7 +13,7 @@ import {
 } from "@/retrieval/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { WorkspaceCommand } from "@/workspace/commands/workspace/workspace.command.ts";
 import { WorkspaceFormatter } from "@/workspace/commands/workspace/workspace.formatter.ts";
 import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
@@ -27,7 +27,7 @@ const HOME = "/home/test" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
 
 type CliTestFixture = {
-  readonly container: Container;
+  readonly container: Gateways;
   readonly command: WorkspaceCommand;
   readonly written: readonly string[];
   readonly procCalls: readonly { readonly args: readonly string[] }[];
@@ -39,7 +39,7 @@ type CliTestFixture = {
  * two different workspace ids each still get their OWN isolated database.
  * `WorkspaceCommand.add`/`rm --purge` derive `index_db` from `home` + the
  * workspace id (`~/.claude/memory/<id>/index.db`) rather than accepting an
- * override, so a plain in-memory `Container` (whose `fs` is the memory fake,
+ * override, so a plain in-memory `Gateways` (whose `fs` is the memory fake,
  * not the real disk) would otherwise try to open a real SQLite file under a
  * `home` directory that doesn't exist on disk.
  */
@@ -58,7 +58,7 @@ function makeInMemoryOnlyOpenDb(): (path: string) => Sqlite {
  * `WorkspaceCommand` needs — production code never imports `@/retrieval`
  * (that would close the workspace<->retrieval cycle), but a test may cross
  * module boundaries to assemble a scenario. */
-function makeIndexBuilder(container: Container): WorkspaceIndexBuilder {
+function makeIndexBuilder(container: Gateways): WorkspaceIndexBuilder {
   return {
     buildIndex: async (workspace) =>
       (
@@ -80,7 +80,7 @@ function makeIndexBuilder(container: Container): WorkspaceIndexBuilder {
   };
 }
 
-function makeWorkspaceCommand(container: Container): WorkspaceCommand {
+function makeWorkspaceCommand(container: Gateways): WorkspaceCommand {
   const registryService = new RegistryService(container.fs, new RegistryTomlSerializer());
   const resolverService = new WorkspaceResolverService(registryService, container.git);
   const targetResolutionService = new TargetResolutionService(
@@ -102,7 +102,7 @@ function makeWorkspaceCommand(container: Container): WorkspaceCommand {
 function makeCliTestFixture(): CliTestFixture {
   const io = makeIoFake();
   const proc = makeProcFake();
-  const container = makeTestContainer({
+  const container = makeTestGateways({
     stdio: io,
     proc,
     openDatabase: makeInMemoryOnlyOpenDb(),

@@ -1,13 +1,13 @@
 import type { AbsPath } from "@/core/index.ts";
 import { joinAbs, tildify } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
+import type { FileSystem } from "@/gateways/index.ts";
 import {
   DAILY_JOURNAL_FILENAME,
   MARKDOWN_EXTENSION,
 } from "@/knowledge/kbMap/kbMap.constants.ts";
 import type { KbMapFeature, KbMapInput } from "@/knowledge/kbMap/kbMap.typedefs.ts";
 import { NoteParser } from "@/knowledge/note/note.parser.ts";
-import type { FileSystem } from "@/platform/index.ts";
 
 function compareCaseInsensitive(left: string, right: string): number {
   const lowerLeft = left.toLowerCase();

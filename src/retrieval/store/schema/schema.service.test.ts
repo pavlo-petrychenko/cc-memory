@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { SqliteAdapter } from "@/platform/index.ts";
+import { SqliteAdapter } from "@/gateways/index.ts";
 import { SCHEMA, SCHEMA_VERSION } from "@/retrieval/store/schema/schema.constants.ts";
 import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 

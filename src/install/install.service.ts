@@ -1,6 +1,7 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, joinAbs } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import {
   DIST_RELATIVE_PATH,
   SKILLS_SOURCE_RELATIVE_PATH,
@@ -35,13 +36,12 @@ import {
   type JsonObject,
   type JsonValue,
 } from "@/install/utils/jsonFile/jsonFile.typedefs.ts";
-import type { Container } from "@/platform/index.ts";
 import { defaultRegistryPath } from "@/workspace/index.ts";
 
 /** `install`/`uninstall`/`--dry-run` orchestration: sequences CLI shim, skills,
  * hooks, and registry seed, in that order. */
 export class InstallService {
-  constructor(private readonly container: Container) {}
+  constructor(private readonly container: Gateways) {}
 
   static defaultDistPath(repoRoot: AbsPath): AbsPath {
     return joinAbs(repoRoot, DIST_RELATIVE_PATH);

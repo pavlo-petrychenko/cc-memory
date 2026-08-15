@@ -1,6 +1,6 @@
 import type { AbsPath, Config } from "@/core/index.ts";
 import { joinAbs, parentDir } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import {
   DEFAULT_SESSION_ID,
   HEAD_LENGTH,
@@ -68,7 +68,7 @@ function withoutSession(map: WrapStateMap, sessionId: string): WrapStateMap {
 
 export class WrapGateHook implements HookHandler<WrapGatePayload> {
   constructor(
-    private readonly container: Container,
+    private readonly container: Gateways,
     private readonly config: Config,
     private readonly payloadParser: PayloadParser,
     private readonly formatter: WrapGateFormatter,

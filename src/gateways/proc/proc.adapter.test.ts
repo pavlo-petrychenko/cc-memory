@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
-import { ProcAdapter } from "@/platform/proc/proc.adapter.ts";
+import { ProcAdapter } from "@/gateways/proc/proc.adapter.ts";
 
 // SAFETY: fixed test fixture — a real, always-present absolute directory.
 const TMP = "/tmp" as AbsPath;

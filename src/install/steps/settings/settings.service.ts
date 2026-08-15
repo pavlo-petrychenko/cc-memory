@@ -1,6 +1,7 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, expandPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
+import type { FileSystem } from "@/gateways/index.ts";
 import { PRE_CCMEMORY_BACKUP_SUFFIX } from "@/install/steps/manifest/manifest.constants.ts";
 import {
   hookRegistrations,
@@ -19,7 +20,6 @@ import type {
   JsonObject,
   JsonValue,
 } from "@/install/utils/jsonFile/jsonFile.typedefs.ts";
-import type { FileSystem } from "@/platform/index.ts";
 import type { HookEvent } from "@/session/index.ts";
 
 /** `~/.claude/settings.json` surgery: purge our own hook groups, re-register the 5

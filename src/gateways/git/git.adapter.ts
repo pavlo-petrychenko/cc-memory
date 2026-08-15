@@ -3,9 +3,9 @@ import {
   READ_TIMEOUT_MS,
   SHOW_TOPLEVEL_TIMEOUT_MS,
   WRITE_TIMEOUT_MS,
-} from "@/platform/git/git.constants.ts";
-import type { Git } from "@/platform/git/git.typedefs.ts";
-import type { Proc } from "@/platform/proc/proc.typedefs.ts";
+} from "@/gateways/git/git.constants.ts";
+import type { Git } from "@/gateways/git/git.typedefs.ts";
+import type { Proc } from "@/gateways/proc/proc.typedefs.ts";
 
 /** The real `Git`, implemented over `Proc` (never `child_process` directly) so
  * git interactions are assertable against `procFake.fake.ts`. */

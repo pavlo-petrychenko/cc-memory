@@ -1,4 +1,4 @@
-import type { Clock } from "@/platform/clock/clock.typedefs.ts";
+import type { Clock } from "@/gateways/clock/clock.typedefs.ts";
 
 function twoDigits(value: number): string {
   return value < 10 ? `0${value}` : String(value);

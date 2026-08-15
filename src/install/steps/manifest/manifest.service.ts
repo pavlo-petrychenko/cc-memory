@@ -1,5 +1,6 @@
 import type { AbsPath } from "@/core/index.ts";
 import { manifestPath } from "@/core/index.ts";
+import type { FileSystem } from "@/gateways/index.ts";
 import type {
   InstalledManifest,
   SkillManifestEntry,
@@ -9,7 +10,6 @@ import type {
   JsonObject,
   JsonValue,
 } from "@/install/utils/jsonFile/jsonFile.typedefs.ts";
-import type { FileSystem } from "@/platform/index.ts";
 
 /** `~/.claude/memory/installed.json` — a record of exactly what THIS installer
  * wrote last time, so hook groups get purged by exact command string, `uninstall`

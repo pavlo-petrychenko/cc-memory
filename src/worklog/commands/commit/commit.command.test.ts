@@ -7,7 +7,7 @@ import type { RawWorkspace } from "@/core/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { CommitCommand } from "@/worklog/commands/commit/commit.command.ts";
 import { CommitFormatter } from "@/worklog/commands/commit/commit.formatter.ts";
 import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
@@ -32,7 +32,7 @@ function commitArgs(overrides: Partial<CommitArgs> = {}): CommitArgs {
 describe("CommitCommand.execute", () => {
   test("a kb with no .git directory is skipped", async () => {
     const io = makeIoFake();
-    const container = makeTestContainer({ stdio: io });
+    const container = makeTestGateways({ stdio: io });
     await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
       REGISTRY_PATH,
       [PRIMARY],
@@ -55,7 +55,7 @@ describe("CommitCommand.execute", () => {
     const io = makeIoFake();
     const proc = makeProcFake();
     const fs = makeFsMemoryFake();
-    const container = makeTestContainer({ stdio: io, proc, fs });
+    const container = makeTestGateways({ stdio: io, proc, fs });
     await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
       REGISTRY_PATH,
       [PRIMARY],
@@ -85,7 +85,7 @@ describe("CommitCommand.execute", () => {
     const io = makeIoFake();
     const proc = makeProcFake();
     const fs = makeFsMemoryFake();
-    const container = makeTestContainer({ stdio: io, proc, fs });
+    const container = makeTestGateways({ stdio: io, proc, fs });
     await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
       REGISTRY_PATH,
       [PRIMARY],
@@ -115,7 +115,7 @@ describe("CommitCommand.execute", () => {
     const io = makeIoFake();
     const proc = makeProcFake();
     const fs = makeFsMemoryFake();
-    const container = makeTestContainer({ stdio: io, proc, fs });
+    const container = makeTestGateways({ stdio: io, proc, fs });
     await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
       REGISTRY_PATH,
       [PRIMARY],
@@ -140,7 +140,7 @@ describe("CommitCommand.execute", () => {
 
   test("an unknown workspace fails with the exact 'no such workspace' message", async () => {
     const io = makeIoFake();
-    const container = makeTestContainer({ stdio: io });
+    const container = makeTestGateways({ stdio: io });
     await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
       REGISTRY_PATH,
       [PRIMARY],

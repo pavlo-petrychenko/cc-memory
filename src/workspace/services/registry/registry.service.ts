@@ -5,7 +5,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { absPath, expandPath, isUnder, parentDir, registryPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import type { RawWorkspace, Workspace } from "@/core/index.ts";
-import type { FileSystem } from "@/platform/index.ts";
+import type { FileSystem } from "@/gateways/index.ts";
 import type { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
 import {
   type RegistryConflict,

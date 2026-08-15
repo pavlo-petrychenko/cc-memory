@@ -4,8 +4,8 @@ import { join } from "node:path";
 
 import type { AbsPath } from "@/core/index.ts";
 import { LogLevel } from "@/core/index.ts";
-import { appendWithRotation, LoggerAdapter } from "@/platform/logger/logger.adapter.ts";
-import { MAX_LOG_BYTES } from "@/platform/logger/logger.constants.ts";
+import { appendWithRotation, LoggerAdapter } from "@/gateways/logger/logger.adapter.ts";
+import { MAX_LOG_BYTES } from "@/gateways/logger/logger.constants.ts";
 import { createTempDir, type TempDir } from "@/testing/utils/tempDir.utils.ts";
 
 let tempDir: TempDir | null = null;

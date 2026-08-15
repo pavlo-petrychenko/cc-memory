@@ -1,6 +1,6 @@
 import { relativeTo, stripChars } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
 import type { NoteSummary } from "@/retrieval/store/noteList/noteList.typedefs.ts";
 
@@ -9,7 +9,7 @@ export class NoteListService {
 
   /** Exhaustive, unlike `store/search/`'s recall-limited BM25 queries. */
   async list(
-    container: Container,
+    container: Gateways,
     workspace: Workspace,
     folder?: string,
   ): Promise<readonly NoteSummary[]> {

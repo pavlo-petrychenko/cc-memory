@@ -1,5 +1,5 @@
 import type { AbsPath } from "@/core/index.ts";
-import type { Git } from "@/platform/index.ts";
+import type { Git } from "@/gateways/index.ts";
 
 export type RecordedGitCall = {
   readonly method: string;

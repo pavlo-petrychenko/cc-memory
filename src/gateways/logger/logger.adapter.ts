@@ -14,8 +14,8 @@ import {
   KEPT_GENERATIONS,
   LEVEL_ORDER,
   MAX_LOG_BYTES,
-} from "@/platform/logger/logger.constants.ts";
-import type { Logger } from "@/platform/logger/logger.typedefs.ts";
+} from "@/gateways/logger/logger.constants.ts";
+import type { Logger } from "@/gateways/logger/logger.typedefs.ts";
 
 function currentSize(path: AbsPath): number {
   try {

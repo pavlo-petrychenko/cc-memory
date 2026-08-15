@@ -1,5 +1,5 @@
+import type { Gateways } from "@/gateways/index.ts";
 import type { KbMapFormatter, KbMapService } from "@/knowledge/index.ts";
-import type { Container } from "@/platform/index.ts";
 import type { IndexBuildService } from "@/retrieval/index.ts";
 import { CONTEXT_SEPARATOR } from "@/session/hooks/sessionStart/sessionStart.constants.ts";
 import type { SessionStartPayload } from "@/session/payload/payload.typedefs.ts";
@@ -14,7 +14,7 @@ import { worktreeSlug } from "@/workspace/index.ts";
  * parts are empty. */
 export class SessionStartHook implements HookHandler<SessionStartPayload> {
   constructor(
-    private readonly container: Container,
+    private readonly container: Gateways,
     private readonly indexBuildService: IndexBuildService,
     private readonly kbMapService: KbMapService,
     private readonly kbMapFormatter: KbMapFormatter,

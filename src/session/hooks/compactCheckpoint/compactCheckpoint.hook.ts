@@ -1,4 +1,4 @@
-import type { Container } from "@/platform/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import type { CompactCheckpointFormatter } from "@/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";
 import type { CompactCheckpointPayload } from "@/session/payload/payload.typedefs.ts";
 import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.ts";
@@ -11,7 +11,7 @@ import { worktreeSlug } from "@/workspace/index.ts";
  * distilled context survives the reset. Write-only. */
 export class CompactCheckpointHook implements HookHandler<CompactCheckpointPayload> {
   constructor(
-    private readonly container: Container,
+    private readonly container: Gateways,
     private readonly formatter: CompactCheckpointFormatter,
     private readonly worklogStoreService: WorklogStoreService,
   ) {}

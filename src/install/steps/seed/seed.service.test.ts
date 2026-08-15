@@ -6,7 +6,7 @@ import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { defaultRegistryPath } from "@/workspace/index.ts";
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — matches
-// `testContainer.fixture.ts`'s `DEFAULT_HOME`.
+// `testGateways.fixture.ts`'s `DEFAULT_HOME`.
 const HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `HOME` above.
 const REPO_ROOT = "/repo" as AbsPath;

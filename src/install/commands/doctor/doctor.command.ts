@@ -1,10 +1,10 @@
 import { CLI_SUCCESS } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import type { DoctorArgs } from "@/install/commands/doctor/doctor.typedefs.ts";
 import { DoctorFormatter } from "@/install/doctor/doctor.formatter.ts";
 import { DoctorService } from "@/install/doctor/doctor.service.ts";
-import type { Container } from "@/platform/index.ts";
 import {
   defaultRegistryPath,
   loadRegistry,
@@ -18,7 +18,7 @@ import {
  * cwd resolution — must stay byte-identical across changes; tests anchor on them. */
 export class DoctorCommand {
   constructor(
-    private readonly container: Container,
+    private readonly container: Gateways,
     private readonly doctorService: DoctorService,
     private readonly formatter: DoctorFormatter,
   ) {}

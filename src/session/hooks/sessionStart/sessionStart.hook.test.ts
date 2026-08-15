@@ -3,8 +3,8 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
+import type { Gateways } from "@/gateways/index.ts";
 import { KbMapFormatter, KbMapService, NoteParser } from "@/knowledge/index.ts";
-import type { Container } from "@/platform/index.ts";
 import {
   IndexBuildService,
   IndexConnectionService,
@@ -16,7 +16,7 @@ import { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts
 import { HookRuntimeService } from "@/session/runtime/runtime.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
-import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
+import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 import { WorkingMemoryFormatter, WorklogStoreService } from "@/worklog/index.ts";
 import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
@@ -27,11 +27,11 @@ import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
  */
 
 // SAFETY: `"/home/test"` is a fixed test fixture (matching
-// `testContainer.fixture.ts`'s DEFAULT_HOME), not user input — no leading
+// `testGateways.fixture.ts`'s DEFAULT_HOME), not user input — no leading
 // `~` or relative segment to normalize.
 const HOME = "/home/test" as AbsPath;
 // SAFETY: same reasoning as `HOME` above — a fixed test fixture, matching
-// `testContainer.fixture.ts`'s DEFAULT_CWD.
+// `testGateways.fixture.ts`'s DEFAULT_CWD.
 const CWD = "/home/test/project" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
 
@@ -47,18 +47,18 @@ const PRIMARY: RawWorkspace = {
 type Fixture = {
   readonly io: IoFake;
   readonly fs: ReturnType<typeof makeFsMemoryFake>;
-  readonly container: Container;
+  readonly container: Gateways;
 };
 
 function makeFixture(): Fixture {
   const io = makeIoFake();
   const fs = makeFsMemoryFake();
-  const container = makeTestContainer({ stdio: io, fs });
+  const container = makeTestGateways({ stdio: io, fs });
   return { io, fs, container };
 }
 
 async function runSessionStart(
-  container: Container,
+  container: Gateways,
   io: IoFake,
   stdin: string,
 ): Promise<void> {
@@ -156,7 +156,7 @@ describe("SessionStart hook", () => {
       PRIMARY,
     ]);
     // `Env` fake defaults its `cwd()` to the same `/home/test/project` used
-    // above as `PRIMARY`'s match prefix — see `testContainer.fixture.ts`.
+    // above as `PRIMARY`'s match prefix — see `testGateways.fixture.ts`.
 
     await runSessionStart(container, io, "{}");
 

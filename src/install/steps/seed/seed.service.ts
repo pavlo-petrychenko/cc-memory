@@ -1,8 +1,8 @@
 import type { AbsPath } from "@/core/index.ts";
 import { joinAbs, parentDir } from "@/core/index.ts";
+import type { FileSystem } from "@/gateways/index.ts";
 import { EXAMPLE_REGISTRY_RELATIVE_PATH } from "@/install/steps/seed/seed.constants.ts";
 import type { SeedRegistryOutcome } from "@/install/steps/seed/seed.typedefs.ts";
-import type { FileSystem } from "@/platform/index.ts";
 import { defaultRegistryPath } from "@/workspace/index.ts";
 
 /** Seeds `registry.toml` from `registry.example.toml` IF one doesn't already

@@ -10,7 +10,7 @@ import { Glob } from "bun";
  * threshold rather than counted as zero. A structural check is both cheaper and
  * stricter — it notices the absence itself.
  *
- * `platform/` is exempt by design. Its adapters are the thinnest possible wrappers over
+ * `gateways/` is exempt by design. Its adapters are the thinnest possible wrappers over
  * Bun and node APIs, and testing them means asserting that the standard library works.
  * The four that encode a real decision — FTS5 availability, git's non-zero exit becoming
  * an empty string, a missing binary becoming exit 127, log rotation — are tested on
@@ -51,14 +51,14 @@ const COVERED_THROUGH_CALLERS: ReadonlyMap<string, string> = new Map([
   ],
 ]);
 
-test("every implementation file outside platform/ has a test beside it", () => {
+test("every implementation file outside gateways/ has a test beside it", () => {
   const allFiles = [...new Glob("**/*.ts").scanSync(SOURCE_ROOT)];
   const testFiles = new Set(allFiles.filter((path) => path.endsWith(".test.ts")));
 
   const implementationFiles = allFiles.filter((path) => {
     if (path.endsWith(".test.ts")) return false;
     if (path.startsWith("testing/") || path.startsWith("quality/")) return false;
-    if (path.startsWith("platform/")) return false;
+    if (path.startsWith("gateways/")) return false;
     return IMPLEMENTATION_SUFFIXES.some((suffix) => path.endsWith(suffix));
   });
 
