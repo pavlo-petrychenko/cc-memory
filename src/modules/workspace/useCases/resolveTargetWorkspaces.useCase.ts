@@ -1,8 +1,8 @@
 import type { AbsPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { WorkspaceRepository } from "@/modules/workspace/workspace.repository.ts";
-import { TargetResolutionService } from "@/modules/workspace/workspace.target.service.ts";
+import { WorkspaceRepository } from "@/modules/workspace/registry/workspace.repository.ts";
+import { TargetResolutionService } from "@/modules/workspace/resolution/workspace.target.service.ts";
 
 /** One user-facing operation: resolve one-by-id or every registered workspace,
  * for `reindex`/`commit`. */

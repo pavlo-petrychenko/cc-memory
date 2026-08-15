@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import { Glob } from "bun";
 
 import { wireCli } from "@/cli/cli.wiring.ts";
-import { COMMAND_DESCRIPTORS } from "@/cli/help/help.constants.ts";
+import { COMMAND_DESCRIPTORS } from "@/cli/commands/help/help.constants.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 

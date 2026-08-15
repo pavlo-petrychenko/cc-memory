@@ -1,10 +1,10 @@
 import type { AbsPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
-import { WorkspaceFormatter } from "@/modules/workspace/commands/workspace/workspace.formatter.ts";
-import { WorkspaceRepository } from "@/modules/workspace/workspace.repository.ts";
+import { WorkspaceLsFormatter } from "@/modules/workspace/commands/workspaceLs/workspaceLs.formatter.ts";
+import { WorkspaceRepository } from "@/modules/workspace/registry/workspace.repository.ts";
+import { WorkspaceValidatorService } from "@/modules/workspace/resolution/workspace.validator.service.ts";
 import type { WorkspaceLsRow } from "@/modules/workspace/workspace.typedefs.ts";
 import type { WorkspaceIndexBuilder } from "@/modules/workspace/workspace.typedefs.ts";
-import { WorkspaceValidatorService } from "@/modules/workspace/workspace.validator.service.ts";
 
 /** One user-facing operation: list registered workspaces with their note counts. */
 export class ListWorkspacesUseCase {
@@ -12,7 +12,7 @@ export class ListWorkspacesUseCase {
     private readonly repository: WorkspaceRepository,
     private readonly validatorService: WorkspaceValidatorService,
     private readonly indexBuilder: WorkspaceIndexBuilder,
-    private readonly formatter: WorkspaceFormatter,
+    private readonly formatter: WorkspaceLsFormatter,
   ) {}
 
   async run(home: AbsPath): Promise<Result<readonly WorkspaceLsRow[], string>> {

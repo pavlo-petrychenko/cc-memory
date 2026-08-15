@@ -2,10 +2,10 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath, indexDbPath, joinAbs, titleize, tildify } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
+import { WorkspaceRepository } from "@/modules/workspace/registry/workspace.repository.ts";
+import { WorkspaceValidatorService } from "@/modules/workspace/resolution/workspace.validator.service.ts";
 import { DEFAULT_EXCLUDE } from "@/modules/workspace/workspace.constants.ts";
-import { WorkspaceRepository } from "@/modules/workspace/workspace.repository.ts";
 import type { WorkspaceIndexBuilder } from "@/modules/workspace/workspace.typedefs.ts";
-import { WorkspaceValidatorService } from "@/modules/workspace/workspace.validator.service.ts";
 
 export type AddWorkspaceInput = {
   readonly id: string;

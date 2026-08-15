@@ -1,7 +1,7 @@
 import type { AbsPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
-import { WorkspaceRepository } from "@/modules/workspace/workspace.repository.ts";
-import { WorkspaceValidatorService } from "@/modules/workspace/workspace.validator.service.ts";
+import { WorkspaceRepository } from "@/modules/workspace/registry/workspace.repository.ts";
+import { WorkspaceValidatorService } from "@/modules/workspace/resolution/workspace.validator.service.ts";
 
 /** One user-facing operation: unregister a workspace, optionally purging its
  * derived index (never the vault data). */

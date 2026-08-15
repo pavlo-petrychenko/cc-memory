@@ -6,8 +6,8 @@ import { expandPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import { RESOLVE_DESCRIPTOR } from "@/modules/workspace/commands/resolve/resolve.constants.ts";
 import { ResolveFormatter } from "@/modules/workspace/commands/resolve/resolve.formatter.ts";
-import { WorkspaceRepository } from "@/modules/workspace/workspace.repository.ts";
-import { WorkspaceResolverService } from "@/modules/workspace/workspace.resolver.service.ts";
+import { WorkspaceRepository } from "@/modules/workspace/registry/workspace.repository.ts";
+import { WorkspaceResolverService } from "@/modules/workspace/resolution/workspace.resolver.service.ts";
 
 export type ResolveOptions = { readonly cwd: string | null };
 

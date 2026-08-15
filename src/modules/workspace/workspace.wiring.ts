@@ -1,12 +1,12 @@
 import type { FileSystem } from "@/gateways/fileSystem/fileSystem.typedefs.ts";
 import type { Git } from "@/gateways/git/git.typedefs.ts";
 import type { Proc } from "@/gateways/proc/proc.typedefs.ts";
-import { WorkspaceParser } from "@/modules/workspace/workspace.parser.ts";
-import { WorkspaceRepository } from "@/modules/workspace/workspace.repository.ts";
-import { WorkspaceResolverService } from "@/modules/workspace/workspace.resolver.service.ts";
-import { WorkspaceSerializer } from "@/modules/workspace/workspace.serializer.ts";
-import { TargetResolutionService } from "@/modules/workspace/workspace.target.service.ts";
-import { WorkspaceValidatorService } from "@/modules/workspace/workspace.validator.service.ts";
+import { WorkspaceParser } from "@/modules/workspace/registry/workspace.parser.ts";
+import { WorkspaceRepository } from "@/modules/workspace/registry/workspace.repository.ts";
+import { WorkspaceSerializer } from "@/modules/workspace/registry/workspace.serializer.ts";
+import { WorkspaceResolverService } from "@/modules/workspace/resolution/workspace.resolver.service.ts";
+import { TargetResolutionService } from "@/modules/workspace/resolution/workspace.target.service.ts";
+import { WorkspaceValidatorService } from "@/modules/workspace/resolution/workspace.validator.service.ts";
 
 export type WorkspaceContext = {
   readonly repository: WorkspaceRepository;

@@ -1,9 +1,9 @@
-import { HelpCommand } from "@/cli/help/help.command.ts";
-import { HelpFormatter } from "@/cli/help/help.formatter.ts";
-import { ReindexCommand } from "@/cli/reindex.command.ts";
-import { ReindexFormatter } from "@/cli/reindex.formatter.ts";
-import { SearchCommand } from "@/cli/search.command.ts";
-import { VersionCommand } from "@/cli/version.command.ts";
+import { HelpCommand } from "@/cli/commands/help/help.command.ts";
+import { HelpFormatter } from "@/cli/commands/help/help.formatter.ts";
+import { ReindexCommand } from "@/cli/commands/reindex/reindex.command.ts";
+import { ReindexFormatter } from "@/cli/commands/reindex/reindex.formatter.ts";
+import { SearchCommand } from "@/cli/commands/search/search.command.ts";
+import { VersionCommand } from "@/cli/commands/version/version.command.ts";
 import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
 import { ConfigParser } from "@/core/index.ts";
 import { registerCommand } from "@/core/index.ts";
@@ -51,9 +51,11 @@ import {
   ResolveTargetWorkspacesUseCase,
   ResolveWorkspaceUseCase,
   WorkspaceAddCommand,
-  WorkspaceFormatter,
+  WorkspaceAddFormatter,
   WorkspaceLsCommand,
+  WorkspaceLsFormatter,
   WorkspaceRmCommand,
+  WorkspaceRmFormatter,
 } from "@/modules/workspace/index.ts";
 import type { WorkspaceIndexBuilder } from "@/modules/workspace/index.ts";
 
@@ -121,7 +123,7 @@ export function wireCli(container: Gateways): Cli {
     workspace.repository,
     workspace.validatorService,
     indexBuilder,
-    new WorkspaceFormatter(),
+    new WorkspaceLsFormatter(),
   );
   const resolveWorkspace = new ResolveWorkspaceUseCase(
     workspace.repository,
@@ -133,8 +135,8 @@ export function wireCli(container: Gateways): Cli {
   );
 
   const commands: readonly RegisteredCommand[] = [
-    registerCommand(new WorkspaceAddCommand(addWorkspace, new WorkspaceFormatter())),
-    registerCommand(new WorkspaceRmCommand(removeWorkspace, new WorkspaceFormatter())),
+    registerCommand(new WorkspaceAddCommand(addWorkspace, new WorkspaceAddFormatter())),
+    registerCommand(new WorkspaceRmCommand(removeWorkspace, new WorkspaceRmFormatter())),
     registerCommand(new WorkspaceLsCommand(listWorkspaces)),
     registerCommand(
       new ResolveCommand(
