@@ -1,3 +1,4 @@
+import { Hook } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { RECENT_COMMIT_COUNT } from "@/modules/session/hooks/worklogFloor/worklogFloor.constants.ts";
 import type { WorklogFloorPayload } from "@/modules/session/payload/payload.typedefs.ts";
@@ -5,6 +6,7 @@ import type {
   HookHandler,
   HookInput,
 } from "@/modules/session/runtime/runtime.typedefs.ts";
+import { WORKLOG_FLOOR_HOOK } from "@/modules/session/session.constants.ts";
 import { HookResultKind } from "@/modules/session/session.typedefs.ts";
 import type { HookResult } from "@/modules/session/session.typedefs.ts";
 import type {
@@ -22,6 +24,7 @@ function lastLineTrimmed(text: string): string {
 /** `SessionEnd`: a deterministic, zero-token git/command skeleton appended to
  * today's worklog journal, so even a killed session leaves a record. Write-only —
  * no stdout, ever. */
+@Hook(WORKLOG_FLOOR_HOOK)
 export class WorklogFloorHook implements HookHandler<WorklogFloorPayload> {
   constructor(
     private readonly container: Gateways,

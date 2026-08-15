@@ -26,7 +26,6 @@ import {
 import { ManifestService } from "@/modules/installation/steps/manifest/manifest.service.ts";
 import type { InstalledManifest } from "@/modules/installation/steps/manifest/manifest.typedefs.ts";
 import { SeedService } from "@/modules/installation/steps/seed/seed.service.ts";
-import { HOOK_REGISTRATION_ORDER } from "@/modules/installation/steps/settings/settings.constants.ts";
 import { SettingsService } from "@/modules/installation/steps/settings/settings.service.ts";
 import { ShimService } from "@/modules/installation/steps/shim/shim.service.ts";
 import { SkillsService } from "@/modules/installation/steps/skills/skills.service.ts";
@@ -37,6 +36,7 @@ import {
   type JsonObject,
   type JsonValue,
 } from "@/modules/installation/utils/jsonFile/jsonFile.typedefs.ts";
+import { HOOK_DESCRIPTORS } from "@/modules/session/session.constants.ts";
 
 /** `install`/`uninstall`/`--dry-run` orchestration: sequences CLI shim, skills,
  * hooks, and registry seed, in that order. */
@@ -140,7 +140,7 @@ export class InstallService {
     const actionLines: string[] = [];
     const purgeLine = SettingsService.purgeSummaryLine(surgery.summary);
     if (purgeLine !== null) actionLines.push(purgeLine);
-    for (const registration of HOOK_REGISTRATION_ORDER) {
+    for (const registration of HOOK_DESCRIPTORS) {
       actionLines.push(
         SettingsService.hookRegisteredLine(registration.event, registration.name),
       );

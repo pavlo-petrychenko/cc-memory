@@ -3,10 +3,7 @@ import { absPath, expandPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import type { FileSystem } from "@/gateways/index.ts";
 import { PRE_CCMEMORY_BACKUP_SUFFIX } from "@/modules/installation/steps/manifest/manifest.constants.ts";
-import {
-  hookRegistrations,
-  LEGACY_HOOK_SUBSTRINGS,
-} from "@/modules/installation/steps/settings/settings.constants.ts";
+import { LEGACY_HOOK_SUBSTRINGS } from "@/modules/installation/steps/settings/settings.constants.ts";
 import { SETTINGS_HOME_RELATIVE_PATH } from "@/modules/installation/steps/settings/settings.constants.ts";
 import type {
   HookPurgeSummary,
@@ -20,7 +17,7 @@ import type {
   JsonObject,
   JsonValue,
 } from "@/modules/installation/utils/jsonFile/jsonFile.typedefs.ts";
-import type { HookEvent } from "@/modules/session/index.ts";
+import { HOOK_DESCRIPTORS } from "@/modules/session/session.constants.ts";
 
 /** `~/.claude/settings.json` surgery: purge our own hook groups, re-register the 5
  * hooks at their current location, and preserve every foreign entry byte-for-byte. */
@@ -111,7 +108,7 @@ export class SettingsService {
     const hooks = new Map<string, JsonValue>(Object.entries(hooksByEvent));
     const hookCommands: Record<string, string> = {};
 
-    for (const registration of hookRegistrations) {
+    for (const registration of HOOK_DESCRIPTORS) {
       const command = SettingsService.hookCommand(bunPath, distPath, registration.name);
       hookCommands[registration.event] = command;
       const existing = hooks.get(registration.event);
@@ -158,7 +155,7 @@ export class SettingsService {
     return `purged ${removed} stale cc-memory/legacy hook entr${suffix}`;
   }
 
-  static hookRegisteredLine(event: HookEvent, hookName: string): string {
+  static hookRegisteredLine(event: string, hookName: string): string {
     return `hook ${event} -> ${hookName}`;
   }
 

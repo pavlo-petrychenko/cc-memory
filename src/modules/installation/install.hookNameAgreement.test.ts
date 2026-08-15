@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
-import { hookRegistrations } from "@/modules/installation/steps/settings/settings.constants.ts";
 import { dispatchableHookNames } from "@/modules/session/index.ts";
 import { HookName } from "@/modules/session/index.ts";
+import { HOOK_DESCRIPTORS } from "@/modules/session/session.constants.ts";
 
 /**
  * The installer writes `<abs-bun> <dist> hook <name>` into
@@ -17,20 +17,20 @@ import { HookName } from "@/modules/session/index.ts";
  */
 describe("installer and dispatcher agree on hook names", () => {
   test("every registered hook name is dispatchable", () => {
-    for (const registration of hookRegistrations) {
-      expect(dispatchableHookNames).toContain(registration.name);
+    for (const registration of HOOK_DESCRIPTORS) {
+      expect(dispatchableHookNames.map(String)).toContain(String(registration.name));
     }
   });
 
   test("every dispatchable hook name gets registered — none is left unwired", () => {
-    const registered = hookRegistrations.map((registration) => registration.name);
+    const registered = HOOK_DESCRIPTORS.map((registration) => registration.name);
     for (const name of Object.values(HookName)) {
-      expect(registered).toContain(name);
+      expect(registered).toContain(String(name));
     }
   });
 
   test("exactly the five hooks, registered once each", () => {
-    const registered = hookRegistrations.map((registration) => registration.name);
+    const registered = HOOK_DESCRIPTORS.map((registration) => registration.name);
     expect(registered).toHaveLength(5);
     expect(new Set(registered).size).toBe(5);
     expect(dispatchableHookNames).toHaveLength(5);

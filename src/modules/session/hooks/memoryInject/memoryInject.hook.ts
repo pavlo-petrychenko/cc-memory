@@ -1,6 +1,7 @@
 import type { AbsPath, Config, Workspace } from "@/core/index.ts";
 import { absPath, joinAbs, parentDir } from "@/core/index.ts";
 import type { FusedHit, TokenizerParser } from "@/core/index.ts";
+import { Hook } from "@/core/index.ts";
 import type { Gateways, FileSystem } from "@/gateways/index.ts";
 import { SearchNotesUseCase } from "@/modules/note/index.ts";
 import {
@@ -25,6 +26,7 @@ import type {
   HookHandler,
   HookInput,
 } from "@/modules/session/runtime/runtime.typedefs.ts";
+import { MEMORY_INJECT_HOOK } from "@/modules/session/session.constants.ts";
 import { HookEvent, HookResultKind } from "@/modules/session/session.typedefs.ts";
 import type { HookResult } from "@/modules/session/session.typedefs.ts";
 import { SearchWorklogUseCase } from "@/modules/worklog/index.ts";
@@ -100,6 +102,7 @@ function toInjectedHit(hit: FusedHit, base: AbsPath): InjectedHit {
   };
 }
 
+@Hook(MEMORY_INJECT_HOOK)
 export class MemoryInjectHook implements HookHandler<MemoryInjectPayload> {
   constructor(
     private readonly container: Gateways,

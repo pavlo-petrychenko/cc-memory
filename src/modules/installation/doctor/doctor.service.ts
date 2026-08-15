@@ -12,11 +12,11 @@ import type {
 import { WorkspaceIndexStatus } from "@/modules/installation/doctor/doctor.typedefs.ts";
 import { InstallService } from "@/modules/installation/install.service.ts";
 import { ManifestService } from "@/modules/installation/steps/manifest/manifest.service.ts";
-import { HOOK_REGISTRATION_ORDER } from "@/modules/installation/steps/settings/settings.constants.ts";
 import { SettingsService } from "@/modules/installation/steps/settings/settings.service.ts";
 import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.service.ts";
 import type { JsonObject } from "@/modules/installation/utils/jsonFile/jsonFile.typedefs.ts";
 import type { ReprojectNotesUseCase } from "@/modules/note/index.ts";
+import { HOOK_DESCRIPTORS } from "@/modules/session/session.constants.ts";
 import type { ReprojectWorklogUseCase } from "@/modules/worklog/index.ts";
 
 /** Checks the state a healthy install actually depends on: registry, vaults,
@@ -125,7 +125,7 @@ export class DoctorService {
         settingsHooksField !== undefined && JsonFileService.isObject(settingsHooksField)
           ? settingsHooksField
           : {};
-      hooks = HOOK_REGISTRATION_ORDER.map((registration) => {
+      hooks = HOOK_DESCRIPTORS.map((registration) => {
         const expectedCommand = SettingsService.hookCommand(
           manifest.bunPath,
           currentDistPath,

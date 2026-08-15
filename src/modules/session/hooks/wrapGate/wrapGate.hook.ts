@@ -1,5 +1,6 @@
 import type { AbsPath, Config } from "@/core/index.ts";
 import { joinAbs, parentDir } from "@/core/index.ts";
+import { Hook } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import {
   DEFAULT_SESSION_ID,
@@ -23,6 +24,7 @@ import type {
   HookHandler,
   HookInput,
 } from "@/modules/session/runtime/runtime.typedefs.ts";
+import { WRAP_GATE_HOOK } from "@/modules/session/session.constants.ts";
 import { HookEvent, HookResultKind } from "@/modules/session/session.typedefs.ts";
 import type { HookResult } from "@/modules/session/session.typedefs.ts";
 import type { WorklogStoreService } from "@/modules/worklog/index.ts";
@@ -72,6 +74,7 @@ function withoutSession(map: WrapStateMap, sessionId: string): WrapStateMap {
   return Object.fromEntries(Object.entries(map).filter(([id]) => id !== sessionId));
 }
 
+@Hook(WRAP_GATE_HOOK)
 export class WrapGateHook implements HookHandler<WrapGatePayload> {
   constructor(
     private readonly container: Gateways,

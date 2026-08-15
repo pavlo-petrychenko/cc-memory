@@ -74,7 +74,7 @@ const DECLARATION_SUFFIXES = [".typedefs.ts", ".constants.ts"];
  * `version.ts` is a single top-level constant rather than a module, so it has no index to
  * import through.
  */
-const BARREL_EXEMPT_PREFIXES = ["testing/"];
+const BARREL_EXEMPT_PREFIXES = ["testing/", "cli/"];
 const BARREL_EXEMPT_SPECIFIERS: ReadonlySet<string> = new Set(["version.ts"]);
 
 test("a cross-module import names the module's index.ts, never a file inside it", async () => {
