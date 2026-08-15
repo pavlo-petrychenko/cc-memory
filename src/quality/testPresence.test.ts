@@ -38,15 +38,15 @@ const IMPLEMENTATION_SUFFIXES = [
  */
 const COVERED_THROUGH_CALLERS: ReadonlyMap<string, string> = new Map([
   [
-    "session/payload/payload.parser.ts",
+    "modules/session/payload/payload.parser.ts",
     "every field it parses is asserted through the five hook contract tests, which feed real payloads",
   ],
   [
-    "install/steps/shim/shim.service.ts",
+    "modules/installation/steps/shim/shim.service.ts",
     "the shim's exact contents are asserted by the installer's own end-to-end tests",
   ],
   [
-    "install/utils/jsonFile/jsonFile.service.ts",
+    "modules/installation/utils/jsonFile/jsonFile.service.ts",
     "read/write behavior is asserted through settings.service and manifest.service, which are its only callers",
   ],
 ]);

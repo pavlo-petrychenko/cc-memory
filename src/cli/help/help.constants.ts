@@ -13,11 +13,13 @@ import {
   LINK_BOOST_DEFAULT,
 } from "@/core/config/config.constants.ts";
 import { LogLevel } from "@/core/config/config.typedefs.ts";
-import { DOCTOR_DESCRIPTOR } from "@/install/commands/doctor/doctor.constants.ts";
+import { DOCTOR_DESCRIPTOR } from "@/modules/installation/commands/doctor/doctor.constants.ts";
 import {
   INSTALL_DESCRIPTOR,
   UNINSTALL_DESCRIPTOR,
-} from "@/install/commands/install/install.constants.ts";
+} from "@/modules/installation/commands/install/install.constants.ts";
+import { HOOK_DESCRIPTOR } from "@/modules/session/commands/hookDispatch/hookDispatch.constants.ts";
+import { COMMIT_DESCRIPTOR } from "@/modules/worklog/commands/commit/commit.constants.ts";
 import { RESOLVE_DESCRIPTOR } from "@/modules/workspace/commands/resolve/resolve.constants.ts";
 import {
   WORKSPACE_ADD_DESCRIPTOR,
@@ -27,8 +29,6 @@ import {
 import { NOTES_DESCRIPTOR } from "@/retrieval/commands/notes/notes.constants.ts";
 import { REINDEX_DESCRIPTOR } from "@/retrieval/commands/reindex/reindex.constants.ts";
 import { SEARCH_DESCRIPTOR } from "@/retrieval/commands/search/search.constants.ts";
-import { HOOK_DESCRIPTOR } from "@/session/commands/hookDispatch/hookDispatch.constants.ts";
-import { COMMIT_DESCRIPTOR } from "@/worklog/commands/commit/commit.constants.ts";
 
 export const USAGE_HEADER = "memory — per-workspace memory for Claude Code";
 export const USAGE_SECTION_HEADING = "Usage:";

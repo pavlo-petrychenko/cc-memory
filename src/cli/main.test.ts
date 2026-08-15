@@ -4,7 +4,7 @@ import { runCli } from "@/cli/main.ts";
 import { LogLevel } from "@/core/index.ts";
 import { SqliteAdapter } from "@/gateways/index.ts";
 import type { Sqlite } from "@/gateways/index.ts";
-import { UninstallCommand } from "@/install/index.ts";
+import { UninstallCommand } from "@/modules/installation/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 

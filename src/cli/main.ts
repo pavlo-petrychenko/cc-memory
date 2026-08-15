@@ -15,7 +15,9 @@ import {
   DoctorService,
   InstallCommand,
   UninstallCommand,
-} from "@/install/index.ts";
+} from "@/modules/installation/index.ts";
+import { HookDispatchCommand } from "@/modules/session/index.ts";
+import { CommitCommand, CommitFormatter } from "@/modules/worklog/index.ts";
 import {
   RegistryService,
   RegistryTomlSerializer,
@@ -44,8 +46,6 @@ import {
   SearchService,
   TokenizerParser,
 } from "@/retrieval/index.ts";
-import { HookDispatchCommand } from "@/session/index.ts";
-import { CommitCommand, CommitFormatter } from "@/worklog/index.ts";
 
 /** The composition root: no command constructs its own dependencies, each is wired
  * here from the real `Gateways`. */
