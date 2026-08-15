@@ -1,4 +1,5 @@
 import type { AbsPath } from "@/core/index.ts";
+import { absPath, parentDir } from "@/core/index.ts";
 import type { FileStat, FileSystem } from "@/platform/index.ts";
 
 type MemoryFile = { readonly kind: "file"; contents: string; mtimeMs: number };
@@ -6,54 +7,25 @@ type MemoryDir = { readonly kind: "dir" };
 type MemoryEntry = MemoryFile | MemoryDir;
 
 export type FsMemoryFake = FileSystem & {
-  /** Seed a file directly, bypassing `writeFile` (and its mtime bump) — for
-   * building a fixture tree before a test starts asserting on incremental
-   * behavior. */
   readonly seedFile: (path: AbsPath, contents: string, mtimeMs?: number) => void;
   readonly seedDir: (path: AbsPath) => void;
-  /** Move every file's mtime forward by `deltaMs` — for incremental-index
-   * tests that need to make a note "newer" than what's already indexed,
-   * without touching its content. */
   readonly advanceAllMtimes: (deltaMs: number) => void;
-  /** Read a file's current mtime without going through the async `stat`
-   * method — convenient for assertions. */
   readonly mtimeOf: (path: AbsPath) => number;
 };
 
 const ROOT = "/";
 
-/** The parent segment of an `AbsPath`, as an `AbsPath` itself. */
-function parentOf(path: AbsPath): AbsPath {
-  const lastSlash = path.lastIndexOf("/");
-  const sliced = lastSlash <= 0 ? ROOT : path.slice(0, lastSlash);
-  // SAFETY: slicing an already-absolute, already-normalized path at a `/`
-  // boundary can only ever produce another absolute, normalized path (or
-  // `ROOT`) — there is no way to introduce a leading `~` or a `.`/`..`
-  // segment this way.
-  return sliced as AbsPath;
-}
-
-/** Join a renamed prefix back onto a path that started with the old prefix. */
 function rejoin(newPrefix: AbsPath, suffix: string): AbsPath {
-  const joined = newPrefix + suffix;
-  // SAFETY: `suffix` is `candidate.slice(oldPrefix.length)` where `candidate`
-  // started with `oldPrefix` (checked by the caller), so `joined` is
-  // `newPrefix` followed by the same trailing path segments `candidate`
-  // had — still absolute, still normalized.
-  return joined as AbsPath;
+  return absPath(newPrefix + suffix);
 }
 
 function notFound(path: AbsPath): Error {
   return new Error(`ENOENT: no such file or directory, '${path}'`);
 }
 
-/**
- * An in-memory `FileSystem`: a flat `Map<AbsPath, MemoryEntry>` keyed by exact
- * path (parent directories are implicit — present only if something under them
- * exists, or explicitly seeded via `seedDir`/`mkdir`). Every method mutates a
- * clock-free `mtimeMs` on write; only `advanceAllMtimes` moves it forward, so a
- * test controls exactly when a file "changes" relative to an index build.
- */
+/** An in-memory `FileSystem`: a flat `Map<AbsPath, MemoryEntry>` keyed by exact path.
+ * Every write mutates a clock-free `mtimeMs`; only `advanceAllMtimes` moves it
+ * forward, so a test controls exactly when a file "changes". */
 export function makeFsMemoryFake(): FsMemoryFake {
   const entries = new Map<AbsPath, MemoryEntry>();
   let syntheticNowMs = 0;
@@ -65,10 +37,10 @@ export function makeFsMemoryFake(): FsMemoryFake {
   }
 
   function ensureDirsUpTo(path: AbsPath): void {
-    let current = parentOf(path);
+    let current = parentDir(path);
     while (current !== ROOT && !entries.has(current)) {
       entries.set(current, { kind: "dir" });
-      current = parentOf(current);
+      current = parentDir(current);
     }
   }
 
@@ -88,11 +60,8 @@ export function makeFsMemoryFake(): FsMemoryFake {
     },
     mtimeOf: (path: AbsPath) => requireFile(path).mtimeMs,
 
-    // `async` (not a bare `Promise.resolve(...)`) so a missing-file throw
-    // inside `requireFile` becomes a REJECTED promise rather than a
-    // synchronous throw out of the call — matching every other async I/O
-    // port method, where a caller always gets a promise back to `await`/
-    // `.catch()`, never a same-tick exception.
+    // `async`, not a bare `Promise.resolve(...)`, so a missing-file throw inside
+    // `requireFile` becomes a rejected promise, matching every other async I/O port.
     readFile: async (path: AbsPath) => requireFile(path).contents,
     writeFile: (path: AbsPath, contents: string) => {
       ensureDirsUpTo(path);
@@ -160,9 +129,8 @@ export function makeFsMemoryFake(): FsMemoryFake {
       return Promise.resolve();
     },
     symlink: (target: AbsPath, linkPath: AbsPath) => {
-      // Symlinks are represented as a file whose contents are the target —
-      // good enough for the one caller that cares (the skills install step),
-      // which only ever checks existence/identity, never dereferences.
+      // Represented as a file whose contents are the target — good enough for the
+      // one caller that cares, which only checks existence/identity, never dereferences.
       ensureDirsUpTo(linkPath);
       entries.set(linkPath, { kind: "file", contents: target, mtimeMs: syntheticNowMs });
       return Promise.resolve();

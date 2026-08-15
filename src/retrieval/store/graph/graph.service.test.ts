@@ -1,16 +1,19 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
 import { LinkGraphService } from "@/retrieval/store/graph/graph.service.ts";
-import { IndexBuildService } from "@/retrieval/store/indexBuild/index.ts";
+import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
+import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 import {
   setupIndexFixture,
   teardownIndexFixture,
   type IndexFixture,
 } from "@/testing/fixtures/retrievalIndex.fixture.ts";
 
-const indexBuildService = new IndexBuildService();
-const linkGraphService = new LinkGraphService();
+const connectionService = new IndexConnectionService(new SchemaService());
+const indexBuildService = new IndexBuildService(connectionService);
+const linkGraphService = new LinkGraphService(connectionService);
 
 let fixture: IndexFixture;
 

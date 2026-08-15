@@ -4,7 +4,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
-import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/index.ts";
+import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
 import { RegistryService } from "@/workspace/services/registry/registry.service.ts";
 import {
   RegistryConflictKind,

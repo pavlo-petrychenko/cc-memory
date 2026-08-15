@@ -13,7 +13,7 @@ import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeLoggerFake } from "@/testing/fakes/loggerCollect.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
-import { saveRegistry } from "@/workspace/index.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 /**
  * `HookRuntimeService.run`'s own shared preamble/postamble — the piece
@@ -61,7 +61,9 @@ describe("HookRuntimeService.run (the shared per-hook preamble/postamble)", () =
       payloadParser,
       new HookResultSerializer(),
     );
-    await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+      PRIMARY,
+    ]);
     io.setStdin(JSON.stringify({ cwd: CWD }));
 
     await hookRuntimeService.run(
@@ -95,7 +97,9 @@ describe("HookRuntimeService.run (the shared per-hook preamble/postamble)", () =
       payloadParser,
       new HookResultSerializer(),
     );
-    await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+      PRIMARY,
+    ]);
     io.setStdin(JSON.stringify({ cwd: CWD }));
 
     await hookRuntimeService.run(

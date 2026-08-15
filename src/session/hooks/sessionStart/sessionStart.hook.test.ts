@@ -3,7 +3,13 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
+import { KbMapFormatter, KbMapService, NoteParser } from "@/knowledge/index.ts";
 import type { Container } from "@/platform/index.ts";
+import {
+  IndexBuildService,
+  IndexConnectionService,
+  SchemaService,
+} from "@/retrieval/index.ts";
 import { SessionStartHook } from "@/session/hooks/sessionStart/sessionStart.hook.ts";
 import { PayloadParser } from "@/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts";
@@ -11,7 +17,8 @@ import { HookRuntimeService } from "@/session/runtime/runtime.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
-import { saveRegistry } from "@/workspace/index.ts";
+import { WorkingMemoryFormatter, WorklogStoreService } from "@/worklog/index.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 /**
  * `SessionStart`: happy path (exact stdout string), cwd outside any
@@ -65,7 +72,14 @@ async function runSessionStart(
   await hookRuntimeService.run(
     "session-start",
     (record) => payloadParser.parseSessionStart(record),
-    new SessionStartHook(container),
+    new SessionStartHook(
+      container,
+      new IndexBuildService(new IndexConnectionService(new SchemaService())),
+      new KbMapService(container.fs, new NoteParser()),
+      new KbMapFormatter(),
+      new WorklogStoreService(container.fs, container.git),
+      new WorkingMemoryFormatter(),
+    ),
   );
 }
 
@@ -93,7 +107,9 @@ describe("SessionStart hook", () => {
       "/home/test/vault-primary/_Worklogs/_root/STATE.md" as AbsPath,
       "# wt1\n## Current focus\nnothing\n",
     );
-    await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+      PRIMARY,
+    ]);
 
     await runSessionStart(
       container,
@@ -120,7 +136,9 @@ describe("SessionStart hook", () => {
 
   test("cwd outside any workspace: silent, no output, exit 0", async () => {
     const { io, fs, container } = makeFixture();
-    await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+      PRIMARY,
+    ]);
 
     await runSessionStart(
       container,
@@ -134,7 +152,9 @@ describe("SessionStart hook", () => {
 
   test("missing fields (empty payload) falls back to the process cwd", async () => {
     const { io, fs, container } = makeFixture();
-    await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+      PRIMARY,
+    ]);
     // `Env` fake defaults its `cwd()` to the same `/home/test/project` used
     // above as `PRIMARY`'s match prefix — see `testContainer.fixture.ts`.
 
@@ -146,7 +166,9 @@ describe("SessionStart hook", () => {
 
   test("stop_hook_active is a foreign field this hook never reads: ignored", async () => {
     const { io, fs, container } = makeFixture();
-    await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+      PRIMARY,
+    ]);
 
     await runSessionStart(
       container,
@@ -161,7 +183,9 @@ describe("SessionStart hook", () => {
   test("vault directory missing: working memory only, no KB map section", async () => {
     const { io, fs, container } = makeFixture();
     // No `/vault-primary` directory seeded at all.
-    await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+      PRIMARY,
+    ]);
 
     await runSessionStart(container, io, JSON.stringify({ cwd: CWD }));
 
@@ -190,7 +214,9 @@ describe("SessionStart hook", () => {
 
   test("garbage stdin never throws: tolerant-parsed to an empty payload", async () => {
     const { io, fs, container } = makeFixture();
-    await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+      PRIMARY,
+    ]);
 
     await runSessionStart(container, io, "not json");
 

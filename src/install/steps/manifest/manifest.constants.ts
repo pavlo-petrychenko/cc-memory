@@ -1,7 +1,3 @@
-// A literal `~/`-prefix — `expandPath` only expands a LEADING `~`, matching
-// `registry.service.ts`'s `REGISTRY_HOME_RELATIVE_PATH` pattern.
-export const MANIFEST_HOME_RELATIVE_PATH = "~/.claude/memory/installed.json";
-
 /** Bumped only if this manifest's own shape changes — unrelated to the
  * index's schema version or the registry's schema. */
 export const MANIFEST_SCHEMA_VERSION = 1;

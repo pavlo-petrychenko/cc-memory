@@ -34,6 +34,13 @@ async function readProductionFiles(
 const FUNCTION_DECLARATION = /^\s*(?:export\s+)?(?:async\s+)?function\s/m;
 const ARROW_FUNCTION_EXPORT =
   /^\s*export\s+const\s+\w+\s*(?::[^=]+)?=\s*(?:async\s*)?\(/m;
+/**
+ * A declaration file may only hold literal values — never derive one from another
+ * at module scope. `settings.constants.ts` once computed `HOOK_REGISTRATION_ORDER`
+ * via `hookRegistrations.map(...)`, which runs on every import and hides the actual
+ * emitted values behind a transform the reader has to execute mentally.
+ */
+const MODULE_SCOPE_ARRAY_METHOD = /\.(?:map|filter|reduce)\(/;
 
 test("a *.typedefs.ts file declares only types, never behavior", async () => {
   const files = await readProductionFiles((path) => path.endsWith(".typedefs.ts"));
@@ -44,6 +51,8 @@ test("a *.typedefs.ts file declares only types, never behavior", async () => {
     if (FUNCTION_DECLARATION.test(text)) violations.push(`${path}: function declaration`);
     if (ARROW_FUNCTION_EXPORT.test(text))
       violations.push(`${path}: exported arrow function`);
+    if (MODULE_SCOPE_ARRAY_METHOD.test(text))
+      violations.push(`${path}: module-scope .map/.filter/.reduce call`);
   }
   expect(violations).toEqual([]);
 });
@@ -57,6 +66,8 @@ test("a *.constants.ts file declares only values, never behavior", async () => {
     if (FUNCTION_DECLARATION.test(text)) violations.push(`${path}: function declaration`);
     if (ARROW_FUNCTION_EXPORT.test(text))
       violations.push(`${path}: exported arrow function`);
+    if (MODULE_SCOPE_ARRAY_METHOD.test(text))
+      violations.push(`${path}: module-scope .map/.filter/.reduce call`);
   }
   expect(violations).toEqual([]);
 });
@@ -86,6 +97,7 @@ const ALLOWED_EXACT_NAMES: ReadonlySet<string> = new Set([
 
 test("every production file carries a role suffix, so its name says what is inside", async () => {
   const files = await readProductionFiles(() => true);
+  expect(files.size).toBeGreaterThan(100);
 
   const violations = [...files.keys()].filter((path) => {
     const basename = path.split("/").pop() ?? path;
@@ -96,7 +108,7 @@ test("every production file carries a role suffix, so its name says what is insi
   expect(violations).toEqual([]);
 });
 
-test("every module and submodule exposes an index.ts", async () => {
+test("every top-level module exposes an index.ts, and no directory below top level does", async () => {
   const paths = [...new Glob("**/*.ts").scanSync(SOURCE_ROOT)].filter(isProductionFile);
 
   const directories = new Set(
@@ -108,8 +120,19 @@ test("every module and submodule exposes an index.ts", async () => {
       .map((path) => path.slice(0, -"/index.ts".length)),
   );
 
-  const missing = [...directories]
-    .filter((directory) => !withIndex.has(directory))
+  const topLevelModules = new Set(
+    [...directories].map((directory) => directory.split("/")[0] ?? directory),
+  );
+  expect(topLevelModules.size).toBeGreaterThan(0);
+
+  const missingRootBarrel = [...topLevelModules]
+    .filter((moduleName) => !withIndex.has(moduleName))
     .toSorted();
-  expect(missing).toEqual([]);
+  expect(missingRootBarrel).toEqual([]);
+
+  const nestedBarrels = [...directories]
+    .filter((directory) => directory.includes("/"))
+    .filter((directory) => withIndex.has(directory))
+    .toSorted();
+  expect(nestedBarrels).toEqual([]);
 });

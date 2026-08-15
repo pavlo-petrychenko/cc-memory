@@ -1,10 +1,5 @@
-/**
- * The `memory commit` output, as pure `(structured input) => string`
- * methods. The skills that drive this CLI parse this output verbatim, so it
- * doubles as a contract; agent-visible text always comes from here.
- * `CommitCommand` calls `container.stdio.write` once per line these return;
- * nothing here does I/O.
- */
+/** The `memory commit` output. The skills that drive this CLI parse it verbatim,
+ * so it doubles as a contract. */
 export class CommitFormatter {
   commitSkipped(id: string): string {
     return `${id}: not a git repo, skipping`;

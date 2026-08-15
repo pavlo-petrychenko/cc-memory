@@ -19,18 +19,8 @@ function renderFeatureLine(feature: KbMapFeature): string {
   return line;
 }
 
-/**
- * Renders the KB map injected at SessionStart.
- *
- * This text is agent-visible, so its exact wording and formatting matter:
- * it is what every session sees injected at startup.
- *
- * Returning `""` for a missing vault directory is a filesystem check, so
- * that case lives in `kbMap.service.ts`, which simply doesn't call this
- * formatter then. Given a `features`/`looseNotes` pair (even both empty, for
- * an existing-but-empty vault), this always renders the full header +
- * `## Features` section.
- */
+/** Renders the KB map injected at SessionStart — agent-visible text, exact wording
+ * matters. */
 export class KbMapFormatter {
   format(input: KbMapInput): string {
     const lines = [

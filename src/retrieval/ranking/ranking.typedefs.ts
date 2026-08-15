@@ -1,9 +1,8 @@
 import type { Hit } from "@/retrieval/retrieval.typedefs.ts";
 
 export type FuseInput = {
-  /** BM25 token-OR hits, already ranked (0-based rank = array index). The
-   * complete candidate set: phrase hits are always a subset of these (`NEAR`
-   * requires both terms to already match), so an empty `tokenHits` fuses to `[]`. */
+  /** BM25 token-OR hits, already ranked (0-based rank = array index) — the complete
+   * candidate set, since phrase hits are always a subset of these. */
   readonly tokenHits: readonly Hit[];
   /** Path -> 0-based rank within the phrase/`NEAR` search results. */
   readonly phraseRanks: ReadonlyMap<string, number>;

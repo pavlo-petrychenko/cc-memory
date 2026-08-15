@@ -1,11 +1,43 @@
-import type { AbsPath } from "@/core/core.typedefs.ts";
-import { HOME_ALIAS } from "@/core/utils/paths/paths.constants.ts";
+import type { AbsPath, Result } from "@/core/core.typedefs.ts";
+import {
+  CCMEM_LOG_FILENAME,
+  CCMEM_HOME,
+  HOME_ALIAS,
+  INDEX_DB_FILENAME,
+  INJECT_LOG_FILENAME,
+  MANIFEST_FILENAME,
+  REGISTRY_FILENAME,
+} from "@/core/utils/paths/paths.constants.ts";
+import type { PathError } from "@/core/utils/paths/paths.typedefs.ts";
+import { PathErrorKind } from "@/core/utils/paths/paths.typedefs.ts";
 
-/**
- * Collapse redundant `.`/`..`/duplicate-slash segments the way `os.path.normpath`
- * does for POSIX paths (this project only ever runs on macOS/Linux). Does not
- * touch a leading `~` — callers expand that first.
- */
+function unsafeAbsPath(value: string): AbsPath {
+  // SAFETY: every call site in this file has already established `value` is
+  // absolute — either by checking it (`tryAbsPath`) or by construction
+  // (normalizing an expanded path, slicing at a `/` boundary, appending a
+  // literal segment onto an already-absolute base).
+  return value as AbsPath;
+}
+
+export function tryAbsPath(value: string): Result<AbsPath, PathError> {
+  if (!value.startsWith("/")) {
+    return { ok: false, error: { kind: PathErrorKind.NotAbsolute, value } };
+  }
+  return { ok: true, value: unsafeAbsPath(value) };
+}
+
+/** Throws instead of returning `Result` for cases this codebase's own invariants
+ * already guarantee are absolute — `$HOME`, a resolved `readlink`, an index column. */
+export function absPath(value: string): AbsPath {
+  const result = tryAbsPath(value);
+  if (!result.ok) {
+    throw new Error(`not an absolute path: ${value}`);
+  }
+  return result.value;
+}
+
+/** Collapses `.`/`..`/duplicate slashes like `os.path.normpath` for POSIX paths.
+ * Does not touch a leading `~` — callers expand that first. */
 function normalize(path: string): string {
   const isAbsolute = path.startsWith("/");
   const segments = path.split("/");
@@ -28,47 +60,68 @@ function normalize(path: string): string {
   return joined === "" ? "." : joined;
 }
 
-/**
- * Expand a leading `~` (and only a leading `~`) against `home`, then normalize.
- * This is the sole constructor of `AbsPath` — the ONE place a type assertion is
- * allowed.
- *
- * `home` arrives as a parameter rather than being read from the environment:
- * domain code has no I/O, so callers (services) resolve `$HOME` and pass it in.
- */
+/** Expands a leading `~` against `home`, then normalizes. */
 export function expandPath(path: string, home: AbsPath): AbsPath {
   const expanded =
     path === HOME_ALIAS || path.startsWith(`${HOME_ALIAS}/`)
       ? home + path.slice(1)
       : path;
-  // SAFETY: `normalize` never introduces a leading `~`, and every caller of
-  // `expandPath` supplies either an absolute path or one anchored at `home`
-  // (itself an `AbsPath`), so the result is always an absolute, normalized path.
-  return normalize(expanded) as AbsPath;
+  return unsafeAbsPath(normalize(expanded));
 }
 
-/**
- * Collapse `$HOME` back to `~` for tidy registry storage.
- * The exact-match case (`p === home`) must be checked before the prefix case, or
- * a workspace whose path *is* the home directory would fall through unchanged.
- */
+/** Collapses `$HOME` back to `~` for registry storage. The exact-match check must
+ * come before the prefix check, or a workspace whose path *is* home falls through. */
 export function tildify(path: AbsPath, home: AbsPath): string {
   if (path === home) return HOME_ALIAS;
   if (path.startsWith(`${home}/`)) return HOME_ALIAS + path.slice(home.length);
   return path;
 }
 
-/** True when `child` is `parent` itself or a path strictly nested under it. */
 export function isUnder(child: AbsPath, parent: AbsPath): boolean {
   return child === parent || child.startsWith(`${parent}/`);
 }
 
-/**
- * Path relative to `base` with the `.md` extension stripped — the FTS index's
- * link-resolution key. Falls back to the path unchanged when it isn't under
- * `base` at all.
- */
+/** `path` relative to `base` with `.md` stripped — the FTS index's link-resolution key. */
 export function relKey(path: AbsPath, base: AbsPath): string {
   const relative = path.startsWith(`${base}/`) ? path.slice(base.length + 1) : path;
   return relative.endsWith(".md") ? relative.slice(0, -3) : relative;
+}
+
+export function relativeTo(path: string, base: string): string {
+  const prefix = `${base}/`;
+  return path.startsWith(prefix) ? path.slice(prefix.length) : path;
+}
+
+export function parentDir(path: AbsPath): AbsPath {
+  const lastSlashIndex = path.lastIndexOf("/");
+  const sliced = lastSlashIndex <= 0 ? "/" : path.slice(0, lastSlashIndex);
+  return unsafeAbsPath(sliced);
+}
+
+/** `base` is treated as ending in `/` when it's the filesystem root, so
+ * `joinAbs(rootPath, "x")` yields `/x` rather than `//x`. */
+export function joinAbs(base: AbsPath, ...segments: readonly string[]): AbsPath {
+  if (segments.length === 0) return base;
+  const separator = base.endsWith("/") ? "" : "/";
+  return unsafeAbsPath(`${base}${separator}${segments.join("/")}`);
+}
+
+export function registryPath(home: AbsPath): AbsPath {
+  return expandPath(`${CCMEM_HOME}/${REGISTRY_FILENAME}`, home);
+}
+
+export function indexDbPath(home: AbsPath, id: string): AbsPath {
+  return expandPath(`${CCMEM_HOME}/${id}/${INDEX_DB_FILENAME}`, home);
+}
+
+export function manifestPath(home: AbsPath): AbsPath {
+  return expandPath(`${CCMEM_HOME}/${MANIFEST_FILENAME}`, home);
+}
+
+export function logPath(home: AbsPath): AbsPath {
+  return expandPath(`${CCMEM_HOME}/${CCMEM_LOG_FILENAME}`, home);
+}
+
+export function injectLogPath(home: AbsPath, id: string): AbsPath {
+  return expandPath(`${CCMEM_HOME}/${id}/${INJECT_LOG_FILENAME}`, home);
 }

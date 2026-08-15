@@ -5,9 +5,9 @@ import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
-import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/index.ts";
-import { RegistryService } from "@/workspace/services/registry/index.ts";
-import { WorkspaceResolverService } from "@/workspace/services/resolver/index.ts";
+import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
+import { RegistryService } from "@/workspace/services/registry/registry.service.ts";
+import { WorkspaceResolverService } from "@/workspace/services/resolver/resolver.service.ts";
 import { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/workspace/targetResolution/targetResolution.constants.ts";
 import { TargetResolutionService } from "@/workspace/targetResolution/targetResolution.service.ts";
 

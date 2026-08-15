@@ -253,7 +253,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
    * settings.json, the CLI shim and the skills directory, and those are
    * keyed by the REAL system user id, not by `$HOME` — a faked home only
    * protects file writes, not this one. Spawning the real built binary here
-   * (rather than calling `install()` in-process with an injected
+   * (rather than exercising `InstallCommand` in-process with an injected
    * `procFake`, as `src/install/commands/install/install.command.test.ts`
    * does) would genuinely rewrite the real configuration of whatever machine
    * runs this suite. `--dry-run` returns before any of `settings.json`/shim/skills/
@@ -269,6 +269,20 @@ describe("CLI e2e against the built dist/memory.js", () => {
       });
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("dry run");
+    } finally {
+      tempDir.remove();
+    }
+  });
+
+  test("--help lists the real command surface, generated from its descriptors", async () => {
+    const { tempDir, fixture } = setUpFixture();
+    try {
+      const result = await runBuiltCli(["--help"], {
+        env: fixture.env,
+        cwd: primaryCwd(fixture),
+      });
+      expect(result.exitCode).toBe(0);
+      expect(normalizeText(result.stdout, fixture.root)).toBe(readGolden("help"));
     } finally {
       tempDir.remove();
     }

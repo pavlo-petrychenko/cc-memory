@@ -2,8 +2,14 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
 import { relKey } from "@/core/index.ts";
+import { FtsQueryBuilder } from "@/retrieval/query/ftsQuery/ftsQuery.builder.ts";
+import { TokenizerParser } from "@/retrieval/query/tokenizer/tokenizer.parser.ts";
+import { Ranker } from "@/retrieval/ranking/ranking.ranker.ts";
 import { SearchKind } from "@/retrieval/retrieval.typedefs.ts";
-import { IndexBuildService } from "@/retrieval/store/indexBuild/index.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
+import { LinkGraphService } from "@/retrieval/store/graph/graph.service.ts";
+import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
+import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 import { SearchService } from "@/retrieval/store/search/search.service.ts";
 import {
   setupIndexFixture,
@@ -15,8 +21,14 @@ import {
 // searchFused requires it explicitly rather than re-deriving its own copy.
 const LINK_BOOST = 0.003;
 
-const indexBuildService = new IndexBuildService();
-const searchService = new SearchService();
+const connectionService = new IndexConnectionService(new SchemaService());
+const indexBuildService = new IndexBuildService(connectionService);
+const searchService = new SearchService(
+  connectionService,
+  new FtsQueryBuilder(new TokenizerParser()),
+  new Ranker(),
+  new LinkGraphService(connectionService),
+);
 
 let fixture: IndexFixture;
 

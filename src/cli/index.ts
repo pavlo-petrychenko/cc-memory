@@ -1,4 +1,5 @@
-export { CliCommand, parseArgs } from "@/cli/args/index.ts";
+export { parseArgs } from "@/cli/args/args.parser.ts";
+export { CliCommand } from "@/cli/args/args.typedefs.ts";
 export type {
   ArgsError,
   CommitArgs,
@@ -16,5 +17,5 @@ export type {
   WorkspaceAddArgs,
   WorkspaceLsArgs,
   WorkspaceRmArgs,
-} from "@/cli/args/index.ts";
-export { HelpCommand } from "@/cli/help/index.ts";
+} from "@/cli/args/args.typedefs.ts";
+export { HelpCommand } from "@/cli/help/help.command.ts";

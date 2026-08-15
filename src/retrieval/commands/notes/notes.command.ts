@@ -1,11 +1,16 @@
-import type { NotesArgs } from "@/cli/index.ts";
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
 import { NotesFormatter } from "@/retrieval/commands/notes/notes.formatter.ts";
-import { NoteListService } from "@/retrieval/store/index.ts";
-import { loadRegistryForCli, resolveWorkspaceForCwd } from "@/workspace/index.ts";
+import type { NotesArgs } from "@/retrieval/commands/notes/notes.typedefs.ts";
+import { NoteListService } from "@/retrieval/store/noteList/noteList.service.ts";
+import {
+  RegistryService,
+  RegistryTomlSerializer,
+  TargetResolutionService,
+  WorkspaceResolverService,
+} from "@/workspace/index.ts";
 
 /** An explicit empty `--folder ""` behaves like omitting the flag entirely. */
 function normalizedFolder(folder: string | null): string | null {
@@ -14,19 +19,28 @@ function normalizedFolder(folder: string | null): string | null {
 
 export class NotesCommand {
   constructor(
-    private readonly noteListService: NoteListService = new NoteListService(),
-    private readonly formatter: NotesFormatter = new NotesFormatter(),
+    private readonly noteListService: NoteListService,
+    private readonly formatter: NotesFormatter,
   ) {}
 
   /** `--json` is checked BEFORE the "no notes" fallback: an empty `--json`
    * result still prints `[]` rather than the plain-text "no notes" message. */
   async execute(container: Container, args: NotesArgs): Promise<CliOutcome> {
     const home = container.env.home();
-    const registryResult = await loadRegistryForCli(container.fs, home);
+    const registryService = new RegistryService(
+      container.fs,
+      new RegistryTomlSerializer(),
+    );
+    const resolverService = new WorkspaceResolverService(registryService, container.git);
+    const targetResolutionService = new TargetResolutionService(
+      registryService,
+      resolverService,
+    );
+    const registryResult = await targetResolutionService.loadRegistryForCli(home);
     if (!registryResult.ok) return registryResult.error;
 
     const cwd = args.cwd !== null ? expandPath(args.cwd, home) : container.env.cwd();
-    const resolved = resolveWorkspaceForCwd(
+    const resolved = targetResolutionService.resolveWorkspaceForCwd(
       registryResult.value,
       home,
       cwd,

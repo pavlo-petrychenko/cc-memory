@@ -1,17 +1,6 @@
 import { CliCommand, type ArgsError, type ParsedArgs } from "@/cli/args/args.typedefs.ts";
 import type { Result } from "@/core/index.ts";
 
-/**
- * Hand-written CLI argument parser: `node:util.parseArgs` cannot express
- * `nargs="+"` (a required, space-separated list: `--match ~/a ~/b`), which is
- * the invocation shape the CLI needs to support.
- *
- * Deliberately simpler than a general parser in one way: every flag here is
- * expected AFTER its command's positional argument(s) — this parser does not
- * support a flag preceding a positional. Nothing this CLI does needs that
- * generality.
- */
-
 function fail(message: string): Result<ParsedArgs, ArgsError> {
   return { ok: false, error: { message } };
 }
@@ -20,10 +9,8 @@ function ok(value: ParsedArgs): Result<ParsedArgs, ArgsError> {
   return { ok: true, value };
 }
 
-/** True for anything this parser treats as a flag boundary — every flag is a
- * long (`--foo`) or short (`-k`/`-m`) option; nothing here is ever mistaken
- * for a positional because positionals are always consumed BEFORE
- * flag-scanning starts (see the module doc comment). */
+/** Every flag is a long (`--foo`) or short (`-k`/`-m`) option; every flag here is
+ * expected AFTER its command's positional argument(s). */
 function isFlagToken(token: string): boolean {
   return token.startsWith("-");
 }
@@ -32,21 +19,12 @@ function hasFlag(tokens: readonly string[], flag: string): boolean {
   return tokens.includes(flag);
 }
 
-/** The value immediately following `flag`, or `null` if `flag` is absent
- * (single-value options: `--kb PATH`, `-k N`, ...). */
 function findFlagValue(tokens: readonly string[], flag: string): string | null {
   const index = tokens.indexOf(flag);
   if (index === -1) return null;
   return tokens[index + 1] ?? null;
 }
 
-/**
- * Every token after `flag` up to the next flag or the end of `tokens` — the
- * space-separated, variadic-value shape (`--match a b`, `--exclude`). Returns
- * `null` when `flag` is absent at all, distinct from present-but-empty: a
- * caller that wants an explicit empty `--exclude` treated the same as an
- * omitted one applies that fallback itself, not this parser.
- */
 function findVariadicValues(
   tokens: readonly string[],
   flag: string,
@@ -193,11 +171,8 @@ function parseInstall(tokens: readonly string[]): Result<ParsedArgs, ArgsError> 
   return ok({ command: CliCommand.Install, dryRun: hasFlag(tokens, "--dry-run") });
 }
 
-/**
- * Parse a full `argv` (already stripped of the `node`/`bun`/script leader —
- * callers pass `process.argv.slice(2)`) into one `ParsedArgs`. This only
- * parses; dispatch is `main.ts`'s job.
- */
+/** `argv` is already stripped of the `node`/`bun`/script leader. Only parses;
+ * dispatch is `main.ts`'s job. */
 export function parseArgs(argv: readonly string[]): Result<ParsedArgs, ArgsError> {
   const [command, ...rest] = argv;
   switch (command) {

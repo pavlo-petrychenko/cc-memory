@@ -1,11 +1,7 @@
 import { SLUG_ALLOWED_CHARACTER } from "@/core/utils/slug/slug.constants.ts";
 
-/**
- * Remove every leading/trailing character that appears in `chars`, repeatedly,
- * from both ends. `String.prototype.trim` only strips whitespace, so stripping
- * an arbitrary character set (quotes, brackets, `" -*"`, etc.) goes through this
- * instead of a hand-rolled regex.
- */
+/** `String.prototype.trim` only strips whitespace; this strips an arbitrary
+ * character set (quotes, brackets, etc.) from both ends instead. */
 export function stripChars(text: string, chars: string): string {
   let start = 0;
   let end = text.length;
@@ -22,11 +18,8 @@ export function stripChars(text: string, chars: string): string {
   return text.slice(start, end);
 }
 
-/**
- * Filter a worktree-relative slug candidate down to alphanumerics plus `-_.`,
- * replacing every other character with `-`, then trim leading/trailing `-`.
- * Empty after that -> `_root` (the repo-top-level worktree).
- */
+/** Replaces every character not in the allowed set with `-`, trims leading/trailing
+ * `-`, and falls back to `_root` (the repo-top-level worktree) when empty. */
 export function sanitizeSlug(candidate: string): string {
   let filtered = "";
   for (const character of candidate) {
@@ -36,11 +29,8 @@ export function sanitizeSlug(candidate: string): string {
   return trimmed === "" ? "_root" : trimmed;
 }
 
-/**
- * `-`/`_`-separated identifier -> Title Case words. Each word has its first
- * character uppercased and the REST lowercased (`"myAPI"` -> `"Myapi"`, not
- * `"MyAPI"`), matching the vault's existing home-note titles.
- */
+/** Each word has its first character uppercased and the REST lowercased
+ * (`"myAPI"` -> `"Myapi"`, not `"MyAPI"`), matching the vault's home-note titles. */
 export function titleize(id: string): string {
   return id
     .split(/[-_]/)

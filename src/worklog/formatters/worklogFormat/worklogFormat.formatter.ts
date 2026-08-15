@@ -3,12 +3,9 @@ import type {
   StateTemplateInput,
 } from "@/worklog/formatters/worklogFormat/worklogFormat.typedefs.ts";
 
-/**
- * The two worklog file formats. Both strings are a contract with every worklog already
- * written into a vault, so they must stay exact, character for character.
- */
+/** The two worklog file formats — a contract with every worklog already written
+ * into a vault, so they must stay exact, character for character. */
 export class WorklogFormatter {
-  /** The living per-worktree state file. */
   stateTemplate(input: StateTemplateInput): string {
     return `---
 type: worktree-state
@@ -29,7 +26,6 @@ _(nothing yet)_
 `;
   }
 
-  /** One append-only journal entry. */
   entryTemplate(input: EntryTemplateInput): string {
     return `## ${input.time} — ${input.topic}
 **Changes:** ${input.changes}

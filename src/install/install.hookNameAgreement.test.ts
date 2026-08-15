@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { hookRegistrations } from "@/install/steps/settings/index.ts";
+import { hookRegistrations } from "@/install/steps/settings/settings.constants.ts";
 import { dispatchableHookNames } from "@/session/index.ts";
 import { HookName } from "@/session/index.ts";
 

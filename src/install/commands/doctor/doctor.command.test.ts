@@ -5,13 +5,32 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import { DoctorCommand } from "@/install/commands/doctor/doctor.command.ts";
+import { DoctorFormatter } from "@/install/doctor/doctor.formatter.ts";
+import { DoctorService } from "@/install/doctor/doctor.service.ts";
+import type { Container } from "@/platform/index.ts";
+import {
+  IndexBuildService,
+  IndexConnectionService,
+  SchemaService,
+} from "@/retrieval/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
-import { saveRegistry } from "@/workspace/index.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 // SAFETY: a fixed test fixture, matching tests/helpers/container.ts's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
+
+function makeDoctorCommand(container: Container): DoctorCommand {
+  const indexBuildService = new IndexBuildService(
+    new IndexConnectionService(new SchemaService()),
+  );
+  return new DoctorCommand(
+    container,
+    new DoctorService(container, indexBuildService),
+    new DoctorFormatter(),
+  );
+}
 
 const PRIMARY: RawWorkspace = {
   id: "primary",
@@ -38,7 +57,7 @@ describe("DoctorCommand (real diagnostics, replacing the exit-0 hook smoke test)
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
 
-    const outcome = await new DoctorCommand(container).execute(
+    const outcome = await makeDoctorCommand(container).execute(
       doctorArgs({ cwd: "/repo/primary" }),
     );
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
@@ -51,9 +70,12 @@ describe("DoctorCommand (real diagnostics, replacing the exit-0 hook smoke test)
   test("a populated registry reports '(ok)' and the resolved workspace id", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
-    await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
+      REGISTRY_PATH,
+      [PRIMARY],
+    );
 
-    const outcome = await new DoctorCommand(container).execute(
+    const outcome = await makeDoctorCommand(container).execute(
       doctorArgs({ cwd: "/repo/primary/wt1" }),
     );
     expect(outcome).toEqual({ exitCode: 0, stderrMessage: null });
@@ -66,7 +88,7 @@ describe("DoctorCommand (real diagnostics, replacing the exit-0 hook smoke test)
     const container = makeTestContainer({ stdio: io });
     await container.fs.writeFile(REGISTRY_PATH, "not toml [[[");
 
-    const outcome = await new DoctorCommand(container).execute(doctorArgs());
+    const outcome = await makeDoctorCommand(container).execute(doctorArgs());
     expect(outcome.exitCode).toBe(0);
     expect(io.written[0]).toContain("(empty)");
     expect(io.written.some((line) => line.startsWith("registry error:"))).toBe(true);
@@ -81,9 +103,12 @@ describe("DoctorCommand (real diagnostics, replacing the exit-0 hook smoke test)
     const worklogsPath = "/vault-primary/_Worklogs" as AbsPath;
     await container.fs.mkdir(kbPath);
     await container.fs.mkdir(worklogsPath);
-    await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
+      REGISTRY_PATH,
+      [PRIMARY],
+    );
 
-    await new DoctorCommand(container).execute(doctorArgs());
+    await makeDoctorCommand(container).execute(doctorArgs());
 
     expect(io.written).toContain("workspace primary:");
     expect(io.written).toContain("  kb: ok");
@@ -94,10 +119,13 @@ describe("DoctorCommand (real diagnostics, replacing the exit-0 hook smoke test)
   test("reports a missing kb/worklogs directory rather than fabricating success", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
-    await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
+      REGISTRY_PATH,
+      [PRIMARY],
+    );
     // Neither `/vault-primary` nor its `_Worklogs` was ever created.
 
-    await new DoctorCommand(container).execute(doctorArgs());
+    await makeDoctorCommand(container).execute(doctorArgs());
 
     expect(io.written).toContain("  kb: MISSING");
     expect(io.written).toContain("  worklogs: MISSING");
@@ -107,7 +135,7 @@ describe("DoctorCommand (real diagnostics, replacing the exit-0 hook smoke test)
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
 
-    await new DoctorCommand(container).execute(doctorArgs());
+    await makeDoctorCommand(container).execute(doctorArgs());
 
     expect(io.written).toContain(
       "install: not installed (no installed.json manifest found)",
@@ -118,7 +146,7 @@ describe("DoctorCommand (real diagnostics, replacing the exit-0 hook smoke test)
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
 
-    await new DoctorCommand(container).execute(doctorArgs());
+    await makeDoctorCommand(container).execute(doctorArgs());
 
     expect(io.written.some((line) => line.startsWith("ccmem.log: 0 bytes"))).toBe(true);
   });

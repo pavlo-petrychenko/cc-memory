@@ -5,8 +5,8 @@ import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace, Workspace } from "@/core/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
-import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/index.ts";
-import { RegistryService } from "@/workspace/services/registry/index.ts";
+import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
+import { RegistryService } from "@/workspace/services/registry/registry.service.ts";
 import { WorkspaceResolverService } from "@/workspace/services/resolver/resolver.service.ts";
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup. Every

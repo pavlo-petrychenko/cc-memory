@@ -1,15 +1,10 @@
 import type { FloorBlockInput } from "@/worklog/formatters/worklogFloor/worklogFloor.typedefs.ts";
 
-/**
- * Renders the `SessionEnd` deterministic worklog-floor skeleton: the exact
- * HTML-comment skeleton a killed session still leaves behind. This text is
- * agent-visible and must stay exact.
- */
+/** Renders the `SessionEnd` HTML-comment skeleton a killed session still leaves
+ * behind. Agent-visible text — must stay exact. */
 export class WorklogFloorFormatter {
-  // `bun test --coverage` treats a class with no explicit constructor as
-  // having an unreachable synthetic one, which drags its function-coverage
-  // percentage down even at 100% line coverage — a non-empty (if inert)
-  // constructor body keeps that synthetic slot out of the count.
+  // A non-empty constructor keeps bun's coverage report from counting an
+  // unreachable synthetic default constructor against this class.
 
   format(input: FloorBlockInput): string {
     const lines = [

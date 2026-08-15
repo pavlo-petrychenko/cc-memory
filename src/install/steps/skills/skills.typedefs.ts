@@ -1,4 +1,4 @@
-import type { SkillManifestEntry } from "@/install/steps/manifest/index.ts";
+import type { SkillManifestEntry } from "@/install/steps/manifest/manifest.typedefs.ts";
 
 export type SkillInstallOutcome = {
   readonly skills: readonly SkillManifestEntry[];

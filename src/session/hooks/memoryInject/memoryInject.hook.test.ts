@@ -6,7 +6,16 @@ import { expandPath } from "@/core/index.ts";
 import type { Config } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { IndexBuildService } from "@/retrieval/index.ts";
+import {
+  FtsQueryBuilder,
+  IndexBuildService,
+  IndexConnectionService,
+  LinkGraphService,
+  Ranker,
+  SchemaService,
+  SearchService,
+  TokenizerParser,
+} from "@/retrieval/index.ts";
 import { MemoryInjectFormatter } from "@/session/hooks/memoryInject/memoryInject.formatter.ts";
 import { MemoryInjectHook } from "@/session/hooks/memoryInject/memoryInject.hook.ts";
 import { PayloadParser } from "@/session/payload/payload.parser.ts";
@@ -15,13 +24,31 @@ import { HookRuntimeService } from "@/session/runtime/runtime.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
-import { expandWorkspace, saveRegistry } from "@/workspace/index.ts";
+import {
+  expandWorkspace,
+  RegistryService,
+  RegistryTomlSerializer,
+} from "@/workspace/index.ts";
 
 /**
  * `UserPromptSubmit`: gates in order (prompt length, salient-token count,
  * score floor). The `inject.jsonl` log is written before the emptiness
  * check, and is size-capped and rotated instead of growing unbounded.
  */
+
+function makeIndexBuildService(): IndexBuildService {
+  return new IndexBuildService(new IndexConnectionService(new SchemaService()));
+}
+
+function makeSearchService(): SearchService {
+  const connectionService = new IndexConnectionService(new SchemaService());
+  return new SearchService(
+    connectionService,
+    new FtsQueryBuilder(new TokenizerParser()),
+    new Ranker(),
+    new LinkGraphService(connectionService),
+  );
+}
 
 // SAFETY: fixed test fixtures, matching `testContainer.fixture.ts`'s
 // DEFAULT_HOME/DEFAULT_CWD.
@@ -38,7 +65,7 @@ const PRIMARY: RawWorkspace = {
   worklogs: "/home/test/vault-primary/_Worklogs",
   exclude: ["_Worklogs"],
   // `dirname(":memory:")` -> `"/"` (`AbsPath.lastIndexOf("/")` is `-1`), so
-  // `inject.jsonl` lands at the fake filesystem's root — harmless: `SqlDatabase` is
+  // `inject.jsonl` lands at the fake filesystem's root — harmless: `Sqlite` is
   // never faked (CLAUDE.md), so `indexDb` MUST stay `":memory:"` to avoid a
   // real on-disk SQLite file; `FileSystem` IS faked, so this path is still
   // just a key in `fsMemory.fake.ts`'s in-memory map, never real disk.
@@ -86,8 +113,11 @@ async function seedIndexedWorkspace(fixture: Fixture): Promise<void> {
     "/home/test/vault-primary/Fast Vehicle.md" as AbsPath,
     "---\ntype: note\n---\n# Fast Vehicle\nThe red car is very fast.\n",
   );
-  await saveRegistry(fixture.fs, REGISTRY_PATH, [PRIMARY]);
-  await new IndexBuildService().build(fixture.container, expandWorkspace(PRIMARY, HOME));
+  await new RegistryService(fixture.fs, new RegistryTomlSerializer()).save(
+    REGISTRY_PATH,
+    [PRIMARY],
+  );
+  await makeIndexBuildService().build(fixture.container, expandWorkspace(PRIMARY, HOME));
 }
 
 async function runMemoryInject(
@@ -105,7 +135,13 @@ async function runMemoryInject(
   await hookRuntimeService.run(
     "memory-inject",
     (record) => payloadParser.parseMemoryInject(record),
-    new MemoryInjectHook(fixture.container, config, new MemoryInjectFormatter()),
+    new MemoryInjectHook(
+      fixture.container,
+      config,
+      new MemoryInjectFormatter(),
+      makeSearchService(),
+      new TokenizerParser(),
+    ),
   );
 }
 
@@ -171,7 +207,7 @@ describe("UserPromptSubmit (memory-inject) hook", () => {
       "/home/test/vault-primary/_Worklogs/wt1/2026-01-03.md" as AbsPath,
       "## 08:00 — cleanup\n**Changes:** archived old build artifacts and logs.\n",
     );
-    await new IndexBuildService().build(
+    await makeIndexBuildService().build(
       fixture.container,
       expandWorkspace(PRIMARY, HOME),
     );
@@ -202,11 +238,14 @@ describe("UserPromptSubmit (memory-inject) hook", () => {
       ...PRIMARY,
       // A path under a directory that cannot exist: `bun:sqlite` throws
       // `SQLITE_CANTOPEN` opening it, synchronously, writing nothing —
-      // `SqlDatabase` is still the real adapter (CLAUDE.md), just fed a path that
+      // `Sqlite` is still the real adapter (CLAUDE.md), just fed a path that
       // fails to open rather than a faked port.
       indexDb: "/definitely-not-a-real-directory-for-this-test/index.db",
     };
-    await saveRegistry(fixture.fs, REGISTRY_PATH, [brokenWorkspace]);
+    await new RegistryService(fixture.fs, new RegistryTomlSerializer()).save(
+      REGISTRY_PATH,
+      [brokenWorkspace],
+    );
 
     await runMemoryInject(
       fixture,

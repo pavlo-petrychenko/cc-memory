@@ -10,7 +10,8 @@ cannot quietly stop being true between reviews.
   `index.ts` (declarations excepted); nothing but a test reaches into
   `testing/`; no cycles between top-level modules.
 - `fileKinds.test.ts` — typedefs and constants files hold no behavior; every
-  production file carries a role suffix; every module has an `index.ts`.
+  production file carries a role suffix; every top-level module has an
+  `index.ts` and no directory below top level does.
 - `testPresence.test.ts` — every implementation file has a test beside it.
 
 Each test asserts its own input is non-empty first: a structural rule that

@@ -7,11 +7,23 @@ import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
 import { SearchCommand } from "@/retrieval/commands/search/search.command.ts";
-import { IndexBuildService } from "@/retrieval/store/index.ts";
+import { SearchFormatter } from "@/retrieval/commands/search/search.formatter.ts";
+import { FtsQueryBuilder } from "@/retrieval/query/ftsQuery/ftsQuery.builder.ts";
+import { TokenizerParser } from "@/retrieval/query/tokenizer/tokenizer.parser.ts";
+import { Ranker } from "@/retrieval/ranking/ranking.ranker.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
+import { LinkGraphService } from "@/retrieval/store/graph/graph.service.ts";
+import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
+import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
+import { SearchService } from "@/retrieval/store/search/search.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake, type IoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
-import { expandWorkspace, saveRegistry } from "@/workspace/index.ts";
+import {
+  expandWorkspace,
+  RegistryService,
+  RegistryTomlSerializer,
+} from "@/workspace/index.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
@@ -35,8 +47,17 @@ const PRIMARY: RawWorkspace = {
   indexDb: ":memory:",
 };
 
-const indexBuildService = new IndexBuildService();
-const searchCommand = new SearchCommand();
+const connectionService = new IndexConnectionService(new SchemaService());
+const indexBuildService = new IndexBuildService(connectionService);
+const searchCommand = new SearchCommand(
+  new SearchService(
+    connectionService,
+    new FtsQueryBuilder(new TokenizerParser()),
+    new Ranker(),
+    new LinkGraphService(connectionService),
+  ),
+  new SearchFormatter(),
+);
 
 function searchArgs(overrides: Partial<SearchArgs> = {}): SearchArgs {
   return {
@@ -62,7 +83,9 @@ async function seedIndexedWorkspace(): Promise<SeededFixture> {
     "/vault-primary/Kryptonite.md" as AbsPath,
     "# Kryptonite Handbook\nGeneral notes about assorted green minerals.\n",
   );
-  await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+  await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+    PRIMARY,
+  ]);
   await indexBuildService.build(container, expandWorkspace(PRIMARY, HOME));
   return { container, io };
 }

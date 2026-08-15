@@ -12,7 +12,8 @@ import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type GitFake, makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
-import { saveRegistry } from "@/workspace/index.ts";
+import { WorklogFloorFormatter, WorklogStoreService } from "@/worklog/index.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 /**
  * `SessionEnd`: a deterministic, write-only git/command skeleton appended to
@@ -51,7 +52,9 @@ async function makeFixture(): Promise<Fixture> {
   const fs = makeFsMemoryFake();
   const git = makeGitFake();
   const container = makeTestContainer({ stdio: io, fs, git });
-  await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+  await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+    PRIMARY,
+  ]);
   return { io, fs, git, container };
 }
 
@@ -66,7 +69,11 @@ async function runWorklogFloor(fixture: Fixture, stdin: string): Promise<void> {
   await hookRuntimeService.run(
     "worklog-floor",
     (record) => payloadParser.parseWorklogFloor(record),
-    new WorklogFloorHook(fixture.container),
+    new WorklogFloorHook(
+      fixture.container,
+      new WorklogFloorFormatter(),
+      new WorklogStoreService(fixture.container.fs, fixture.container.git),
+    ),
   );
 }
 

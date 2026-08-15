@@ -1,7 +1,23 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/core.typedefs.ts";
-import { expandPath, isUnder, relKey, tildify } from "@/core/utils/paths/paths.utils.ts";
+import { PathErrorKind } from "@/core/utils/paths/paths.typedefs.ts";
+import {
+  absPath,
+  expandPath,
+  indexDbPath,
+  injectLogPath,
+  isUnder,
+  joinAbs,
+  logPath,
+  manifestPath,
+  parentDir,
+  registryPath,
+  relativeTo,
+  relKey,
+  tildify,
+  tryAbsPath,
+} from "@/core/utils/paths/paths.utils.ts";
 
 // SAFETY: test fixture only — a fixed home path, never a real filesystem
 // lookup. This is the pattern every real caller uses too: `expandPath`'s own
@@ -88,5 +104,126 @@ describe("relKey", () => {
   test("falls back to the full path when it isn't under base", () => {
     const outside = expandPath("/etc/hosts.md", HOME);
     expect(relKey(outside, kb)).toBe(outside.slice(0, -3));
+  });
+});
+
+describe("relativeTo", () => {
+  const kb = expandPath("~/Documents/Vault", HOME);
+
+  test("strips the base prefix, extension untouched", () => {
+    expect(relativeTo(expandPath("~/Documents/Vault/Feature/Note.md", HOME), kb)).toBe(
+      "Feature/Note.md",
+    );
+  });
+
+  test("falls back to the full path when it isn't under base", () => {
+    const outside = expandPath("/etc/hosts.md", HOME);
+    expect(relativeTo(outside, kb)).toBe(outside);
+  });
+
+  test("leaves a path equal to base (no trailing slash to match) unchanged", () => {
+    expect(relativeTo(kb, kb)).toBe(kb);
+  });
+
+  test("works on plain, non-branded strings too", () => {
+    expect(relativeTo("/vault/notes/a.md", "/vault")).toBe("notes/a.md");
+  });
+});
+
+describe("absPath / tryAbsPath", () => {
+  const cases: readonly { readonly name: string; readonly input: string }[] = [
+    { name: "the filesystem root", input: "/" },
+    { name: "a plain absolute path", input: "/Users/tester/Documents" },
+    { name: "an absolute path with a trailing segment", input: "/var/log/ccmem.log" },
+  ];
+
+  for (const { name, input } of cases) {
+    test(`absPath accepts ${name}`, () => {
+      expect(String(absPath(input))).toBe(input);
+    });
+
+    test(`tryAbsPath accepts ${name}`, () => {
+      const result = tryAbsPath(input);
+      expect(result).toEqual({ ok: true, value: absPath(input) });
+    });
+  }
+
+  const rejected: readonly string[] = ["relative/path", "~/Documents", "", "./here"];
+
+  for (const input of rejected) {
+    test(`absPath throws for ${JSON.stringify(input)}`, () => {
+      expect(() => absPath(input)).toThrow();
+    });
+
+    test(`tryAbsPath reports an error for ${JSON.stringify(input)}`, () => {
+      expect(tryAbsPath(input)).toEqual({
+        ok: false,
+        error: { kind: PathErrorKind.NotAbsolute, value: input },
+      });
+    });
+  }
+});
+
+describe("joinAbs", () => {
+  test("joins a single segment onto a normal base", () => {
+    expect(String(joinAbs(HOME, "sub"))).toBe(`${HOME}/sub`);
+  });
+
+  test("joins multiple segments in order", () => {
+    expect(String(joinAbs(HOME, "a", "b", "c"))).toBe(`${HOME}/a/b/c`);
+  });
+
+  test("returns base unchanged when given no segments", () => {
+    expect(String(joinAbs(HOME))).toBe(HOME);
+  });
+
+  test("does not double the slash when base is the filesystem root", () => {
+    // SAFETY: a fixed test fixture — the filesystem root is always absolute.
+    const root = absPath("/");
+    expect(String(joinAbs(root, "wrap-state.json"))).toBe("/wrap-state.json");
+  });
+});
+
+describe("parentDir", () => {
+  test("strips the last segment of a nested path", () => {
+    expect(String(parentDir(expandPath("~/Documents/Vault/Note.md", HOME)))).toBe(
+      `${HOME}/Documents/Vault`,
+    );
+  });
+
+  test("a single-segment absolute path's parent is the root", () => {
+    // SAFETY: a fixed test fixture.
+    expect(String(parentDir(absPath("/index.db")))).toBe("/");
+  });
+
+  test("the root's parent is itself the root", () => {
+    // SAFETY: a fixed test fixture.
+    expect(String(parentDir(absPath("/")))).toBe("/");
+  });
+});
+
+describe("home-rooted path builders", () => {
+  test("registryPath", () => {
+    expect(String(registryPath(HOME))).toBe(`${HOME}/.claude/memory/registry.toml`);
+  });
+
+  test("indexDbPath", () => {
+    expect(String(indexDbPath(HOME, "acme"))).toBe(
+      `${HOME}/.claude/memory/acme/index.db`,
+    );
+  });
+
+  test("manifestPath", () => {
+    expect(String(manifestPath(HOME))).toBe(`${HOME}/.claude/memory/installed.json`);
+  });
+
+  test("logPath", () => {
+    expect(String(logPath(HOME))).toBe(`${HOME}/.claude/memory/ccmem.log`);
+  });
+
+  test("injectLogPath", () => {
+    expect(String(injectLogPath(HOME, "acme"))).toBe(
+      `${HOME}/.claude/memory/acme/inject.jsonl`,
+    );
   });
 });

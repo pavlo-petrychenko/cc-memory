@@ -1,22 +1,20 @@
-export { ResolveCommand } from "@/workspace/commands/resolve/index.ts";
-export { ResolveFormatter } from "@/workspace/commands/resolve/index.ts";
-export { WorkspaceCommand } from "@/workspace/commands/workspace/index.ts";
-export { WorkspaceFormatter } from "@/workspace/commands/workspace/index.ts";
-export { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/index.ts";
+export { ResolveCommand } from "@/workspace/commands/resolve/resolve.command.ts";
+export { ResolveFormatter } from "@/workspace/commands/resolve/resolve.formatter.ts";
+export { WorkspaceCommand } from "@/workspace/commands/workspace/workspace.command.ts";
+export { WorkspaceFormatter } from "@/workspace/commands/workspace/workspace.formatter.ts";
+export { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
 export {
   defaultRegistryPath,
   expandWorkspace,
   findWorkspace,
   loadRegistry,
   RegistryService,
-  saveRegistry,
   validateNew,
-} from "@/workspace/services/registry/index.ts";
+} from "@/workspace/services/registry/registry.service.ts";
 export {
-  resolveWorkspace,
   worktreeSlug,
   WorkspaceResolverService,
-} from "@/workspace/services/resolver/index.ts";
+} from "@/workspace/services/resolver/resolver.service.ts";
 export type {
   RegistryConflict,
   RegistryError,
@@ -26,11 +24,8 @@ export {
   RegistryConflictKind,
   RegistryErrorKind,
 } from "@/workspace/workspace.typedefs.ts";
+export { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/workspace/targetResolution/targetResolution.constants.ts";
 export {
-  loadRegistryForCli,
-  NO_WORKSPACE_FOR_CWD_MESSAGE,
   noSuchWorkspaceMessage,
-  resolveTargetWorkspaces,
-  resolveWorkspaceForCwd,
   TargetResolutionService,
-} from "@/workspace/targetResolution/index.ts";
+} from "@/workspace/targetResolution/targetResolution.service.ts";

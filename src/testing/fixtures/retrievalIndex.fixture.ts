@@ -1,19 +1,9 @@
 import type { AbsPath } from "@/core/index.ts";
-import { expandPath } from "@/core/index.ts";
+import { absPath, expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
 import { FileSystemAdapter } from "@/platform/index.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
-/**
- * Shared setup for the retrieval integration tests: a REAL vault on disk
- * built by `vault.fixture.ts`'s `buildFixtureVault`, plus a second,
- * unrelated workspace for isolation checks. A real `FileSystem`
- * (`fileSystem.adapter.ts`) and a real `bun:sqlite` file back every test built
- * from this — `SqlDatabase` is never faked, since FTS5's stemmer, bm25 weighting and
- * `NEAR` semantics are the behavior under test — and using the real disk
- * here (rather than the in-memory `fs` fake) means the same fixture module
- * backs both these tests and the end-to-end tests.
- */
 import {
   buildFixtureVault,
   type FixtureVault,
@@ -21,6 +11,8 @@ import {
 } from "@/testing/fixtures/vault.fixture.ts";
 import { createTempDir, type TempDir } from "@/testing/utils/tempDir.utils.ts";
 
+/** Shared setup for the retrieval integration tests: a REAL vault on disk, a real
+ * `FileSystem` and a real `bun:sqlite` file — `Sqlite` is never faked. */
 export type IndexFixture = {
   readonly tempDir: TempDir;
   readonly vault: FixtureVault;
@@ -38,9 +30,6 @@ function requireFixtureWorkspace(vault: FixtureVault, id: string): FixtureWorksp
   return found;
 }
 
-/** Expand a `FixtureWorkspace` (plain absolute strings from `node:fs`) into a
- * real `Workspace` (branded `AbsPath`s) — same registry `exclude` list
- * `buildFixtureVault` writes (`_Worklogs`, `Archive`, `.obsidian`). */
 function toWorkspace(fixtureWorkspace: FixtureWorkspace, home: AbsPath): Workspace {
   const kb = expandPath(fixtureWorkspace.kbDir, home);
   return {
@@ -54,15 +43,9 @@ function toWorkspace(fixtureWorkspace: FixtureWorkspace, home: AbsPath): Workspa
   };
 }
 
-/** Build a fresh temp-dir-backed vault + registry and wrap it as a real
- * `Container` + two `Workspace`s ready for `retrieval/**` calls. Pair
- * with `teardownIndexFixture` in an `afterEach`. */
 export function setupIndexFixture(): IndexFixture {
   const tempDir = createTempDir("ccmem-index-fixture");
-  // SAFETY: `createTempDir` always returns an absolute, resolved path, and it
-  // also doubles as this fixture's sandboxed `$HOME` (`buildFixtureVault`'s
-  // own doc comment).
-  const home = tempDir.path as AbsPath;
+  const home = absPath(tempDir.path);
   const vault = buildFixtureVault(tempDir.path);
   const container = makeTestContainer({ fs: new FileSystemAdapter() });
   return {

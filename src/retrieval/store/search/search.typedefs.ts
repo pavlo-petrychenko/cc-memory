@@ -15,8 +15,7 @@ export type SearchOptions = {
 export type SearchFusedOptions = SearchOptions & {
   /** Include the wikilink-corroboration bonus. Default `true`. */
   readonly links?: boolean;
-  /** RRF bonus per corroborating in-link — `Config.linkBoost`
-   * (`CCMEM_LINK_BOOST`). Required rather than defaulted here: the default
-   * (`0.003`) is `core/config`'s to own, not re-derived in this file. */
+  /** `Config.linkBoost` — required rather than defaulted here, since the default
+   * is `core/config`'s to own. */
   readonly linkBoost: number;
 };

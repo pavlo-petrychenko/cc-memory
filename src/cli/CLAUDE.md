@@ -19,3 +19,10 @@ this module renders nothing except its own `-h`/`--version` usage text.
 `main.ts` keeps that exact name and path rather than `cli.main.ts`: both
 `package.json`'s build script and `quality/purity.test.ts`'s composition-root
 allowlist hardcode `src/cli/main.ts`, and neither is editable from here.
+
+`args/`'s parser is hand-written because `node:util.parseArgs` cannot express
+a required, space-separated variadic list (`--match ~/a ~/b`), which several
+subcommands need; every flag is expected AFTER its command's positional
+argument(s). `help/`'s usage text is not parsed by any skill, so its wording
+is free to change — what is required is that both exit 0 and `--help` lists
+the real command surface.

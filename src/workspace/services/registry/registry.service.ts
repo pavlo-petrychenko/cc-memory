@@ -2,12 +2,11 @@ import { parse as parseToml } from "smol-toml";
 import type { TomlTable, TomlValue } from "smol-toml";
 
 import type { AbsPath } from "@/core/index.ts";
-import { expandPath, isUnder } from "@/core/index.ts";
+import { absPath, expandPath, isUnder, parentDir, registryPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import type { RawWorkspace, Workspace } from "@/core/index.ts";
 import type { FileSystem } from "@/platform/index.ts";
-import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/index.ts";
-import { REGISTRY_HOME_RELATIVE_PATH } from "@/workspace/services/registry/registry.constants.ts";
+import type { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
 import {
   type RegistryConflict,
   RegistryConflictKind,
@@ -15,29 +14,16 @@ import {
   RegistryErrorKind,
 } from "@/workspace/workspace.typedefs.ts";
 
-/**
- * Workspace registry: read/write/validate `~/.claude/memory/registry.toml`. A
- * workspace is stored with `~`-relative paths (portability); callers expand
- * via `expandWorkspace` before touching the filesystem for real.
- *
- * The free functions below are the canonical implementation; `RegistryService`
- * is a constructor-injected facade over them for callers that hold an
- * instance rather than threading `fs` through every call.
- */
-
-/** The registry file path, given a home directory. */
 export function defaultRegistryPath(home: AbsPath): AbsPath {
-  return expandPath(REGISTRY_HOME_RELATIVE_PATH, home);
+  return registryPath(home);
 }
 
 function malformed(message: string): Result<RawWorkspace, RegistryError> {
   return { ok: false, error: { kind: RegistryErrorKind.Malformed, message } };
 }
 
-// `typeof` only distinguishes JS representations, not TOML's domain values (a
-// `TomlDate` is also `"object"`) — `Object.prototype.toString` gives the precise
-// tag instead, the same technique the knowledge module's `isYamlMapping` uses
-// for the analogous YAML-boundary check.
+// `typeof` can't distinguish a TOML domain value from a plain object (a `TomlDate`
+// is also `"object"`) — `Object.prototype.toString` gives the precise tag instead.
 function isTomlString(value: TomlValue | undefined): value is string {
   return Object.prototype.toString.call(value) === "[object String]";
 }
@@ -50,12 +36,6 @@ function isTomlTableValue(value: TomlValue): value is TomlTable {
   return Object.prototype.toString.call(value) === "[object Object]";
 }
 
-/**
- * One `[[workspace]]` block: a table with `id`/`kb`/`worklogs`/`index_db`
- * strings, a `match` array of strings, and an optional `exclude` array of
- * strings (defaulted to `[]`) — `exclude` is the one field that isn't
- * required.
- */
 function parseRawWorkspaceEntry(
   entry: TomlValue,
   index: number,
@@ -92,19 +72,14 @@ function parseRawWorkspaceEntry(
   };
 }
 
-/**
- * Return the registry's raw workspace list. A missing file is empty, not an
- * error — only a PRESENT file that fails to parse or doesn't match the schema
- * becomes a `RegistryError`. Callers that must fail open (the hooks) treat the
- * error as "no workspace" and log it; the CLI reports it.
- */
+/** A missing file is empty, not an error — only a present file that fails to parse
+ * or doesn't match the schema becomes a `RegistryError`. */
 export async function loadRegistry(
   fs: FileSystem,
   path: AbsPath,
 ): Promise<Result<readonly RawWorkspace[], RegistryError>> {
   if (!(await fs.exists(path))) return { ok: true, value: [] };
   const stat = await fs.stat(path);
-  // A directory at this path is not a valid registry file.
   if (!stat.isFile) return { ok: true, value: [] };
 
   const content = await fs.readFile(path);
@@ -118,7 +93,6 @@ export async function loadRegistry(
   }
 
   const workspaceValue = parsed["workspace"];
-  // An absent "workspace" key is empty, not malformed.
   if (workspaceValue === undefined) return { ok: true, value: [] };
   if (!Array.isArray(workspaceValue)) {
     return {
@@ -139,38 +113,6 @@ export async function loadRegistry(
   return { ok: true, value: workspaces };
 }
 
-/** The parent directory of an absolute, normalized path, itself absolute. */
-function parentDir(path: AbsPath): AbsPath {
-  const lastSlashIndex = path.lastIndexOf("/");
-  const sliced = lastSlashIndex <= 0 ? "/" : path.slice(0, lastSlashIndex);
-  // SAFETY: slicing an absolute, normalized path at a `/` boundary yields another
-  // absolute, normalized path (or the root `/`) — same reasoning `paths.ts`
-  // documents for `expandPath`'s own cast.
-  return sliced as AbsPath;
-}
-
-/**
- * Write the registry atomically: `<path>.tmp` then rename over it, so a
- * reader never observes a half-written file. Uses `RegistryTomlSerializer`
- * rather than a hand-rolled or `smol-toml`-stringified serialization, since
- * this file is user-owned and rewritten in place — `smol-toml`'s array
- * formatting would produce spurious diff churn.
- */
-export async function saveRegistry(
-  fs: FileSystem,
-  path: AbsPath,
-  workspaces: readonly RawWorkspace[],
-): Promise<void> {
-  await fs.mkdir(parentDir(path));
-  const tmpPath = `${path}.tmp`;
-  // SAFETY: appending a fixed `.tmp` suffix to an absolute, normalized path
-  // cannot introduce a `~`, `.` or `..` segment.
-  const tmpAbsPath = tmpPath as AbsPath;
-  await fs.writeFile(tmpAbsPath, new RegistryTomlSerializer().serialize(workspaces));
-  await fs.rename(tmpAbsPath, path);
-}
-
-/** Finds a workspace by id, over an already-loaded list. */
 export function findWorkspace(
   raws: readonly RawWorkspace[],
   id: string,
@@ -178,17 +120,6 @@ export function findWorkspace(
   return raws.find((raw) => raw.id === id) ?? null;
 }
 
-/**
- * Expand every path field to an absolute, normalized `AbsPath` — the only way
- * to produce a `Workspace` (see `Workspace.ts`'s doc comment).
- *
- * `matchedPrefix` defaults to the first `match` entry (falling back to `kb` if
- * `match` is empty). `resolveWorkspace` overrides `matchedPrefix` with the
- * real matched prefix once a specific `cwd` picks one; the default here only
- * surfaces for a caller that expands a workspace directly, outside cwd
- * resolution (e.g. the CLI acting on a workspace by id), where no single
- * prefix is actually meaningful.
- */
 export function expandWorkspace(raw: RawWorkspace, home: AbsPath): Workspace {
   const match = raw.match.map((entry) => expandPath(entry, home));
   const kb = expandPath(raw.kb, home);
@@ -205,8 +136,6 @@ export function expandWorkspace(raw: RawWorkspace, home: AbsPath): Workspace {
   };
 }
 
-// Required fields: id, match, kb, worklogs, index_db — `exclude` is
-// deliberately not required.
 function requiredFieldConflicts(candidate: RawWorkspace): readonly RegistryConflict[] {
   const conflicts: RegistryConflict[] = [];
   if (candidate.id === "") {
@@ -227,16 +156,9 @@ function requiredFieldConflicts(candidate: RawWorkspace): readonly RegistryConfl
   return conflicts;
 }
 
-/**
- * Every way `candidate` conflicts with `existing` — unique `id`, no
- * overlapping `match` prefix in EITHER direction, no `kb` nested with another
- * workspace's `kb` in either direction. Returns the complete list of
- * conflicts rather than stopping at the first, so a caller (the CLI) can
- * report every problem at once.
- *
- * `match`/`kb` are stored `~`-relative (`RawWorkspace`), so `home` is required
- * to expand both sides before comparing.
- */
+/** Returns every conflict rather than stopping at the first, so the CLI can report
+ * all of them at once. `match`/`kb` are `~`-relative, so `home` expands both sides
+ * before comparing. */
 export function validateNew(
   candidate: RawWorkspace,
   existing: readonly RawWorkspace[],
@@ -279,11 +201,6 @@ export function validateNew(
   return conflicts;
 }
 
-/**
- * Constructor-injected facade over the free functions above, for callers
- * (`commands/workspace`, `targetResolution`) that hold a `RegistryService`
- * instance rather than threading `fs` through every call.
- */
 export class RegistryService {
   constructor(
     private readonly fs: FileSystem,
@@ -300,10 +217,7 @@ export class RegistryService {
 
   async save(path: AbsPath, workspaces: readonly RawWorkspace[]): Promise<void> {
     await this.fs.mkdir(parentDir(path));
-    const tmpPath = `${path}.tmp`;
-    // SAFETY: appending a fixed `.tmp` suffix to an absolute, normalized path
-    // cannot introduce a `~`, `.` or `..` segment.
-    const tmpAbsPath = tmpPath as AbsPath;
+    const tmpAbsPath = absPath(`${path}.tmp`);
     await this.fs.writeFile(tmpAbsPath, this.tomlSerializer.serialize(workspaces));
     await this.fs.rename(tmpAbsPath, path);
   }

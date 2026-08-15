@@ -1,22 +1,40 @@
-import { CliCommand, parseArgs, type ParsedArgs } from "@/cli/args/index.ts";
-import { HelpCommand } from "@/cli/help/index.ts";
+import { parseArgs } from "@/cli/args/args.parser.ts";
+import { CliCommand, type ParsedArgs } from "@/cli/args/args.typedefs.ts";
+import { HelpCommand } from "@/cli/help/help.command.ts";
+import { HelpFormatter } from "@/cli/help/help.formatter.ts";
 import type { Config } from "@/core/index.ts";
 import { ConfigParser } from "@/core/index.ts";
-import { cliFailure } from "@/core/outcome/index.ts";
+import { cliFailure } from "@/core/index.ts";
+import type { CliOutcome } from "@/core/index.ts";
 import { ARGS_PARSE_ERROR_EXIT_CODE } from "@/core/outcome/outcome.constants.ts";
-import type { CliOutcome } from "@/core/outcome/outcome.typedefs.ts";
-import { DoctorCommand, InstallCommand, UninstallCommand } from "@/install/index.ts";
+import {
+  DoctorCommand,
+  DoctorFormatter,
+  DoctorService,
+  InstallCommand,
+  UninstallCommand,
+} from "@/install/index.ts";
 import type { Container } from "@/platform/index.ts";
 import { AppContainer } from "@/platform/index.ts";
 import {
+  FtsQueryBuilder,
   IndexBuildService,
   IndexConnectionService,
+  LinkGraphService,
+  NoteListService,
   NotesCommand,
+  NotesFormatter,
+  Ranker,
   ReindexCommand,
+  ReindexFormatter,
+  SchemaService,
   SearchCommand,
+  SearchFormatter,
+  SearchService,
+  TokenizerParser,
 } from "@/retrieval/index.ts";
 import { HookDispatchCommand } from "@/session/index.ts";
-import { CommitCommand } from "@/worklog/index.ts";
+import { CommitCommand, CommitFormatter } from "@/worklog/index.ts";
 import {
   RegistryService,
   RegistryTomlSerializer,
@@ -29,18 +47,38 @@ import {
 } from "@/workspace/index.ts";
 import type { WorkspaceIndexBuilder } from "@/workspace/index.ts";
 
-/**
- * The one capability `WorkspaceCommand` needs from the search index, backed by
- * the real `retrieval` module — constructed here (the composition root)
- * rather than inside `workspace` itself, which would close a cycle (retrieval
- * depends on workspace for target resolution).
- */
+/** The composition root: no command constructs its own dependencies, each is wired
+ * here from the real `Container`. */
+function makeIndexConnectionService(): IndexConnectionService {
+  return new IndexConnectionService(new SchemaService());
+}
+
+function makeIndexBuildService(): IndexBuildService {
+  return new IndexBuildService(makeIndexConnectionService());
+}
+
+function makeSearchService(): SearchService {
+  const connectionService = makeIndexConnectionService();
+  return new SearchService(
+    connectionService,
+    new FtsQueryBuilder(new TokenizerParser()),
+    new Ranker(),
+    new LinkGraphService(connectionService),
+  );
+}
+
+function makeNoteListService(): NoteListService {
+  return new NoteListService(makeIndexConnectionService());
+}
+
+/** Backed by `retrieval`, constructed here rather than inside `workspace` itself,
+ * which would close a cycle (retrieval depends on workspace for target resolution). */
 function makeWorkspaceIndexBuilder(container: Container): WorkspaceIndexBuilder {
   return {
     buildIndex: async (workspace) =>
-      (await new IndexBuildService().build(container, workspace)).total,
+      (await makeIndexBuildService().build(container, workspace)).total,
     noteCount: async (workspace) => {
-      const { db } = await new IndexConnectionService().open(container, workspace);
+      const { db } = await makeIndexConnectionService().open(container, workspace);
       const row = db.query<{ readonly "COUNT(*)": number }>(
         "SELECT COUNT(*) FROM notes",
         [],
@@ -85,19 +123,9 @@ function makeResolveCommand(container: Container): ResolveCommand {
   );
 }
 
-/**
- * Dispatch a successfully-parsed `ParsedArgs` to its command class and
- * return the resulting `CliOutcome`. Exhaustive over `CliCommand` so adding a
- * subcommand without wiring it here is a compile error (the switch already
- * covers every member, so a missing case fails to type-check).
- *
- * `Install`/`Uninstall`/`Hook` deliberately ignore the `container` argument and
- * act on the real machine: the first two exist to modify this user's Claude Code
- * setup, and a hook is spawned by Claude Code itself, so its environment is the
- * real `process.env` and nothing else. Consequently these three cannot be
- * called in-process from a test — see the root `CLAUDE.md`. Every other command
- * is built from the container and config threaded through `runCli`.
- */
+/** Exhaustive over `CliCommand`, so a missing subcommand is a compile error.
+ * `Install`/`Uninstall`/`Hook` ignore `container` and act on the real machine (see
+ * the root `CLAUDE.md`'s Traps). */
 async function dispatch(
   container: Container,
   config: Config,
@@ -113,44 +141,54 @@ async function dispatch(
     case CliCommand.Resolve:
       return makeResolveCommand(container).execute(parsed);
     case CliCommand.Reindex:
-      return new ReindexCommand().execute(container, parsed);
+      return new ReindexCommand(makeIndexBuildService(), new ReindexFormatter()).execute(
+        container,
+        parsed,
+      );
     case CliCommand.Search:
-      return new SearchCommand().execute(container, config, parsed);
+      return new SearchCommand(makeSearchService(), new SearchFormatter()).execute(
+        container,
+        config,
+        parsed,
+      );
     case CliCommand.Notes:
-      return new NotesCommand().execute(container, parsed);
+      return new NotesCommand(makeNoteListService(), new NotesFormatter()).execute(
+        container,
+        parsed,
+      );
     case CliCommand.Commit:
       return new CommitCommand(
         container.fs,
         container.proc,
         container.env,
         container.stdio,
+        container.git,
+        new CommitFormatter(),
       ).execute(parsed);
     case CliCommand.Doctor:
-      return new DoctorCommand(container).execute(parsed);
+      return new DoctorCommand(
+        container,
+        new DoctorService(container, makeIndexBuildService()),
+        new DoctorFormatter(),
+      ).execute(parsed);
     case CliCommand.Hook:
       return new HookDispatchCommand(
         new AppContainer(process.env),
         new ConfigParser().parse(process.env),
       ).execute(parsed);
     case CliCommand.Install:
-      return new InstallCommand().execute(parsed);
+      return new InstallCommand(new AppContainer(process.env)).execute(parsed);
     case CliCommand.Uninstall:
-      return new UninstallCommand().execute();
+      return new UninstallCommand(new AppContainer(process.env)).execute();
     case CliCommand.Help:
     case CliCommand.Version:
-      return new HelpCommand(container.stdio).execute(parsed);
+      return new HelpCommand(container.stdio, new HelpFormatter()).execute(parsed);
   }
 }
 
-/**
- * Build the real `Container`, parse `argv`, dispatch, map the result to a
- * `CliOutcome`. Kept as an exported, container-injected function (rather than
- * living inside the `import.meta.main` guard) so it's testable in-process
- * with a fake `Container` — the guard below only does the two things that
- * genuinely need the real process: reading `process.argv`/`process.env`, and
- * writing to real stderr (`Stdio` has no stderr method — see `CliOutcome`'s
- * doc comment).
- */
+/** Kept outside the `import.meta.main` guard so it's testable in-process with a
+ * fake `Container`; the guard below only reads the real `process.argv`/`process.env`
+ * and writes real stderr (`Stdio` has no stderr method). */
 export async function runCli(
   argv: readonly string[],
   container: Container,
@@ -161,9 +199,6 @@ export async function runCli(
   return dispatch(container, config, parsed.value);
 }
 
-// No work at import time — everything below only runs when this module IS
-// the entrypoint; a plain import of this module (as a test does to reach
-// `runCli`) never triggers it.
 if (import.meta.main) {
   const envSnapshot = process.env;
   const container = new AppContainer(envSnapshot);

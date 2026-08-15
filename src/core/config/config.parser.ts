@@ -21,11 +21,8 @@ import {
 
 /** Parses an env snapshot into a typed `Config`, applying every default. */
 export class ConfigParser {
-  /**
-   * A malformed numeric env var falls back to its default rather than propagating
-   * a parse failure — a bad tunable must never crash a hook, since hooks must
-   * always fail open.
-   */
+  /** A malformed numeric env var falls back to its default rather than propagating
+   * a parse failure — a bad tunable must never crash a hook. */
   private parseNumber(raw: string | undefined, fallback: number): number {
     if (raw === undefined) return fallback;
     const parsed = Number.parseFloat(raw);
@@ -45,7 +42,6 @@ export class ConfigParser {
     }
   }
 
-  /** Build a `Config` from an env snapshot, applying every default. */
   parse(env: EnvSnapshot): Config {
     return {
       injectMinScore: this.parseNumber(

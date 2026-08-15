@@ -1,15 +1,20 @@
-import type { ReindexArgs } from "@/cli/index.ts";
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
 import { ReindexFormatter } from "@/retrieval/commands/reindex/reindex.formatter.ts";
-import { IndexBuildService } from "@/retrieval/store/index.ts";
-import { loadRegistryForCli, resolveTargetWorkspaces } from "@/workspace/index.ts";
+import type { ReindexArgs } from "@/retrieval/commands/reindex/reindex.typedefs.ts";
+import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
+import {
+  RegistryService,
+  RegistryTomlSerializer,
+  TargetResolutionService,
+  WorkspaceResolverService,
+} from "@/workspace/index.ts";
 
 export class ReindexCommand {
   constructor(
-    private readonly indexBuildService: IndexBuildService = new IndexBuildService(),
-    private readonly formatter: ReindexFormatter = new ReindexFormatter(),
+    private readonly indexBuildService: IndexBuildService,
+    private readonly formatter: ReindexFormatter,
   ) {}
 
   /** One line per target workspace, printed in registry order (`Promise.all`
@@ -17,10 +22,23 @@ export class ReindexCommand {
    * concurrently). */
   async execute(container: Container, args: ReindexArgs): Promise<CliOutcome> {
     const home = container.env.home();
-    const registryResult = await loadRegistryForCli(container.fs, home);
+    const registryService = new RegistryService(
+      container.fs,
+      new RegistryTomlSerializer(),
+    );
+    const resolverService = new WorkspaceResolverService(registryService, container.git);
+    const targetResolutionService = new TargetResolutionService(
+      registryService,
+      resolverService,
+    );
+    const registryResult = await targetResolutionService.loadRegistryForCli(home);
     if (!registryResult.ok) return registryResult.error;
 
-    const targets = resolveTargetWorkspaces(registryResult.value, home, args.workspace);
+    const targets = targetResolutionService.resolveTargetWorkspaces(
+      registryResult.value,
+      home,
+      args.workspace,
+    );
     if (!targets.ok) return cliFailure(targets.error);
 
     const lines = await Promise.all(

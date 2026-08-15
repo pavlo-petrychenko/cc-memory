@@ -37,12 +37,11 @@ function shimPathFor(container: Container): AbsPath {
 
 /**
  * `InstallService.install` seeds `registry.toml` from
- * `<repoRoot>/registry.example.toml` when absent (`seed.service.ts`) —
- * under `bun test` (unbundled), `InstallCommand`'s `repoRootFromRunningFile()`
- * resolves to a path with no such example file at all (see that function's
- * doc comment: it is only correct for the BUNDLED artifact). Pre-seeding a
- * registry here takes that codepath's "already exists, left as-is" branch
- * instead, matching what a real second install run looks like anyway.
+ * `<repoRoot>/registry.example.toml` when absent (`seed.service.ts`) — the
+ * fake container's `env.repoRoot()` is a fixed fake path with no such example
+ * file preseeded in the fake filesystem. Pre-seeding a registry here takes
+ * that codepath's "already exists, left as-is" branch instead, matching what
+ * a real second install run looks like anyway.
  */
 async function seedExistingRegistry(container: Container): Promise<void> {
   await container.fs.writeFile(defaultRegistryPath(container.env.home()), "");

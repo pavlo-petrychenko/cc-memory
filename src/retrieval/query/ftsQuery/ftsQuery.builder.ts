@@ -3,19 +3,13 @@ import {
   MAX_QUERY_TOKENS,
   PHRASE_WINDOW,
 } from "@/retrieval/query/ftsQuery/ftsQuery.constants.ts";
-import { TokenizerParser } from "@/retrieval/query/tokenizer/index.ts";
+import { TokenizerParser } from "@/retrieval/query/tokenizer/tokenizer.parser.ts";
 
 export class FtsQueryBuilder {
-  constructor(
-    private readonly tokenizerParser: TokenizerParser = new TokenizerParser(),
-  ) {}
+  constructor(private readonly tokenizerParser: TokenizerParser) {}
 
-  /**
-   * Build a safe FTS5 MATCH query: an OR over up to 32 sorted, quoted salient
-   * tokens. `text` is always natural prompt text run through this — never raw
-   * FTS5 syntax — so a prompt containing `OR`/`AND`/`NEAR`/quotes is safe and
-   * never errors.
-   */
+  /** Always natural prompt text, never raw FTS5 syntax, so quotes/`OR`/`AND`/`NEAR`
+   * in the prompt are always safe. */
   ftsQuery(text: string): string {
     const tokens = [...this.tokenizerParser.salientTokens(text)].toSorted();
     return tokens
@@ -24,12 +18,8 @@ export class FtsQueryBuilder {
       .join(" OR ");
   }
 
-  /**
-   * FTS5 `NEAR` clauses over adjacent salient-term pairs, OR'd together.
-   * Rewards proximity (salient tokens appearing as a phrase, not just both
-   * words somewhere). Empty string when there are fewer than two ordered
-   * terms — phrase ranking then degrades to pure BM25.
-   */
+  /** FTS5 `NEAR` clauses over adjacent salient-term pairs, OR'd together. Empty
+   * string when there are fewer than two ordered terms. */
   phraseQuery(text: string, window: number = PHRASE_WINDOW): string {
     const terms = this.tokenizerParser.orderedTerms(text);
     const seen = new Set<string>();

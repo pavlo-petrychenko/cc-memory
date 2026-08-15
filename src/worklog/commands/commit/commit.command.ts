@@ -1,25 +1,30 @@
-import type { CommitArgs } from "@/cli/index.ts";
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { AbsPath, CliOutcome } from "@/core/index.ts";
-import type { Env, FileSystem, Proc, Stdio } from "@/platform/index.ts";
+import { joinAbs } from "@/core/index.ts";
+import type { Env, FileSystem, Git, Proc, Stdio } from "@/platform/index.ts";
 import {
   DEFAULT_COMMIT_MESSAGE,
   GIT_TIMEOUT_MS,
 } from "@/worklog/commands/commit/commit.constants.ts";
 import { CommitFormatter } from "@/worklog/commands/commit/commit.formatter.ts";
-import { loadRegistryForCli, resolveTargetWorkspaces } from "@/workspace/index.ts";
+import type { CommitArgs } from "@/worklog/commands/commit/commit.typedefs.ts";
+import {
+  RegistryService,
+  RegistryTomlSerializer,
+  TargetResolutionService,
+  WorkspaceResolverService,
+} from "@/workspace/index.ts";
 
-/** Manual, local-only snapshot; never pushes. Unlike `worklogStore.service.ts`'s
- * `commitWorklogs`, this stages the whole kb repo via `git add -A`, so it goes
- * straight through `Proc` rather than the narrower `Git.add`/`Git.commit` port
- * methods. */
+/** Manual, local-only snapshot; never pushes. Stages the whole kb repo via
+ * `git add -A`, straight through `Proc` rather than `Git.add`/`Git.commit`. */
 export class CommitCommand {
   constructor(
     private readonly fs: FileSystem,
     private readonly proc: Proc,
     private readonly env: Env,
     private readonly stdio: Stdio,
-    private readonly formatter: CommitFormatter = new CommitFormatter(),
+    private readonly git: Git,
+    private readonly formatter: CommitFormatter,
   ) {}
 
   private async isGitRepoDir(path: AbsPath): Promise<boolean> {
@@ -30,15 +35,11 @@ export class CommitCommand {
     }
   }
 
-  /** One workspace's commit step, run to completion before the next — `git add`
-   * and `git commit` in the same repo must run sequentially. */
   private async commitOne(
     workspace: { readonly id: string; readonly kb: AbsPath },
     message: string,
   ): Promise<string> {
-    // SAFETY: `.git` is a fixed literal segment appended to an already-absolute,
-    // normalized `AbsPath`.
-    const gitDirPath = `${workspace.kb}/.git` as AbsPath;
+    const gitDirPath = joinAbs(workspace.kb, ".git");
     if (!(await this.isGitRepoDir(gitDirPath))) {
       return this.formatter.commitSkipped(workspace.id);
     }
@@ -55,16 +56,25 @@ export class CommitCommand {
 
   async execute(args: CommitArgs): Promise<CliOutcome> {
     const home = this.env.home();
-    const registryResult = await loadRegistryForCli(this.fs, home);
+    const registryService = new RegistryService(this.fs, new RegistryTomlSerializer());
+    const resolverService = new WorkspaceResolverService(registryService, this.git);
+    const targetResolutionService = new TargetResolutionService(
+      registryService,
+      resolverService,
+    );
+    const registryResult = await targetResolutionService.loadRegistryForCli(home);
     if (!registryResult.ok) return registryResult.error;
 
-    const targets = resolveTargetWorkspaces(registryResult.value, home, args.workspace);
+    const targets = targetResolutionService.resolveTargetWorkspaces(
+      registryResult.value,
+      home,
+      args.workspace,
+    );
     if (!targets.ok) return cliFailure(targets.error);
 
     const message = args.message ?? DEFAULT_COMMIT_MESSAGE;
     for (const workspace of targets.value) {
-      // Deliberately sequential (not `Promise.all`): two commits landing in the
-      // same kb repo at once would race `git add -A`/`git commit`.
+      // Deliberately sequential: two commits in the same kb repo at once would race.
       // eslint-disable-next-line no-await-in-loop
       const line = await this.commitOne(workspace, message);
       this.stdio.write(line);

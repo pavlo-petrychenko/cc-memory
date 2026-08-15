@@ -7,13 +7,8 @@ export type ClockFake = Clock & {
   readonly setTimeHHMM: (value: string) => void;
 };
 
-/**
- * A `Clock` a test fully controls — `today`/`timeHHMM` are settable
- * independently of `nowMs` (rather than derived from it) so a test doesn't
- * have to fight the host machine's timezone to get a deterministic date/time
- * string; `nowMs` is what incremental-index tests advance to make a note
- * "newer" than its indexed mtime.
- */
+/** A `Clock` a test fully controls — `today`/`timeHHMM` are settable independently
+ * of `nowMs` so a test doesn't have to fight the host machine's timezone. */
 export function makeClockFake(
   initialNowMs = 0,
   initialToday = "2026-01-01",

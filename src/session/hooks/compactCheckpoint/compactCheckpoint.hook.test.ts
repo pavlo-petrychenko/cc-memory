@@ -12,7 +12,8 @@ import { HookRuntimeService } from "@/session/runtime/runtime.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
-import { saveRegistry } from "@/workspace/index.ts";
+import { WorklogStoreService } from "@/worklog/index.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 /**
  * `PostCompact`: persist the compaction summary into today's dated journal —
@@ -49,7 +50,9 @@ async function makeFixture(): Promise<Fixture> {
   const io = makeIoFake();
   const fs = makeFsMemoryFake();
   const container = makeTestContainer({ stdio: io, fs });
-  await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+  await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+    PRIMARY,
+  ]);
   return { io, fs, container };
 }
 
@@ -64,7 +67,11 @@ async function runCompactCheckpoint(fixture: Fixture, stdin: string): Promise<vo
   await hookRuntimeService.run(
     "compact-checkpoint",
     (record) => payloadParser.parseCompactCheckpoint(record),
-    new CompactCheckpointHook(fixture.container, new CompactCheckpointFormatter()),
+    new CompactCheckpointHook(
+      fixture.container,
+      new CompactCheckpointFormatter(),
+      new WorklogStoreService(fixture.container.fs, fixture.container.git),
+    ),
   );
 }
 
