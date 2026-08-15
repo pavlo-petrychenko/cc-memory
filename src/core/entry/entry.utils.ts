@@ -10,6 +10,7 @@ import type {
   CommandDescriptor,
   CommandResult,
   RegisteredCommand,
+  RunContext,
 } from "@/core/entry/entry.typedefs.ts";
 
 /** A failure message printed to stderr, exiting 1 by default. */
@@ -42,7 +43,7 @@ export function registerCommand<TOptions>(command: Command<TOptions>): Registere
 
   return {
     spec,
-    invoke(tokens: readonly string[]): Promise<CommandResult> {
+    invoke(tokens: readonly string[], context: RunContext): Promise<CommandResult> {
       const parsed = command.parse(tokens);
       if (!parsed.ok) {
         return Promise.resolve({
@@ -51,7 +52,7 @@ export function registerCommand<TOptions>(command: Command<TOptions>): Registere
           stderrMessage: parsed.error.message,
         });
       }
-      return command.run(parsed.value);
+      return command.run(parsed.value, context);
     },
   };
 }

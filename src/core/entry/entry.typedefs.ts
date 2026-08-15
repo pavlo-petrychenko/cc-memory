@@ -1,4 +1,14 @@
+import type { Config } from "@/core/config/config.typedefs.ts";
+import type { AbsPath } from "@/core/core.typedefs.ts";
 import type { Result } from "@/core/core.typedefs.ts";
+
+/** The ambient process context the runner resolves once and hands to every
+ * command's `run` — the command itself never reads `env`/`cwd`/config. */
+export type RunContext = {
+  readonly home: AbsPath;
+  readonly cwd: AbsPath;
+  readonly config: Config;
+};
 
 /** A command's result, before the runner maps it to process exit: the lines to
  * write on stdout, plus the exit code and optional stderr message. */
@@ -69,7 +79,7 @@ export type EnvVarDescriptor = {
  * exit codes. */
 export interface Command<TOptions> {
   parse(tokens: readonly string[]): Result<TOptions, ArgsError>;
-  run(options: TOptions): Promise<CommandResult>;
+  run(options: TOptions, context: RunContext): Promise<CommandResult>;
 }
 
 /** The type-erased registry entry: `invoke` parses with the command's own
@@ -77,7 +87,10 @@ export interface Command<TOptions> {
  * one array with no type assertion. */
 export type RegisteredCommand = {
   readonly spec: CommandDescriptor;
-  readonly invoke: (tokens: readonly string[]) => Promise<CommandResult>;
+  readonly invoke: (
+    tokens: readonly string[],
+    context: RunContext,
+  ) => Promise<CommandResult>;
 };
 
 /** The constructor shape `@Command` accepts: any class implementing `Command`. */

@@ -46,6 +46,7 @@ export type {
   EnvVarDescriptor,
   HookDescriptor,
   RegisteredCommand,
+  RunContext,
 } from "@/core/entry/entry.typedefs.ts";
 export { CliCommand } from "@/core/entry/entry.typedefs.ts";
 export { Command } from "@/core/entry/command.decorator.ts";

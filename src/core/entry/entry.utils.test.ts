@@ -6,6 +6,7 @@ import type {
   Command as CommandContract,
   CommandDescriptor,
   CommandResult,
+  RunContext,
 } from "@/core/entry/entry.typedefs.ts";
 import {
   cliFailure,
@@ -17,6 +18,8 @@ import {
   requirePositional,
   variadicValues,
 } from "@/core/entry/entry.utils.ts";
+import { LogLevel } from "@/core/index.ts";
+import { absPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 
 test("cliFailure defaults to exit code 1 and cliOutcome is explicit", () => {
@@ -49,6 +52,20 @@ test("requirePositional takes the first token or reports the missing name", () =
   });
 });
 
+const CONTEXT: RunContext = {
+  home: absPath("/home"),
+  cwd: absPath("/cwd"),
+  config: {
+    injectMinScore: 0.2,
+    linkBoost: 0.003,
+    injectLogEnabled: true,
+    blockAfter: 2,
+    blockDrift: 5,
+    gateDisabled: false,
+    logLevel: LogLevel.Warn,
+  },
+};
+
 const SPEC: CommandDescriptor = {
   path: ["ping"],
   usage: ["ping"],
@@ -64,7 +81,7 @@ class PingCommand implements CommandContract<PingOptions> {
     return { ok: true, value: { loud: tokens.includes("--loud") } };
   }
 
-  async run(options: PingOptions): Promise<CommandResult> {
+  async run(options: PingOptions, _context: RunContext): Promise<CommandResult> {
     return {
       lines: [options.loud ? "PONG!" : "pong"],
       exitCode: 0,
@@ -76,5 +93,5 @@ class PingCommand implements CommandContract<PingOptions> {
 test("registerCommand wraps a command without a type assertion at the call site", async () => {
   const registered = registerCommand(new PingCommand());
   expect(registered.spec).toBe(SPEC);
-  expect((await registered.invoke(["--loud"])).lines).toEqual(["PONG!"]);
+  expect((await registered.invoke(["--loud"], CONTEXT)).lines).toEqual(["PONG!"]);
 });
