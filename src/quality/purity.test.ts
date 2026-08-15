@@ -20,7 +20,19 @@ import { Glob } from "bun";
  * tell whether `tokenize.ts` or `build.service.ts` can hit a disk without opening
  * either one.
  */
-const IMPURE_SUFFIXES = [".service.ts", ".command.ts", ".hook.ts", ".adapter.ts"];
+const IMPURE_SUFFIXES = [
+  ".service.ts",
+  ".command.ts",
+  ".hook.ts",
+  ".adapter.ts",
+  ".repository.ts",
+  ".projection.ts",
+  ".query.ts",
+  ".runner.ts",
+  ".wiring.ts",
+  ".container.ts",
+  ".fake.ts",
+];
 
 /** `gateways/` IS the outside world; its container wires the real adapters up. */
 const EXEMPT_PREFIXES = ["gateways/"];

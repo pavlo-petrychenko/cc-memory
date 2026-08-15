@@ -1,4 +1,6 @@
 export type { JournalEntry, WorktreeState } from "@/modules/worklog/worklog.entity.ts";
+export { WorklogProjection } from "@/modules/worklog/projection/worklog.projection.ts";
+export { WorklogQuery } from "@/modules/worklog/projection/worklog.query.ts";
 export { CommitCommand } from "@/modules/worklog/commands/commit/commit.command.ts";
 export { CommitFormatter } from "@/modules/worklog/commands/commit/commit.formatter.ts";
 export { WorklogFloorFormatter } from "@/modules/worklog/formatters/worklogFloor/worklogFloor.formatter.ts";

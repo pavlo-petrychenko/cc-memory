@@ -1,4 +1,6 @@
 export { Collection } from "@/gateways/searchIndex/searchIndex.typedefs.ts";
+export { SearchIndexAdapter } from "@/gateways/searchIndex/searchIndex.adapter.ts";
+export { SearchIndexFake } from "@/gateways/searchIndex/searchIndex.fake.ts";
 export type {
   ColumnWeights,
   IndexDocument,
