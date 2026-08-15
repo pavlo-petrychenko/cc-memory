@@ -7,13 +7,7 @@ import type { JsonRecord } from "@/modules/session/payload/payload.typedefs.ts";
 import type { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
 import type { HookHandler } from "@/modules/session/runtime/runtime.typedefs.ts";
 import { type HookResult, HookResultKind } from "@/modules/session/session.typedefs.ts";
-import {
-  defaultRegistryPath,
-  loadRegistry,
-  RegistryService,
-  RegistryTomlSerializer,
-  WorkspaceResolverService,
-} from "@/modules/workspace/index.ts";
+import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
 
 /** The shared preamble/postamble every hook needs: resolve exactly one workspace
  * for the cwd or go silent, run the handler, and — no matter what happens — exit 0,
@@ -34,24 +28,17 @@ export class HookRuntimeService {
    * CLI, which reports a `RegistryError` to the caller instead. */
   private async resolveWorkspaceForHook(cwd: AbsPath): Promise<Workspace | null> {
     const home = this.container.env.home();
-    const registryResult = await loadRegistry(
+    const { repository, resolverService } = makeWorkspaceContext(
       this.container.fs,
-      defaultRegistryPath(home),
+      this.container.git,
     );
+    const registryResult = await repository.load(repository.defaultPath(home));
     if (!registryResult.ok) {
       this.container.logger.error(
         `hook: registry load failed (${registryResult.error.kind}): ${registryResult.error.message}`,
       );
       return null;
     }
-    const registryService = new RegistryService(
-      this.container.fs,
-      new RegistryTomlSerializer(),
-    );
-    const resolverService = new WorkspaceResolverService(
-      registryService,
-      this.container.git,
-    );
     return resolverService.resolveWorkspace(registryResult.value, cwd, home);
   }
 

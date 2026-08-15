@@ -24,7 +24,11 @@ export class CompactCheckpointHook implements HookHandler<CompactCheckpointPaylo
     if (summary === "") return { kind: HookResultKind.Silent };
 
     const { workspace, cwd, trigger } = payload;
-    const slug = await worktreeSlug(this.container.git, cwd, workspace);
+    const slug = worktreeSlug(
+      (await this.container.git.showToplevel(cwd)).trim(),
+      cwd,
+      workspace,
+    );
     const date = this.container.clock.today();
     const block = this.formatter.formatCompactBlock({ trigger, summary });
 

@@ -5,12 +5,7 @@ import type { Gateways } from "@/gateways/index.ts";
 import type { NotesArgs } from "@/modules/note/commands/notes.typedefs.ts";
 import { ListNotesUseCase } from "@/modules/note/index.ts";
 import { NotesFormatter } from "@/modules/note/services/notes.formatter.ts";
-import {
-  RegistryService,
-  RegistryTomlSerializer,
-  TargetResolutionService,
-  WorkspaceResolverService,
-} from "@/modules/workspace/index.ts";
+import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
 
 /** An explicit empty `--folder ""` behaves like omitting the flag entirely. */
 function normalizedFolder(folder: string | null): string | null {
@@ -27,17 +22,14 @@ export class NotesCommand {
    * result still prints `[]` rather than the plain-text "no notes" message. */
   async execute(container: Gateways, args: NotesArgs): Promise<CliOutcome> {
     const home = container.env.home();
-    const registryService = new RegistryService(
+    const { repository, targetResolutionService } = makeWorkspaceContext(
       container.fs,
-      new RegistryTomlSerializer(),
+      container.git,
     );
-    const resolverService = new WorkspaceResolverService(registryService, container.git);
-    const targetResolutionService = new TargetResolutionService(
-      registryService,
-      resolverService,
-    );
-    const registryResult = await targetResolutionService.loadRegistryForCli(home);
-    if (!registryResult.ok) return registryResult.error;
+    const registryResult = await repository.load(repository.defaultPath(home));
+    if (!registryResult.ok) {
+      return cliFailure(`registry error: ${registryResult.error.message}`);
+    }
 
     const cwd = args.cwd !== null ? expandPath(args.cwd, home) : container.env.cwd();
     const resolved = targetResolutionService.resolveWorkspaceForCwd(

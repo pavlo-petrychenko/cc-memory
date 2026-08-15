@@ -5,12 +5,7 @@ import type { CliOutcome } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { ReprojectNotesUseCase } from "@/modules/note/index.ts";
 import { ReprojectWorklogUseCase } from "@/modules/worklog/index.ts";
-import {
-  RegistryService,
-  RegistryTomlSerializer,
-  TargetResolutionService,
-  WorkspaceResolverService,
-} from "@/modules/workspace/index.ts";
+import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
 
 export class ReindexCommand {
   constructor(
@@ -24,17 +19,14 @@ export class ReindexCommand {
    * concurrently). */
   async execute(container: Gateways, args: ReindexArgs): Promise<CliOutcome> {
     const home = container.env.home();
-    const registryService = new RegistryService(
+    const { repository, targetResolutionService } = makeWorkspaceContext(
       container.fs,
-      new RegistryTomlSerializer(),
+      container.git,
     );
-    const resolverService = new WorkspaceResolverService(registryService, container.git);
-    const targetResolutionService = new TargetResolutionService(
-      registryService,
-      resolverService,
-    );
-    const registryResult = await targetResolutionService.loadRegistryForCli(home);
-    if (!registryResult.ok) return registryResult.error;
+    const registryResult = await repository.load(repository.defaultPath(home));
+    if (!registryResult.ok) {
+      return cliFailure(`registry error: ${registryResult.error.message}`);
+    }
 
     const targets = targetResolutionService.resolveTargetWorkspaces(
       registryResult.value,

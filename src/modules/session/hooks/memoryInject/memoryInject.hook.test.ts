@@ -12,11 +12,7 @@ import { MemoryInjectHook } from "@/modules/session/hooks/memoryInject/memoryInj
 import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
 import { HookRuntimeService } from "@/modules/session/runtime/runtime.service.ts";
-import {
-  expandWorkspace,
-  RegistryService,
-  RegistryTomlSerializer,
-} from "@/modules/workspace/index.ts";
+import { expandWorkspace } from "@/modules/workspace/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import {
@@ -25,6 +21,7 @@ import {
   makeWorklogModule,
 } from "@/testing/fixtures/retrievalModules.fixture.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 /**
  * `UserPromptSubmit`: gates in order (prompt length, salient-token count,
@@ -98,10 +95,7 @@ async function seedIndexedWorkspace(fixture: Fixture): Promise<void> {
     "/home/test/vault-primary/Fast Vehicle.md" as AbsPath,
     "---\ntype: note\n---\n# Fast Vehicle\nThe red car is very fast.\n",
   );
-  await new RegistryService(fixture.fs, new RegistryTomlSerializer()).save(
-    REGISTRY_PATH,
-    [PRIMARY],
-  );
+  await makeWorkspaceRepository(fixture.fs).save(REGISTRY_PATH, [PRIMARY]);
   await note.reprojectNotes.run(expandWorkspace(PRIMARY, HOME), { incremental: false });
   await worklog.reprojectWorklog.run(expandWorkspace(PRIMARY, HOME));
 }
@@ -238,10 +232,7 @@ describe("UserPromptSubmit (memory-inject) hook", () => {
       // fails to open rather than a faked port.
       indexDb: "/definitely-not-a-real-directory-for-this-test/index.db",
     };
-    await new RegistryService(fixture.fs, new RegistryTomlSerializer()).save(
-      REGISTRY_PATH,
-      [brokenWorkspace],
-    );
+    await makeWorkspaceRepository(fixture.fs).save(REGISTRY_PATH, [brokenWorkspace]);
 
     await runMemoryInject(
       fixture,

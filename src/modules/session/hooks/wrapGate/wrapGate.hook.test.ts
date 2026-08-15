@@ -12,12 +12,12 @@ import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
 import { HookRuntimeService } from "@/modules/session/runtime/runtime.service.ts";
 import { WorklogStoreService } from "@/modules/worklog/index.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { type ClockFake, makeClockFake } from "@/testing/fakes/clockFixed.fake.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type GitFake, makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 /**
  * `Stop`: the dirty-tree signature, the nudge->block escalation, and one
@@ -64,9 +64,7 @@ async function makeFixture(): Promise<Fixture> {
   const git = makeGitFake();
   const clock = makeClockFake();
   const container = makeTestGateways({ stdio: io, fs, git, clock });
-  await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-    PRIMARY,
-  ]);
+  await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
   return { io, fs, git, clock, container };
 }
 

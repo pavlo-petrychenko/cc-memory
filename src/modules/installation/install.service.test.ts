@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
+import { registryPath } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { InstallService } from "@/modules/installation/install.service.ts";
 import { InstallErrorKind } from "@/modules/installation/install.typedefs.ts";
@@ -9,7 +10,6 @@ import { SettingsService } from "@/modules/installation/steps/settings/settings.
 import { ShimService } from "@/modules/installation/steps/shim/shim.service.ts";
 import { SkillsService } from "@/modules/installation/steps/skills/skills.service.ts";
 import { HookEvent } from "@/modules/session/index.ts";
-import { defaultRegistryPath } from "@/modules/workspace/index.ts";
 import { makeProcFake, type ProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 
@@ -53,7 +53,7 @@ async function setUpBunResolution(container: Gateways, proc: ProcFake): Promise<
     result: { stdout: `${REAL_BUN_PATH}\n`, stderr: "", exitCode: 0 },
   });
   await container.fs.writeFile(REAL_BUN_PATH, "");
-  await container.fs.writeFile(defaultRegistryPath(container.env.home()), "");
+  await container.fs.writeFile(registryPath(container.env.home()), "");
 }
 
 /** A full, real install run against `fs`/`env` already seeded on `base` —

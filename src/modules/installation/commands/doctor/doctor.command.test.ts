@@ -8,7 +8,6 @@ import type { Gateways } from "@/gateways/index.ts";
 import { DoctorCommand } from "@/modules/installation/commands/doctor/doctor.command.ts";
 import { DoctorFormatter } from "@/modules/installation/doctor/doctor.formatter.ts";
 import { DoctorService } from "@/modules/installation/doctor/doctor.service.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import {
   makeNoteModule,
@@ -16,6 +15,7 @@ import {
   makeWorklogModule,
 } from "@/testing/fixtures/retrievalModules.fixture.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 // SAFETY: a fixed test fixture, matching tests/helpers/container.ts's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
@@ -70,10 +70,7 @@ describe("DoctorCommand (real diagnostics, replacing the exit-0 hook smoke test)
   test("a populated registry reports '(ok)' and the resolved workspace id", async () => {
     const io = makeIoFake();
     const container = makeTestGateways({ stdio: io });
-    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
-      REGISTRY_PATH,
-      [PRIMARY],
-    );
+    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
 
     const outcome = await makeDoctorCommand(container).execute(
       doctorArgs({ cwd: "/repo/primary/wt1" }),
@@ -103,10 +100,7 @@ describe("DoctorCommand (real diagnostics, replacing the exit-0 hook smoke test)
     const worklogsPath = "/vault-primary/_Worklogs" as AbsPath;
     await container.fs.mkdir(kbPath);
     await container.fs.mkdir(worklogsPath);
-    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
-      REGISTRY_PATH,
-      [PRIMARY],
-    );
+    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
 
     await makeDoctorCommand(container).execute(doctorArgs());
 
@@ -119,10 +113,7 @@ describe("DoctorCommand (real diagnostics, replacing the exit-0 hook smoke test)
   test("reports a missing kb/worklogs directory rather than fabricating success", async () => {
     const io = makeIoFake();
     const container = makeTestGateways({ stdio: io });
-    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
-      REGISTRY_PATH,
-      [PRIMARY],
-    );
+    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
     // Neither `/vault-primary` nor its `_Worklogs` was ever created.
 
     await makeDoctorCommand(container).execute(doctorArgs());

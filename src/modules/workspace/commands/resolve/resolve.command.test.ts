@@ -7,12 +7,10 @@ import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { ResolveCommand } from "@/modules/workspace/commands/resolve/resolve.command.ts";
 import { ResolveFormatter } from "@/modules/workspace/commands/resolve/resolve.formatter.ts";
-import { RegistryTomlSerializer } from "@/modules/workspace/serializers/registryToml/registryToml.serializer.ts";
-import { RegistryService } from "@/modules/workspace/services/registry/registry.service.ts";
-import { WorkspaceResolverService } from "@/modules/workspace/services/resolver/resolver.service.ts";
-import { TargetResolutionService } from "@/modules/workspace/targetResolution/targetResolution.service.ts";
+import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
@@ -32,16 +30,14 @@ function resolveArgs(overrides: Partial<ResolveArgs> = {}): ResolveArgs {
 }
 
 function makeResolveCommand(container: Gateways): ResolveCommand {
-  const registryService = new RegistryService(container.fs, new RegistryTomlSerializer());
-  const resolverService = new WorkspaceResolverService(registryService, container.git);
-  const targetResolutionService = new TargetResolutionService(
-    registryService,
-    resolverService,
+  const { repository, resolverService } = makeWorkspaceContext(
+    container.fs,
+    container.git,
   );
   return new ResolveCommand(
     container.env,
     container.stdio,
-    targetResolutionService,
+    repository,
     resolverService,
     new ResolveFormatter(),
   );
@@ -51,10 +47,7 @@ describe("ResolveCommand.execute", () => {
   test("inside a workspace prints the 5 key: value lines", async () => {
     const io = makeIoFake();
     const container = makeTestGateways({ stdio: io });
-    const registryService = new RegistryService(
-      container.fs,
-      new RegistryTomlSerializer(),
-    );
+    const registryService = makeWorkspaceRepository(container.fs);
     await registryService.save(REGISTRY_PATH, [PRIMARY]);
 
     const command = makeResolveCommand(container);
@@ -72,10 +65,7 @@ describe("ResolveCommand.execute", () => {
   test("outside any workspace prints a plain message and still exits 0", async () => {
     const io = makeIoFake();
     const container = makeTestGateways({ stdio: io });
-    const registryService = new RegistryService(
-      container.fs,
-      new RegistryTomlSerializer(),
-    );
+    const registryService = makeWorkspaceRepository(container.fs);
     await registryService.save(REGISTRY_PATH, [PRIMARY]);
 
     const command = makeResolveCommand(container);

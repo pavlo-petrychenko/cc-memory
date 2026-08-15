@@ -1,6 +1,7 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, joinAbs } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
+import { registryPath } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import {
   DIST_RELATIVE_PATH,
@@ -36,7 +37,6 @@ import {
   type JsonObject,
   type JsonValue,
 } from "@/modules/installation/utils/jsonFile/jsonFile.typedefs.ts";
-import { defaultRegistryPath } from "@/modules/workspace/index.ts";
 
 /** `install`/`uninstall`/`--dry-run` orchestration: sequences CLI shim, skills,
  * hooks, and registry seed, in that order. */
@@ -87,7 +87,7 @@ export class InstallService {
       skillsSourceDir: InstallService.defaultSkillsSourceDir(repoRoot),
       skillsTargetDir: SkillsService.defaultTargetDir(home),
       shimPath: ShimService.defaultPath(home),
-      registryPath: defaultRegistryPath(home),
+      registryPath: registryPath(home),
     };
   }
 

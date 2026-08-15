@@ -144,7 +144,11 @@ export class WrapGateHook implements HookHandler<WrapGatePayload> {
     const head = (headRaw === "" ? NO_GIT_HEAD : headRaw).slice(0, HEAD_LENGTH);
     const sig = `${head}:${dirtyCount}`;
 
-    const slug = await worktreeSlug(this.container.git, cwd, workspace);
+    const slug = worktreeSlug(
+      (await this.container.git.showToplevel(cwd)).trim(),
+      cwd,
+      workspace,
+    );
     const state = this.worklogStoreService.statePath(workspace, slug);
     let stateMtimeMs = 0;
     try {

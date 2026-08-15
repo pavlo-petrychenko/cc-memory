@@ -1,24 +1,20 @@
 import type { AbsPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import type { RawWorkspace, Workspace } from "@/core/index.ts";
-import { cliFailure } from "@/core/index.ts";
-import type { CliOutcome } from "@/core/index.ts";
-import type { RegistryService } from "@/modules/workspace/services/registry/registry.service.ts";
-import type { WorkspaceResolverService } from "@/modules/workspace/services/resolver/resolver.service.ts";
-import { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/modules/workspace/targetResolution/targetResolution.constants.ts";
+import { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/modules/workspace/workspace.constants.ts";
+import { WorkspaceResolverService } from "@/modules/workspace/workspace.resolver.service.ts";
+import { WorkspaceValidatorService } from "@/modules/workspace/workspace.validator.service.ts";
 
-export function noSuchWorkspaceMessage(id: string): string {
-  return `no such workspace: ${id}`;
-}
-
+/** Pure target resolution: map a registry + id/cwd to the workspace(s) a command
+ * should act on. No I/O — the registry is loaded by the caller's repository. */
 export class TargetResolutionService {
   constructor(
-    private readonly registryService: RegistryService,
+    private readonly validatorService: WorkspaceValidatorService,
     private readonly resolverService: WorkspaceResolverService,
   ) {}
 
   noSuchWorkspaceMessage(id: string): string {
-    return noSuchWorkspaceMessage(id);
+    return this.validatorService.noSuchWorkspaceMessage(id);
   }
 
   /** `id === null` means the positional `workspace` argument was omitted, and every
@@ -31,12 +27,12 @@ export class TargetResolutionService {
     if (id === null) {
       return {
         ok: true,
-        value: raws.map((raw) => this.registryService.expandWorkspace(raw, home)),
+        value: raws.map((raw) => this.validatorService.expandWorkspace(raw, home)),
       };
     }
-    const found = this.registryService.find(raws, id);
+    const found = this.validatorService.findWorkspace(raws, id);
     if (found === null) return { ok: false, error: this.noSuchWorkspaceMessage(id) };
-    return { ok: true, value: [this.registryService.expandWorkspace(found, home)] };
+    return { ok: true, value: [this.validatorService.expandWorkspace(found, home)] };
   }
 
   /** An explicit `--workspace` id wins outright; otherwise falls back to
@@ -48,23 +44,14 @@ export class TargetResolutionService {
     explicitId: string | null,
   ): Result<Workspace, string> {
     if (explicitId !== null) {
-      const found = this.registryService.find(raws, explicitId);
+      const found = this.validatorService.findWorkspace(raws, explicitId);
       if (found === null) {
         return { ok: false, error: this.noSuchWorkspaceMessage(explicitId) };
       }
-      return { ok: true, value: this.registryService.expandWorkspace(found, home) };
+      return { ok: true, value: this.validatorService.expandWorkspace(found, home) };
     }
     const resolved = this.resolverService.resolveWorkspace(raws, cwd, home);
     if (resolved === null) return { ok: false, error: NO_WORKSPACE_FOR_CWD_MESSAGE };
     return { ok: true, value: resolved };
-  }
-
-  async loadRegistryForCli(
-    home: AbsPath,
-  ): Promise<Result<readonly RawWorkspace[], CliOutcome>> {
-    const registryPath = this.registryService.defaultPath(home);
-    const result = await this.registryService.load(registryPath);
-    if (result.ok) return result;
-    return { ok: false, error: cliFailure(`registry error: ${result.error.message}`) };
   }
 }

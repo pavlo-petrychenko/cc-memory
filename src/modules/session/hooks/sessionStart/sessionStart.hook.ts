@@ -40,7 +40,11 @@ export class SessionStartHook implements HookHandler<SessionStartPayload> {
       // reindex failures are swallowed: a stale index beats a broken SessionStart.
     }
 
-    const slug = await worktreeSlug(this.container.git, cwd, workspace);
+    const slug = worktreeSlug(
+      (await this.container.git.showToplevel(cwd)).trim(),
+      cwd,
+      workspace,
+    );
     const kbMapInput = await this.buildKbMap.run(workspace, this.container.env.home());
     const kbMapText = kbMapInput === null ? "" : this.kbMapFormatter.format(kbMapInput);
 

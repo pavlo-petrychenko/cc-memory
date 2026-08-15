@@ -1,5 +1,5 @@
 import type { RawWorkspace } from "@/core/index.ts";
-import { REGISTRY_HEADER } from "@/modules/workspace/serializers/registryToml/registryToml.constants.ts";
+import { REGISTRY_HEADER } from "@/modules/workspace/workspace.constants.ts";
 
 /** Escapes backslashes then double quotes, nothing else — a control character in
  * a path would produce invalid TOML, but paths never contain one in practice. */
@@ -16,7 +16,7 @@ function quotedArray(items: readonly string[]): string {
  * and rewritten in place on every `memory workspace add|rm`, so its exact
  * formatting must stay stable — a stringifier's own choices would show up as
  * spurious churn in the user's registry. `smol-toml` is still used for reading. */
-export class RegistryTomlSerializer {
+export class WorkspaceSerializer {
   serialize(workspaces: readonly RawWorkspace[]): string {
     if (workspaces.length === 0) return REGISTRY_HEADER;
 

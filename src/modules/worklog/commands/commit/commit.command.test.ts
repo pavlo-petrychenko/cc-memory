@@ -6,11 +6,11 @@ import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import { CommitCommand } from "@/modules/worklog/commands/commit/commit.command.ts";
 import { CommitFormatter } from "@/modules/worklog/commands/commit/commit.formatter.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
@@ -33,10 +33,7 @@ describe("CommitCommand.execute", () => {
   test("a kb with no .git directory is skipped", async () => {
     const io = makeIoFake();
     const container = makeTestGateways({ stdio: io });
-    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
-      REGISTRY_PATH,
-      [PRIMARY],
-    );
+    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
     const command = new CommitCommand(
       container.fs,
       container.proc,
@@ -56,10 +53,7 @@ describe("CommitCommand.execute", () => {
     const proc = makeProcFake();
     const fs = makeFsMemoryFake();
     const container = makeTestGateways({ stdio: io, proc, fs });
-    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
-      REGISTRY_PATH,
-      [PRIMARY],
-    );
+    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
     // SAFETY: a fixed literal directory segment under a hard-coded test fixture path.
     fs.seedDir("/vault-primary/.git" as AbsPath);
     const command = new CommitCommand(
@@ -86,10 +80,7 @@ describe("CommitCommand.execute", () => {
     const proc = makeProcFake();
     const fs = makeFsMemoryFake();
     const container = makeTestGateways({ stdio: io, proc, fs });
-    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
-      REGISTRY_PATH,
-      [PRIMARY],
-    );
+    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
     // SAFETY: a fixed literal directory segment under a hard-coded test fixture path.
     fs.seedDir("/vault-primary/.git" as AbsPath);
     const command = new CommitCommand(
@@ -116,10 +107,7 @@ describe("CommitCommand.execute", () => {
     const proc = makeProcFake();
     const fs = makeFsMemoryFake();
     const container = makeTestGateways({ stdio: io, proc, fs });
-    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
-      REGISTRY_PATH,
-      [PRIMARY],
-    );
+    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
     // SAFETY: a fixed literal directory segment under a hard-coded test fixture path.
     fs.seedDir("/vault-primary/.git" as AbsPath);
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } }); // add
@@ -141,10 +129,7 @@ describe("CommitCommand.execute", () => {
   test("an unknown workspace fails with the exact 'no such workspace' message", async () => {
     const io = makeIoFake();
     const container = makeTestGateways({ stdio: io });
-    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
-      REGISTRY_PATH,
-      [PRIMARY],
-    );
+    await makeWorkspaceRepository(container.fs).save(REGISTRY_PATH, [PRIMARY]);
     const command = new CommitCommand(
       container.fs,
       container.proc,

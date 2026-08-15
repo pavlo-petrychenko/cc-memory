@@ -8,10 +8,7 @@ import { SqliteAdapter } from "@/gateways/index.ts";
 import type { Sqlite } from "@/gateways/index.ts";
 import { WorkspaceCommand } from "@/modules/workspace/commands/workspace/workspace.command.ts";
 import { WorkspaceFormatter } from "@/modules/workspace/commands/workspace/workspace.formatter.ts";
-import { RegistryTomlSerializer } from "@/modules/workspace/serializers/registryToml/registryToml.serializer.ts";
-import { RegistryService } from "@/modules/workspace/services/registry/registry.service.ts";
-import { WorkspaceResolverService } from "@/modules/workspace/services/resolver/resolver.service.ts";
-import { TargetResolutionService } from "@/modules/workspace/targetResolution/targetResolution.service.ts";
+import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
 import type { WorkspaceIndexBuilder } from "@/modules/workspace/workspace.typedefs.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
@@ -68,18 +65,17 @@ function makeIndexBuilder(container: Gateways): WorkspaceIndexBuilder {
 }
 
 function makeWorkspaceCommand(container: Gateways): WorkspaceCommand {
-  const registryService = new RegistryService(container.fs, new RegistryTomlSerializer());
-  const resolverService = new WorkspaceResolverService(registryService, container.git);
-  const targetResolutionService = new TargetResolutionService(
-    registryService,
-    resolverService,
+  const { repository, validatorService, targetResolutionService } = makeWorkspaceContext(
+    container.fs,
+    container.git,
   );
   return new WorkspaceCommand(
     container.fs,
     container.env,
     container.proc,
     container.stdio,
-    registryService,
+    repository,
+    validatorService,
     targetResolutionService,
     makeIndexBuilder(container),
     new WorkspaceFormatter(),

@@ -10,7 +10,6 @@ import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
 import { HookRuntimeService } from "@/modules/session/runtime/runtime.service.ts";
 import { WorkingMemoryFormatter } from "@/modules/worklog/index.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import {
@@ -19,6 +18,7 @@ import {
   makeWorklogModule,
 } from "@/testing/fixtures/retrievalModules.fixture.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 /**
  * `SessionStart`: happy path (exact stdout string), cwd outside any
@@ -113,9 +113,7 @@ describe("SessionStart hook", () => {
       "/home/test/vault-primary/_Worklogs/_root/STATE.md" as AbsPath,
       "# wt1\n## Current focus\nnothing\n",
     );
-    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-      PRIMARY,
-    ]);
+    await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
 
     await runSessionStart(
       container,
@@ -142,9 +140,7 @@ describe("SessionStart hook", () => {
 
   test("cwd outside any workspace: silent, no output, exit 0", async () => {
     const { io, fs, container } = makeFixture();
-    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-      PRIMARY,
-    ]);
+    await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
 
     await runSessionStart(
       container,
@@ -158,9 +154,7 @@ describe("SessionStart hook", () => {
 
   test("missing fields (empty payload) falls back to the process cwd", async () => {
     const { io, fs, container } = makeFixture();
-    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-      PRIMARY,
-    ]);
+    await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
     // `Env` fake defaults its `cwd()` to the same `/home/test/project` used
     // above as `PRIMARY`'s match prefix — see `testGateways.fixture.ts`.
 
@@ -172,9 +166,7 @@ describe("SessionStart hook", () => {
 
   test("stop_hook_active is a foreign field this hook never reads: ignored", async () => {
     const { io, fs, container } = makeFixture();
-    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-      PRIMARY,
-    ]);
+    await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
 
     await runSessionStart(
       container,
@@ -189,9 +181,7 @@ describe("SessionStart hook", () => {
   test("vault directory missing: working memory only, no KB map section", async () => {
     const { io, fs, container } = makeFixture();
     // No `/vault-primary` directory seeded at all.
-    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-      PRIMARY,
-    ]);
+    await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
 
     await runSessionStart(container, io, JSON.stringify({ cwd: CWD }));
 
@@ -220,9 +210,7 @@ describe("SessionStart hook", () => {
 
   test("garbage stdin never throws: tolerant-parsed to an empty payload", async () => {
     const { io, fs, container } = makeFixture();
-    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-      PRIMARY,
-    ]);
+    await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
 
     await runSessionStart(container, io, "not json");
 

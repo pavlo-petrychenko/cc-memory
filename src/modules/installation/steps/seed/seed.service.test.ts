@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
+import { registryPath } from "@/core/index.ts";
 import { SeedService } from "@/modules/installation/steps/seed/seed.service.ts";
-import { defaultRegistryPath } from "@/modules/workspace/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — matches
@@ -24,7 +24,7 @@ describe("SeedService — seeding registry.toml from registry.example.toml", () 
 
     expect(outcome.seeded).toBe(true);
     expect(outcome.actionLine).toContain("seeded registry ->");
-    const written = await fs.readFile(defaultRegistryPath(HOME));
+    const written = await fs.readFile(registryPath(HOME));
     expect(written).toBe('[[workspace]]\nid = "example"\n');
   });
 
@@ -34,14 +34,14 @@ describe("SeedService — seeding registry.toml from registry.example.toml", () 
       SeedService.defaultExampleRegistryPath(REPO_ROOT),
       '[[workspace]]\nid = "example"\n',
     );
-    fs.seedFile(defaultRegistryPath(HOME), '[[workspace]]\nid = "real"\n');
+    fs.seedFile(registryPath(HOME), '[[workspace]]\nid = "real"\n');
     const service = new SeedService(fs);
 
     const outcome = await service.seed(REPO_ROOT, HOME);
 
     expect(outcome.seeded).toBe(false);
     expect(outcome.actionLine).toBe("registry exists (left as-is)");
-    const content = await fs.readFile(defaultRegistryPath(HOME));
+    const content = await fs.readFile(registryPath(HOME));
     expect(content).toBe('[[workspace]]\nid = "real"\n');
   });
 });

@@ -45,14 +45,11 @@ import {
   WorklogStoreService,
 } from "@/modules/worklog/index.ts";
 import {
-  RegistryService,
-  RegistryTomlSerializer,
+  makeWorkspaceContext,
   ResolveCommand,
   ResolveFormatter,
-  TargetResolutionService,
   WorkspaceCommand,
   WorkspaceFormatter,
-  WorkspaceResolverService,
 } from "@/modules/workspace/index.ts";
 import type { WorkspaceIndexBuilder } from "@/modules/workspace/index.ts";
 
@@ -101,18 +98,17 @@ function makeWorkspaceCommand(
   container: Gateways,
   note: ReturnType<typeof makeNoteModule>,
 ): WorkspaceCommand {
-  const registryService = new RegistryService(container.fs, new RegistryTomlSerializer());
-  const resolverService = new WorkspaceResolverService(registryService, container.git);
-  const targetResolutionService = new TargetResolutionService(
-    registryService,
-    resolverService,
+  const { repository, validatorService, targetResolutionService } = makeWorkspaceContext(
+    container.fs,
+    container.git,
   );
   return new WorkspaceCommand(
     container.fs,
     container.env,
     container.proc,
     container.stdio,
-    registryService,
+    repository,
+    validatorService,
     targetResolutionService,
     makeWorkspaceIndexBuilder(note),
     new WorkspaceFormatter(),
@@ -120,16 +116,14 @@ function makeWorkspaceCommand(
 }
 
 function makeResolveCommand(container: Gateways): ResolveCommand {
-  const registryService = new RegistryService(container.fs, new RegistryTomlSerializer());
-  const resolverService = new WorkspaceResolverService(registryService, container.git);
-  const targetResolutionService = new TargetResolutionService(
-    registryService,
-    resolverService,
+  const { repository, resolverService } = makeWorkspaceContext(
+    container.fs,
+    container.git,
   );
   return new ResolveCommand(
     container.env,
     container.stdio,
-    targetResolutionService,
+    repository,
     resolverService,
     new ResolveFormatter(),
   );

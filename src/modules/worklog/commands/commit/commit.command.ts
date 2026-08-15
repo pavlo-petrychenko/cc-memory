@@ -8,12 +8,7 @@ import {
 } from "@/modules/worklog/commands/commit/commit.constants.ts";
 import { CommitFormatter } from "@/modules/worklog/commands/commit/commit.formatter.ts";
 import type { CommitArgs } from "@/modules/worklog/commands/commit/commit.typedefs.ts";
-import {
-  RegistryService,
-  RegistryTomlSerializer,
-  TargetResolutionService,
-  WorkspaceResolverService,
-} from "@/modules/workspace/index.ts";
+import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
 
 /** Manual, local-only snapshot; never pushes. Stages the whole kb repo via
  * `git add -A`, straight through `Proc` rather than `Git.add`/`Git.commit`. */
@@ -56,14 +51,14 @@ export class CommitCommand {
 
   async execute(args: CommitArgs): Promise<CliOutcome> {
     const home = this.env.home();
-    const registryService = new RegistryService(this.fs, new RegistryTomlSerializer());
-    const resolverService = new WorkspaceResolverService(registryService, this.git);
-    const targetResolutionService = new TargetResolutionService(
-      registryService,
-      resolverService,
+    const { repository, targetResolutionService } = makeWorkspaceContext(
+      this.fs,
+      this.git,
     );
-    const registryResult = await targetResolutionService.loadRegistryForCli(home);
-    if (!registryResult.ok) return registryResult.error;
+    const registryResult = await repository.load(repository.defaultPath(home));
+    if (!registryResult.ok) {
+      return cliFailure(`registry error: ${registryResult.error.message}`);
+    }
 
     const targets = targetResolutionService.resolveTargetWorkspaces(
       registryResult.value,

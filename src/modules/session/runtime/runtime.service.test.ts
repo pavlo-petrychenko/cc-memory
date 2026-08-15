@@ -9,11 +9,11 @@ import { HookRuntimeService } from "@/modules/session/runtime/runtime.service.ts
 import type { HookHandler } from "@/modules/session/runtime/runtime.typedefs.ts";
 import { HookResultKind } from "@/modules/session/session.typedefs.ts";
 import type { HookResult } from "@/modules/session/session.typedefs.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeLoggerFake } from "@/testing/fakes/loggerCollect.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 /**
  * `HookRuntimeService.run`'s own shared preamble/postamble — the piece
@@ -61,9 +61,7 @@ describe("HookRuntimeService.run (the shared per-hook preamble/postamble)", () =
       payloadParser,
       new HookResultSerializer(),
     );
-    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-      PRIMARY,
-    ]);
+    await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
     io.setStdin(JSON.stringify({ cwd: CWD }));
 
     await hookRuntimeService.run(
@@ -97,9 +95,7 @@ describe("HookRuntimeService.run (the shared per-hook preamble/postamble)", () =
       payloadParser,
       new HookResultSerializer(),
     );
-    await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-      PRIMARY,
-    ]);
+    await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
     io.setStdin(JSON.stringify({ cwd: CWD }));
 
     await hookRuntimeService.run(

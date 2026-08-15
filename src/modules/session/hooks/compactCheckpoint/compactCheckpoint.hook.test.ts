@@ -10,10 +10,10 @@ import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
 import { HookRuntimeService } from "@/modules/session/runtime/runtime.service.ts";
 import { WorklogStoreService } from "@/modules/worklog/index.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 /**
  * `PostCompact`: persist the compaction summary into today's dated journal —
@@ -50,9 +50,7 @@ async function makeFixture(): Promise<Fixture> {
   const io = makeIoFake();
   const fs = makeFsMemoryFake();
   const container = makeTestGateways({ stdio: io, fs });
-  await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-    PRIMARY,
-  ]);
+  await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
   return { io, fs, container };
 }
 

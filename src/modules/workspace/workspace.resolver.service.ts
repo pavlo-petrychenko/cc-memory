@@ -1,9 +1,8 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, isUnder, sanitizeSlug } from "@/core/index.ts";
 import type { RawWorkspace, Workspace, WorktreeSlug } from "@/core/index.ts";
-import type { Git } from "@/gateways/index.ts";
-import type { RegistryService } from "@/modules/workspace/services/registry/registry.service.ts";
-import { PATH_SEPARATOR } from "@/modules/workspace/services/resolver/resolver.constants.ts";
+import { PATH_SEPARATOR } from "@/modules/workspace/workspace.constants.ts";
+import { WorkspaceValidatorService } from "@/modules/workspace/workspace.validator.service.ts";
 
 function relativeToPrefix(path: AbsPath, prefix: AbsPath): string {
   return path === prefix ? "" : path.slice(prefix.length + 1);
@@ -11,14 +10,14 @@ function relativeToPrefix(path: AbsPath, prefix: AbsPath): string {
 
 /** Prefers the git worktree root — so distinct worktrees of one repo get distinct
  * slugs, and subdirs collapse to the repo root — but only when that root actually
- * lies inside the matched prefix; otherwise falls back to `cwd`. */
-export async function worktreeSlug(
-  git: Git,
+ * lies inside the matched prefix; otherwise falls back to `cwd`. The git toplevel
+ * OUTPUT is supplied by the repository (the only layer that may touch git). */
+export function worktreeSlug(
+  toplevelOutput: string,
   cwd: AbsPath,
   ws: Workspace,
-): Promise<WorktreeSlug> {
+): WorktreeSlug {
   const prefix = ws.matchedPrefix;
-  const toplevelOutput = (await git.showToplevel(cwd)).trim();
 
   let base: AbsPath = cwd;
   if (toplevelOutput !== "") {
@@ -33,11 +32,9 @@ export async function worktreeSlug(
   return sanitizeSlug(relative);
 }
 
+/** Pure longest-prefix workspace resolution — no git, no filesystem. */
 export class WorkspaceResolverService {
-  constructor(
-    private readonly registryService: RegistryService,
-    private readonly git: Git,
-  ) {}
+  constructor(private readonly validatorService: WorkspaceValidatorService) {}
 
   /** Longest-prefix match, or `null` if `cwd` is under no workspace — the
    * encapsulation choke point: a session sees memory for the single workspace
@@ -51,7 +48,7 @@ export class WorkspaceResolverService {
     let bestPrefixLength = -1;
 
     for (const raw of raws) {
-      const expanded = this.registryService.expandWorkspace(raw, home);
+      const expanded = this.validatorService.expandWorkspace(raw, home);
       for (const prefix of expanded.match) {
         const isMatch = cwd === prefix || cwd.startsWith(`${prefix}${PATH_SEPARATOR}`);
         if (!isMatch || prefix.length <= bestPrefixLength) continue;
@@ -63,7 +60,7 @@ export class WorkspaceResolverService {
     return best;
   }
 
-  async worktreeSlug(cwd: AbsPath, ws: Workspace): Promise<WorktreeSlug> {
-    return worktreeSlug(this.git, cwd, ws);
+  worktreeSlug(toplevelOutput: string, cwd: AbsPath, ws: Workspace): WorktreeSlug {
+    return worktreeSlug(toplevelOutput, cwd, ws);
   }
 }

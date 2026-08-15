@@ -9,11 +9,11 @@ import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
 import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
 import { HookRuntimeService } from "@/modules/session/runtime/runtime.service.ts";
 import { WorklogFloorFormatter, WorklogStoreService } from "@/modules/worklog/index.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type GitFake, makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 /**
  * `SessionEnd`: a deterministic, write-only git/command skeleton appended to
@@ -52,9 +52,7 @@ async function makeFixture(): Promise<Fixture> {
   const fs = makeFsMemoryFake();
   const git = makeGitFake();
   const container = makeTestGateways({ stdio: io, fs, git });
-  await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-    PRIMARY,
-  ]);
+  await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
   return { io, fs, git, container };
 }
 

@@ -2,12 +2,12 @@ import { describe, expect, test } from "bun:test";
 
 import { CliCommand } from "@/cli/index.ts";
 import type { AbsPath } from "@/core/index.ts";
+import { registryPath } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import {
   InstallCommand,
   UninstallCommand,
 } from "@/modules/installation/commands/install/install.command.ts";
-import { defaultRegistryPath } from "@/modules/workspace/index.ts";
 import type { ProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
@@ -44,7 +44,7 @@ function shimPathFor(container: Gateways): AbsPath {
  * a real second install run looks like anyway.
  */
 async function seedExistingRegistry(container: Gateways): Promise<void> {
-  await container.fs.writeFile(defaultRegistryPath(container.env.home()), "");
+  await container.fs.writeFile(registryPath(container.env.home()), "");
 }
 
 function scriptedBunProc(): ProcFake {

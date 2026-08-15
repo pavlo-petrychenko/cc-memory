@@ -1,16 +1,26 @@
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
-import type { AbsPath, CliOutcome } from "@/core/index.ts";
+import type {
+  AbsPath,
+  CliOutcome,
+  RawWorkspace,
+  Result,
+  Workspace,
+} from "@/core/index.ts";
 import {
   expandPath,
   indexDbPath,
   joinAbs,
   parentDir,
-  registryPath,
   titleize,
   tildify,
 } from "@/core/index.ts";
-import type { RawWorkspace, Workspace } from "@/core/index.ts";
 import type { Env, FileSystem, Proc, Stdio } from "@/gateways/index.ts";
+import { WorkspaceFormatter } from "@/modules/workspace/commands/workspace/workspace.formatter.ts";
+import type {
+  WorkspaceAddArgs,
+  WorkspaceLsRow,
+  WorkspaceRmArgs,
+} from "@/modules/workspace/commands/workspace/workspace.typedefs.ts";
 import {
   DEFAULT_EXCLUDE,
   GIT_INIT_TIMEOUT_MS,
@@ -20,16 +30,11 @@ import {
   HOME_NOTE_HEADER_PREFIX,
   HOME_NOTE_HEADER_SUFFIX,
   NO_WORKSPACES_MESSAGE,
-} from "@/modules/workspace/commands/workspace/workspace.constants.ts";
-import { WorkspaceFormatter } from "@/modules/workspace/commands/workspace/workspace.formatter.ts";
-import type {
-  WorkspaceAddArgs,
-  WorkspaceLsRow,
-  WorkspaceRmArgs,
-} from "@/modules/workspace/commands/workspace/workspace.typedefs.ts";
-import { RegistryService } from "@/modules/workspace/services/registry/registry.service.ts";
-import { TargetResolutionService } from "@/modules/workspace/targetResolution/targetResolution.service.ts";
+} from "@/modules/workspace/workspace.constants.ts";
+import { WorkspaceRepository } from "@/modules/workspace/workspace.repository.ts";
+import { TargetResolutionService } from "@/modules/workspace/workspace.target.service.ts";
 import type { WorkspaceIndexBuilder } from "@/modules/workspace/workspace.typedefs.ts";
+import { WorkspaceValidatorService } from "@/modules/workspace/workspace.validator.service.ts";
 
 function homeNoteContent(title: string, id: string): string {
   return (
@@ -44,7 +49,8 @@ export class WorkspaceCommand {
     private readonly env: Env,
     private readonly proc: Proc,
     private readonly stdio: Stdio,
-    private readonly registryService: RegistryService,
+    private readonly repository: WorkspaceRepository,
+    private readonly validatorService: WorkspaceValidatorService,
     private readonly targetResolutionService: TargetResolutionService,
     private readonly indexBuilder: WorkspaceIndexBuilder,
     private readonly formatter: WorkspaceFormatter,
@@ -58,8 +64,12 @@ export class WorkspaceCommand {
     }
   }
 
-  private defaultRegistryPathFor(): AbsPath {
-    return registryPath(this.env.home());
+  private async loadRegistryForCli(
+    home: AbsPath,
+  ): Promise<Result<readonly RawWorkspace[], CliOutcome>> {
+    const result = await this.repository.load(this.repository.defaultPath(home));
+    if (result.ok) return result;
+    return { ok: false, error: cliFailure(`registry error: ${result.error.message}`) };
   }
 
   /** Returns `"?"` unless the index file exists and its note count can be read. */
@@ -77,7 +87,7 @@ export class WorkspaceCommand {
     home: AbsPath,
     raw: RawWorkspace,
   ): Promise<WorkspaceLsRow> {
-    const ws = this.registryService.expandWorkspace(raw, home);
+    const ws = this.validatorService.expandWorkspace(raw, home);
     const noteCountText = await this.countNotesOrUnknown(ws);
     return {
       summaryLine: this.formatter.workspaceLsRow(raw.id, ws.kb, noteCountText),
@@ -87,7 +97,7 @@ export class WorkspaceCommand {
 
   async add(args: WorkspaceAddArgs): Promise<CliOutcome> {
     const home = this.env.home();
-    const registryResult = await this.targetResolutionService.loadRegistryForCli(home);
+    const registryResult = await this.loadRegistryForCli(home);
     if (!registryResult.ok) return registryResult.error;
     const existing = registryResult.value;
 
@@ -108,7 +118,7 @@ export class WorkspaceCommand {
       exclude,
       indexDb,
     };
-    const conflicts = this.registryService.validateNew(candidate, existing, home);
+    const conflicts = this.validatorService.validateNew(candidate, existing, home);
     if (conflicts.length > 0) {
       return cliFailure(`workspace '${args.id}' conflicts with an existing workspace`);
     }
@@ -141,9 +151,9 @@ export class WorkspaceCommand {
       exclude: candidate.exclude,
       indexDb: tildify(indexDb, home),
     };
-    await this.registryService.save(this.defaultRegistryPathFor(), [...existing, stored]);
+    await this.repository.save(this.repository.defaultPath(home), [...existing, stored]);
     const total = await this.indexBuilder.buildIndex(
-      this.registryService.expandWorkspace(stored, home),
+      this.validatorService.expandWorkspace(stored, home),
     );
 
     for (const line of this.formatter.workspaceAdded(
@@ -161,7 +171,7 @@ export class WorkspaceCommand {
 
   async rm(args: WorkspaceRmArgs): Promise<CliOutcome> {
     const home = this.env.home();
-    const registryResult = await this.targetResolutionService.loadRegistryForCli(home);
+    const registryResult = await this.loadRegistryForCli(home);
     if (!registryResult.ok) return registryResult.error;
     const existing = registryResult.value;
 
@@ -171,10 +181,10 @@ export class WorkspaceCommand {
     }
 
     const keep = existing.filter((raw) => raw.id !== args.id);
-    await this.registryService.save(this.defaultRegistryPathFor(), keep);
+    await this.repository.save(this.repository.defaultPath(home), keep);
 
     if (args.purge) {
-      const expanded = this.registryService.expandWorkspace(target, home);
+      const expanded = this.validatorService.expandWorkspace(target, home);
       await this.fs.remove(expanded.indexDb);
       this.stdio.write(this.formatter.workspaceRemovedPurged(args.id));
     } else {
@@ -185,7 +195,7 @@ export class WorkspaceCommand {
 
   async ls(): Promise<CliOutcome> {
     const home = this.env.home();
-    const registryResult = await this.targetResolutionService.loadRegistryForCli(home);
+    const registryResult = await this.loadRegistryForCli(home);
     if (!registryResult.ok) return registryResult.error;
     const existing = registryResult.value;
 

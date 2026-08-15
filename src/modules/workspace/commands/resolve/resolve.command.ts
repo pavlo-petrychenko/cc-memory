@@ -1,11 +1,11 @@
-import { CLI_SUCCESS } from "@/core/index.ts";
+import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Env, Stdio } from "@/gateways/index.ts";
 import { ResolveFormatter } from "@/modules/workspace/commands/resolve/resolve.formatter.ts";
 import type { ResolveArgs } from "@/modules/workspace/commands/resolve/resolve.typedefs.ts";
-import { WorkspaceResolverService } from "@/modules/workspace/services/resolver/resolver.service.ts";
-import { TargetResolutionService } from "@/modules/workspace/targetResolution/targetResolution.service.ts";
+import { WorkspaceRepository } from "@/modules/workspace/workspace.repository.ts";
+import { WorkspaceResolverService } from "@/modules/workspace/workspace.resolver.service.ts";
 
 /** No match here returns success (exit 0) with a message, unlike `search`/`notes`,
  * whose `--workspace`-less cwd miss exits 1. */
@@ -13,15 +13,17 @@ export class ResolveCommand {
   constructor(
     private readonly env: Env,
     private readonly stdio: Stdio,
-    private readonly targetResolutionService: TargetResolutionService,
+    private readonly repository: WorkspaceRepository,
     private readonly resolverService: WorkspaceResolverService,
     private readonly formatter: ResolveFormatter,
   ) {}
 
   async execute(args: ResolveArgs): Promise<CliOutcome> {
     const home = this.env.home();
-    const registryResult = await this.targetResolutionService.loadRegistryForCli(home);
-    if (!registryResult.ok) return registryResult.error;
+    const registryResult = await this.repository.load(this.repository.defaultPath(home));
+    if (!registryResult.ok) {
+      return cliFailure(`registry error: ${registryResult.error.message}`);
+    }
 
     const cwd = args.cwd !== null ? expandPath(args.cwd, home) : this.env.cwd();
     const workspace = this.resolverService.resolveWorkspace(
@@ -34,7 +36,7 @@ export class ResolveCommand {
       return CLI_SUCCESS;
     }
 
-    const slug = await this.resolverService.worktreeSlug(cwd, workspace);
+    const slug = await this.repository.worktreeSlug(cwd, workspace);
     for (const line of this.formatter.resolveLines(
       workspace.id,
       slug,

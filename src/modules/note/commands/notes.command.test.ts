@@ -10,10 +10,10 @@ import { ListNotesUseCase } from "@/modules/note/index.ts";
 import { NoteRepository } from "@/modules/note/note.repository.ts";
 import { NoteParser } from "@/modules/note/services/note.parser.ts";
 import { NotesFormatter } from "@/modules/note/services/notes.formatter.ts";
-import { RegistryService, RegistryTomlSerializer } from "@/modules/workspace/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake, type IoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
@@ -56,9 +56,7 @@ async function seedIndexedWorkspace(): Promise<SeededFixture> {
   );
   // SAFETY: fixed literal test fixture paths.
   fs.seedFile("/vault-primary/Loose.md" as AbsPath, "# Loose\nNo frontmatter.\n");
-  await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-    PRIMARY,
-  ]);
+  await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
   return {
     container,
     io,

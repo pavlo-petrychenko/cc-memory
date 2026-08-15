@@ -8,11 +8,7 @@ import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { SearchFormatter } from "@/modules/note/index.ts";
-import {
-  expandWorkspace,
-  RegistryService,
-  RegistryTomlSerializer,
-} from "@/modules/workspace/index.ts";
+import { expandWorkspace } from "@/modules/workspace/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake, type IoFake } from "@/testing/fakes/ioFake.fake.ts";
 import {
@@ -21,6 +17,7 @@ import {
   makeWorklogModule,
 } from "@/testing/fixtures/retrievalModules.fixture.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
@@ -76,9 +73,7 @@ async function seedIndexedWorkspace(): Promise<SeededFixture> {
     "/vault-primary/Kryptonite.md" as AbsPath,
     "# Kryptonite Handbook\nGeneral notes about assorted green minerals.\n",
   );
-  await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
-    PRIMARY,
-  ]);
+  await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
   await note.reprojectNotes.run(expandWorkspace(PRIMARY, HOME), { incremental: false });
 
   return {
