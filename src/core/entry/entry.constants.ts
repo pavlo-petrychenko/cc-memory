@@ -1,4 +1,4 @@
-import type { CliOutcome } from "@/core/outcome/outcome.typedefs.ts";
+import type { CliOutcome } from "@/core/entry/entry.typedefs.ts";
 
 /** `cliFailure`'s default exit code, for callers that just need "a failure". */
 export const DEFAULT_FAILURE_EXIT_CODE = 1;

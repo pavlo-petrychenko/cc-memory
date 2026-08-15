@@ -6,7 +6,7 @@ import type { Config } from "@/core/index.ts";
 import { ConfigParser } from "@/core/index.ts";
 import { cliFailure } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";
-import { ARGS_PARSE_ERROR_EXIT_CODE } from "@/core/outcome/outcome.constants.ts";
+import { ARGS_PARSE_ERROR_EXIT_CODE } from "@/core/index.ts";
 import {
   DoctorCommand,
   DoctorFormatter,

@@ -38,10 +38,6 @@ const IMPLEMENTATION_SUFFIXES = [
  */
 const COVERED_THROUGH_CALLERS: ReadonlyMap<string, string> = new Map([
   [
-    "core/outcome/outcome.utils.ts",
-    "two one-line constructors for a two-field record; every command asserts the record they produce",
-  ],
-  [
     "session/payload/payload.parser.ts",
     "every field it parses is asserted through the five hook contract tests, which feed real payloads",
   ],

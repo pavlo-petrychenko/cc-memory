@@ -23,6 +23,28 @@ export { CCMEM_HOME } from "@/core/utils/paths/paths.constants.ts";
 export type { PathError } from "@/core/utils/paths/paths.typedefs.ts";
 export { PathErrorKind } from "@/core/utils/paths/paths.typedefs.ts";
 export { sanitizeSlug, stripChars, titleize } from "@/core/utils/slug/slug.utils.ts";
-export { CLI_SUCCESS } from "@/core/outcome/outcome.constants.ts";
-export { cliFailure, cliOutcome } from "@/core/outcome/outcome.utils.ts";
-export type { CliOutcome } from "@/core/outcome/outcome.typedefs.ts";
+export {
+  ARGS_PARSE_ERROR_EXIT_CODE,
+  CLI_SUCCESS,
+  DEFAULT_FAILURE_EXIT_CODE,
+} from "@/core/entry/entry.constants.ts";
+export {
+  cliFailure,
+  cliOutcome,
+  flagValue,
+  hasFlag,
+  intFlag,
+  registerCommand,
+  requirePositional,
+  variadicValues,
+} from "@/core/entry/entry.utils.ts";
+export type {
+  ArgsError,
+  CliOutcome,
+  CommandDescriptor,
+  CommandResult,
+  HookDescriptor,
+  RegisteredCommand,
+} from "@/core/entry/entry.typedefs.ts";
+export { Command } from "@/core/entry/command.decorator.ts";
+export { Hook } from "@/core/entry/hook.decorator.ts";

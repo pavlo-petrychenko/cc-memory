@@ -87,6 +87,14 @@ const ALLOWED_SUFFIXES = [
   ".builder.ts",
   ".ranker.ts",
   ".utils.ts",
+  ".decorator.ts",
+  ".runner.ts",
+  ".useCase.ts",
+  ".repository.ts",
+  ".projection.ts",
+  ".query.ts",
+  ".wiring.ts",
+  ".fake.ts",
 ];
 
 /** Files that are entry points or barrels rather than one of the kinds above. */
