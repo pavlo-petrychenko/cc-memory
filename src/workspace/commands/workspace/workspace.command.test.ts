@@ -4,22 +4,22 @@ import { CliCommand } from "@/cli/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { DatabaseAdapter } from "@/platform/index.ts";
-import type { SqlDatabase } from "@/platform/index.ts";
-// Reaches past `@/retrieval/index.ts` to `store/` directly: the module barrel
-// also re-exports the `search`/`notes`/`reindex` commands, which is more of
-// `@/retrieval` than this fixture needs and would drag in files this test has
-// no reason to depend on.
-import { IndexBuildService, IndexConnectionService } from "@/retrieval/store/index.ts";
+import { SqliteAdapter } from "@/platform/index.ts";
+import type { Sqlite } from "@/platform/index.ts";
+import {
+  IndexBuildService,
+  IndexConnectionService,
+  SchemaService,
+} from "@/retrieval/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 import { WorkspaceCommand } from "@/workspace/commands/workspace/workspace.command.ts";
 import { WorkspaceFormatter } from "@/workspace/commands/workspace/workspace.formatter.ts";
-import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/index.ts";
-import { RegistryService } from "@/workspace/services/registry/index.ts";
-import { WorkspaceResolverService } from "@/workspace/services/resolver/index.ts";
-import { TargetResolutionService } from "@/workspace/targetResolution/index.ts";
+import { RegistryTomlSerializer } from "@/workspace/serializers/registryToml/registryToml.serializer.ts";
+import { RegistryService } from "@/workspace/services/registry/registry.service.ts";
+import { WorkspaceResolverService } from "@/workspace/services/resolver/resolver.service.ts";
+import { TargetResolutionService } from "@/workspace/targetResolution/targetResolution.service.ts";
 import type { WorkspaceIndexBuilder } from "@/workspace/workspace.typedefs.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
@@ -34,7 +34,7 @@ type CliTestFixture = {
 };
 
 /**
- * A REAL `bun:sqlite` handle (never a `SqlDatabase` fake — CLAUDE.md), but backed by
+ * A REAL `bun:sqlite` handle (never a `Sqlite` fake — CLAUDE.md), but backed by
  * `:memory:` regardless of the path a caller asks for, keyed by that path so
  * two different workspace ids each still get their OWN isolated database.
  * `WorkspaceCommand.add`/`rm --purge` derive `index_db` from `home` + the
@@ -43,12 +43,12 @@ type CliTestFixture = {
  * not the real disk) would otherwise try to open a real SQLite file under a
  * `home` directory that doesn't exist on disk.
  */
-function makeInMemoryOnlyOpenDb(): (path: string) => SqlDatabase {
-  const handles = new Map<string, SqlDatabase>();
+function makeInMemoryOnlyOpenDb(): (path: string) => Sqlite {
+  const handles = new Map<string, Sqlite>();
   return (path: string) => {
     const existing = handles.get(path);
     if (existing !== undefined) return existing;
-    const db = new DatabaseAdapter(":memory:");
+    const db = new SqliteAdapter(":memory:");
     handles.set(path, db);
     return db;
   };
@@ -61,9 +61,16 @@ function makeInMemoryOnlyOpenDb(): (path: string) => SqlDatabase {
 function makeIndexBuilder(container: Container): WorkspaceIndexBuilder {
   return {
     buildIndex: async (workspace) =>
-      (await new IndexBuildService().build(container, workspace)).total,
+      (
+        await new IndexBuildService(
+          new IndexConnectionService(new SchemaService()),
+        ).build(container, workspace)
+      ).total,
     noteCount: async (workspace) => {
-      const { db } = await new IndexConnectionService().open(container, workspace);
+      const { db } = await new IndexConnectionService(new SchemaService()).open(
+        container,
+        workspace,
+      );
       const row = db.query<{ readonly "COUNT(*)": number }>(
         "SELECT COUNT(*) FROM notes",
         [],

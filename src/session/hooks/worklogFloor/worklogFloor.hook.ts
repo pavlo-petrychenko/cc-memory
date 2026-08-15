@@ -4,33 +4,23 @@ import type { WorklogFloorPayload } from "@/session/payload/payload.typedefs.ts"
 import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.ts";
 import { HookResultKind } from "@/session/session.typedefs.ts";
 import type { HookResult } from "@/session/session.typedefs.ts";
-import { WorklogFloorFormatter, WorklogStoreService } from "@/worklog/index.ts";
+import type { WorklogFloorFormatter, WorklogStoreService } from "@/worklog/index.ts";
 import { worktreeSlug } from "@/workspace/index.ts";
 
-/** The last line of a multi-line git output, trimmed. */
 function lastLineTrimmed(text: string): string {
   const lines = text.split(/\r\n|\r|\n/);
   const last = lines.at(-1);
   return last === undefined ? "" : last.trim();
 }
 
-/**
- * `SessionEnd`: a deterministic, zero-token git/command skeleton appended to
- * today's worklog journal, so even a killed session leaves a record.
- * Write-only — no stdout, ever.
- *
- * Every `Git` call here has its result trimmed by this handler rather than by
- * the `Git` port itself, since other callers of the same port need the
- * untrimmed output — see `git.typedefs.ts`.
- */
+/** `SessionEnd`: a deterministic, zero-token git/command skeleton appended to
+ * today's worklog journal, so even a killed session leaves a record. Write-only —
+ * no stdout, ever. */
 export class WorklogFloorHook implements HookHandler<WorklogFloorPayload> {
   constructor(
     private readonly container: Container,
-    private readonly worklogFloorFormatter: WorklogFloorFormatter = new WorklogFloorFormatter(),
-    private readonly worklogStoreService: WorklogStoreService = new WorklogStoreService(
-      container.fs,
-      container.git,
-    ),
+    private readonly worklogFloorFormatter: WorklogFloorFormatter,
+    private readonly worklogStoreService: WorklogStoreService,
   ) {}
 
   async handle(payload: HookInput<WorklogFloorPayload>): Promise<HookResult> {

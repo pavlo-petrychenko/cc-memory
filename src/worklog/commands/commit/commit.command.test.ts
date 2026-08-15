@@ -9,7 +9,8 @@ import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 import { CommitCommand } from "@/worklog/commands/commit/commit.command.ts";
-import { saveRegistry } from "@/workspace/index.ts";
+import { CommitFormatter } from "@/worklog/commands/commit/commit.formatter.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
@@ -32,12 +33,17 @@ describe("CommitCommand.execute", () => {
   test("a kb with no .git directory is skipped", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
-    await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
+      REGISTRY_PATH,
+      [PRIMARY],
+    );
     const command = new CommitCommand(
       container.fs,
       container.proc,
       container.env,
       container.stdio,
+      container.git,
+      new CommitFormatter(),
     );
 
     const outcome = await command.execute(commitArgs({ workspace: "primary" }));
@@ -50,7 +56,10 @@ describe("CommitCommand.execute", () => {
     const proc = makeProcFake();
     const fs = makeFsMemoryFake();
     const container = makeTestContainer({ stdio: io, proc, fs });
-    await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
+      REGISTRY_PATH,
+      [PRIMARY],
+    );
     // SAFETY: a fixed literal directory segment under a hard-coded test fixture path.
     fs.seedDir("/vault-primary/.git" as AbsPath);
     const command = new CommitCommand(
@@ -58,6 +67,8 @@ describe("CommitCommand.execute", () => {
       container.proc,
       container.env,
       container.stdio,
+      container.git,
+      new CommitFormatter(),
     );
 
     const outcome = await command.execute(
@@ -75,7 +86,10 @@ describe("CommitCommand.execute", () => {
     const proc = makeProcFake();
     const fs = makeFsMemoryFake();
     const container = makeTestContainer({ stdio: io, proc, fs });
-    await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
+      REGISTRY_PATH,
+      [PRIMARY],
+    );
     // SAFETY: a fixed literal directory segment under a hard-coded test fixture path.
     fs.seedDir("/vault-primary/.git" as AbsPath);
     const command = new CommitCommand(
@@ -83,6 +97,8 @@ describe("CommitCommand.execute", () => {
       container.proc,
       container.env,
       container.stdio,
+      container.git,
+      new CommitFormatter(),
     );
 
     await command.execute(commitArgs({ workspace: "primary" }));
@@ -100,7 +116,10 @@ describe("CommitCommand.execute", () => {
     const proc = makeProcFake();
     const fs = makeFsMemoryFake();
     const container = makeTestContainer({ stdio: io, proc, fs });
-    await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
+      REGISTRY_PATH,
+      [PRIMARY],
+    );
     // SAFETY: a fixed literal directory segment under a hard-coded test fixture path.
     fs.seedDir("/vault-primary/.git" as AbsPath);
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 0 } }); // add
@@ -110,6 +129,8 @@ describe("CommitCommand.execute", () => {
       container.proc,
       container.env,
       container.stdio,
+      container.git,
+      new CommitFormatter(),
     );
 
     const outcome = await command.execute(commitArgs({ workspace: "primary" }));
@@ -120,12 +141,17 @@ describe("CommitCommand.execute", () => {
   test("an unknown workspace fails with the exact 'no such workspace' message", async () => {
     const io = makeIoFake();
     const container = makeTestContainer({ stdio: io });
-    await saveRegistry(container.fs, REGISTRY_PATH, [PRIMARY]);
+    await new RegistryService(container.fs, new RegistryTomlSerializer()).save(
+      REGISTRY_PATH,
+      [PRIMARY],
+    );
     const command = new CommitCommand(
       container.fs,
       container.proc,
       container.env,
       container.stdio,
+      container.git,
+      new CommitFormatter(),
     );
 
     const outcome = await command.execute(commitArgs({ workspace: "ghost" }));

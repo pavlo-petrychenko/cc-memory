@@ -16,7 +16,8 @@ import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type GitFake, makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
-import { saveRegistry } from "@/workspace/index.ts";
+import { WorklogStoreService } from "@/worklog/index.ts";
+import { RegistryService, RegistryTomlSerializer } from "@/workspace/index.ts";
 
 /**
  * `Stop`: the dirty-tree signature, the nudge->block escalation, and one
@@ -63,7 +64,9 @@ async function makeFixture(): Promise<Fixture> {
   const git = makeGitFake();
   const clock = makeClockFake();
   const container = makeTestContainer({ stdio: io, fs, git, clock });
-  await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+  await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+    PRIMARY,
+  ]);
   return { io, fs, git, clock, container };
 }
 
@@ -90,7 +93,13 @@ async function runWrapGate(
   await hookRuntimeService.run(
     "wrap-gate",
     (record) => payloadParser.parseWrapGate(record),
-    new WrapGateHook(fixture.container, config, payloadParser, new WrapGateFormatter()),
+    new WrapGateHook(
+      fixture.container,
+      config,
+      payloadParser,
+      new WrapGateFormatter(),
+      new WorklogStoreService(fixture.container.fs, fixture.container.git),
+    ),
   );
 }
 

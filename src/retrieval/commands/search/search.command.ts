@@ -1,26 +1,23 @@
-import type { SearchArgs } from "@/cli/index.ts";
 import { CLI_SUCCESS, cliFailure } from "@/core/index.ts";
 import type { CliOutcome, Config } from "@/core/index.ts";
-import { expandPath } from "@/core/index.ts";
+import { expandPath, relativeTo } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
 import { NO_HITS_MESSAGE } from "@/retrieval/commands/search/search.constants.ts";
 import { SearchFormatter } from "@/retrieval/commands/search/search.formatter.ts";
-import { SearchKind, SearchService } from "@/retrieval/store/index.ts";
-import { loadRegistryForCli, resolveWorkspaceForCwd } from "@/workspace/index.ts";
-
-/** Every indexed path is always under `kb`, so this is prefix-stripping, not
- * full relpath resolution (`..` segments never occur in practice, same
- * reasoning as `store/noteList`'s `relativeToKb`, which this duplicates
- * rather than imports — it's private there). */
-function relativeToKb(path: string, kb: string): string {
-  const prefix = `${kb}/`;
-  return path.startsWith(prefix) ? path.slice(prefix.length) : path;
-}
+import type { SearchArgs } from "@/retrieval/commands/search/search.typedefs.ts";
+import { SearchKind } from "@/retrieval/retrieval.typedefs.ts";
+import { SearchService } from "@/retrieval/store/search/search.service.ts";
+import {
+  RegistryService,
+  RegistryTomlSerializer,
+  TargetResolutionService,
+  WorkspaceResolverService,
+} from "@/workspace/index.ts";
 
 export class SearchCommand {
   constructor(
-    private readonly searchService: SearchService = new SearchService(),
-    private readonly formatter: SearchFormatter = new SearchFormatter(),
+    private readonly searchService: SearchService,
+    private readonly formatter: SearchFormatter,
   ) {}
 
   async execute(
@@ -29,11 +26,20 @@ export class SearchCommand {
     args: SearchArgs,
   ): Promise<CliOutcome> {
     const home = container.env.home();
-    const registryResult = await loadRegistryForCli(container.fs, home);
+    const registryService = new RegistryService(
+      container.fs,
+      new RegistryTomlSerializer(),
+    );
+    const resolverService = new WorkspaceResolverService(registryService, container.git);
+    const targetResolutionService = new TargetResolutionService(
+      registryService,
+      resolverService,
+    );
+    const registryResult = await targetResolutionService.loadRegistryForCli(home);
     if (!registryResult.ok) return registryResult.error;
 
     const cwd = args.cwd !== null ? expandPath(args.cwd, home) : container.env.cwd();
-    const resolved = resolveWorkspaceForCwd(
+    const resolved = targetResolutionService.resolveWorkspaceForCwd(
       registryResult.value,
       home,
       cwd,
@@ -53,7 +59,7 @@ export class SearchCommand {
       return CLI_SUCCESS;
     }
     for (const hit of hits) {
-      const relativePath = relativeToKb(hit.path, workspace.kb);
+      const relativePath = relativeTo(hit.path, workspace.kb);
       for (const line of this.formatter.hit(hit.title, relativePath, hit.snippet)) {
         container.stdio.write(line);
       }

@@ -4,11 +4,20 @@ import type { AbsPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { DoctorService } from "@/install/doctor/doctor.service.ts";
 import { WorkspaceIndexStatus } from "@/install/doctor/doctor.typedefs.ts";
-import { ManifestService } from "@/install/steps/manifest/index.ts";
-import { SettingsService } from "@/install/steps/settings/index.ts";
+import { ManifestService } from "@/install/steps/manifest/manifest.service.ts";
+import { SettingsService } from "@/install/steps/settings/settings.service.ts";
+import {
+  IndexBuildService,
+  IndexConnectionService,
+  SchemaService,
+} from "@/retrieval/index.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 import { RegistryErrorKind } from "@/workspace/index.ts";
+
+function makeIndexBuildService(): IndexBuildService {
+  return new IndexBuildService(new IndexConnectionService(new SchemaService()));
+}
 
 /**
  * `DoctorService` — real diagnostics. Every failure class gets its own
@@ -44,7 +53,10 @@ describe("DoctorService — per-workspace diagnostics", () => {
     await container.fs.mkdir(workspaceFixture().kb);
     await container.fs.mkdir(workspaceFixture().worklogs);
 
-    const report = await new DoctorService(container).gatherReport([workspaceFixture()], {
+    const report = await new DoctorService(
+      container,
+      makeIndexBuildService(),
+    ).gatherReport([workspaceFixture()], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -66,7 +78,10 @@ describe("DoctorService — per-workspace diagnostics", () => {
     const container = makeTestContainer({ proc: makeProcFake() });
     // Neither directory is created this time.
 
-    const report = await new DoctorService(container).gatherReport([workspaceFixture()], {
+    const report = await new DoctorService(
+      container,
+      makeIndexBuildService(),
+    ).gatherReport([workspaceFixture()], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -85,7 +100,10 @@ describe("DoctorService — per-workspace diagnostics", () => {
       indexDb: fixturePath("/nonexistent-doctor-test-dir-xyz/index.db"),
     });
 
-    const report = await new DoctorService(container).gatherReport([brokenWorkspace], {
+    const report = await new DoctorService(
+      container,
+      makeIndexBuildService(),
+    ).gatherReport([brokenWorkspace], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -100,7 +118,10 @@ describe("DoctorService — per-workspace diagnostics", () => {
     await container.fs.writeFile(fixturePath("/wsdir/inject.jsonl"), "one\ntwo\n");
     const workspace = workspaceFixture({ indexDb: fixturePath("/wsdir/index.db") });
 
-    const report = await new DoctorService(container).gatherReport([workspace], {
+    const report = await new DoctorService(
+      container,
+      makeIndexBuildService(),
+    ).gatherReport([workspace], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -114,7 +135,10 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
   test("hooks is null (and bun unreported) when there is no installed.json manifest", async () => {
     const container = makeTestContainer({ proc: makeProcFake() });
 
-    const report = await new DoctorService(container).gatherReport([], {
+    const report = await new DoctorService(
+      container,
+      makeIndexBuildService(),
+    ).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -141,7 +165,10 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
       },
     );
 
-    const report = await new DoctorService(container).gatherReport([], {
+    const report = await new DoctorService(
+      container,
+      makeIndexBuildService(),
+    ).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -190,7 +217,10 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
       }),
     );
 
-    const report = await new DoctorService(container).gatherReport([], {
+    const report = await new DoctorService(
+      container,
+      makeIndexBuildService(),
+    ).gatherReport([], {
       repoRoot: REPO_ROOT, // the CURRENT repo root — different from settings.json's
       registryError: null,
     });
@@ -241,7 +271,10 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
       }),
     );
 
-    const report = await new DoctorService(container).gatherReport([], {
+    const report = await new DoctorService(
+      container,
+      makeIndexBuildService(),
+    ).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -258,7 +291,10 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
       oversizedContent,
     );
 
-    const report = await new DoctorService(container).gatherReport([], {
+    const report = await new DoctorService(
+      container,
+      makeIndexBuildService(),
+    ).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: null,
     });
@@ -269,7 +305,10 @@ describe("DoctorService — install/hooks/bun diagnostics", () => {
   test("carries a registry parse error through for rendering", async () => {
     const container = makeTestContainer({ proc: makeProcFake() });
 
-    const report = await new DoctorService(container).gatherReport([], {
+    const report = await new DoctorService(
+      container,
+      makeIndexBuildService(),
+    ).gatherReport([], {
       repoRoot: REPO_ROOT,
       registryError: { kind: RegistryErrorKind.ParseError, message: "bad toml" },
     });

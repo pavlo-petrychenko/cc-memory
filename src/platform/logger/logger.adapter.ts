@@ -21,7 +21,7 @@ function currentSize(path: AbsPath): number {
   try {
     return statSync(path).size;
   } catch {
-    return 0; // file does not exist yet
+    return 0;
   }
 }
 
@@ -35,12 +35,8 @@ function rotate(path: AbsPath): void {
   }
 }
 
-/**
- * Append one line to `path`, rotating first if the write would push the file
- * past `MAX_LOG_BYTES`. Exported standalone (not only via the `Logger` port)
- * because the same primitive backs `inject.jsonl` rotation, which isn't a
- * leveled log message and doesn't go through `Logger` at all.
- */
+/** Exported standalone because the same primitive also backs `inject.jsonl`
+ * rotation, which isn't a leveled log message and doesn't go through `Logger`. */
 export function appendWithRotation(path: AbsPath, line: string): void {
   const encoded = `${line}\n`;
   mkdirSync(dirname(path), { recursive: true });
@@ -54,12 +50,8 @@ function formatLine(level: LogLevel, message: string): string {
   return `${new Date().toISOString()} [${level}] ${message}`;
 }
 
-/**
- * The real `Logger`: a size-capped rotating file backing both the hook
- * fail-open diagnostics and the CLI's error path. `minLevel` is
- * `Config.logLevel` (`CCMEM_LOG_LEVEL`, default `warn`), applied here rather
- * than at every call site.
- */
+/** The real `Logger`: a size-capped rotating file backing both hook fail-open
+ * diagnostics and the CLI's error path. */
 export class LoggerAdapter implements Logger {
   constructor(
     private readonly path: AbsPath,

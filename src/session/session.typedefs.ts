@@ -1,7 +1,5 @@
-/**
- * The 5 Claude Code hook events this project handles. Values are the exact
- * `hookEventName` strings the protocol expects — copy verbatim, never re-derive.
- */
+/** Values are the exact `hookEventName` strings the protocol expects — copy
+ * verbatim, never re-derive. */
 export enum HookEvent {
   SessionStart = "SessionStart",
   UserPromptSubmit = "UserPromptSubmit",
@@ -10,21 +8,14 @@ export enum HookEvent {
   SessionEnd = "SessionEnd",
 }
 
-/** The closed set of shapes a hook handler can produce, before rendering to JSON. */
 export enum HookResultKind {
   Silent = "silent",
   Context = "context",
   Block = "block",
 }
 
-/**
- * What a hook handler decides to do, decoupled from the stdin/stdout JSON
- * protocol that `hookResult.serializer.ts` encodes it into.
- *
- *   silent  -> print nothing (the common case: cwd matched no workspace, etc.)
- *   context -> `{"hookSpecificOutput": {"hookEventName": event, "additionalContext": text}}`
- *   block   -> `{"decision": "block", "reason": reason}` (wrap-gate escalation only)
- */
+/** What a hook handler decides to do, decoupled from the stdin/stdout JSON protocol
+ * `hookResult.serializer.ts` encodes it into. `Block` is wrap-gate escalation only. */
 export type HookResult =
   | { readonly kind: HookResultKind.Silent }
   | {
@@ -34,18 +25,10 @@ export type HookResult =
     }
   | { readonly kind: HookResultKind.Block; readonly reason: string };
 
-/**
- * The five names `memory hook <name>` dispatches on.
- *
- * This enum has two independent consumers that must agree exactly:
- * `commands/hookDispatch/hookDispatch.command.ts` (which accepts the name)
- * and the install step that writes the settings registration (which writes
- * it into `~/.claude/settings.json`).
- * A rename on one side without the other would silently register a name the
- * other rejects — and because hooks fail open, the symptom would not be an
- * error, it would be memory quietly not working in every session. Sharing one
- * enum makes that a type error instead.
- */
+/** The five names `memory hook <name>` dispatches on. Shared by both
+ * `hookDispatch.command.ts` and the install step that registers them in
+ * `settings.json` — a rename on only one side would fail open silently, so
+ * sharing one enum makes the mismatch a type error instead. */
 export enum HookName {
   SessionStart = "session-start",
   MemoryInject = "memory-inject",

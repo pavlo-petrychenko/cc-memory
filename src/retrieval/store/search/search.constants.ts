@@ -1,12 +1,8 @@
 import { SearchKind } from "@/retrieval/retrieval.typedefs.ts";
 
-// One SQL per kind. Column weights: notes = title 10 / body 1 / tags 5;
-// worklog = slug 3 / date 1 / body 1. `snippet()` draws from the body column
-// (index 1 for notes_fts, index 2 for worklog_fts).
-// Exported individually (rather than kept as a private `Record`) so
-// `platform/db/db.adapter.test.ts` can import the REAL,
-// currently-running query text instead of keeping its own hand-copied
-// transcription that could silently drift from this one.
+// Column weights (C7): notes = title 10 / body 1 / tags 5; worklog = slug 3 / date
+// 1 / body 1. Exported individually so a test can import the REAL query text
+// instead of a hand-copied transcription that could drift from this one.
 export const NOTES_SEARCH_SQL =
   "SELECT path, title, snippet(notes_fts,1,'','','…',12) AS snip, " +
   "bm25(notes_fts, 10.0, 1.0, 5.0) AS score FROM notes_fts " +

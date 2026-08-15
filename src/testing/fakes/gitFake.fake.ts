@@ -1,8 +1,6 @@
 import type { AbsPath } from "@/core/index.ts";
 import type { Git } from "@/platform/index.ts";
 
-/** One recorded `Git` call, for assertions in services/hooks tests that don't
- * care about the underlying `Proc` invocation, only "did we call `git add`". */
 export type RecordedGitCall = {
   readonly method: string;
   readonly cwd: AbsPath;
@@ -19,13 +17,8 @@ export type GitFake = Git & {
   readonly setCommitResult: (value: boolean) => void;
 };
 
-/**
- * A `Git` with a fixed, settable return value per method — for services/hooks
- * tests that want to script "the tree is dirty" or "there is no git repo
- * here" without going through `procFake.fake.ts`'s argv-level detail.
- * `git.adapter.test.ts` itself tests the real adapter over `procFake`, not
- * this fake.
- */
+/** A `Git` with a fixed, settable return value per method, without going through
+ * `procFake.fake.ts`'s argv-level detail. */
 export function makeGitFake(): GitFake {
   const calls: RecordedGitCall[] = [];
   let statusPorcelainValue = "";

@@ -12,12 +12,7 @@ import type { Proc } from "@/platform/proc/proc.typedefs.ts";
 export class GitAdapter implements Git {
   constructor(private readonly proc: Proc) {}
 
-  /**
-   * Run `git -C cwd <...args>`, returning raw stdout on a clean exit or `""` on
-   * a non-zero exit or any thrown error (timeout, missing binary). `Proc.run`
-   * rejecting on timeout is what lets one `try/catch` cover both a timeout and
-   * a spawn failure.
-   */
+  /** Raw stdout on a clean exit, `""` on a non-zero exit or any thrown error. */
   private async readGit(
     cwd: AbsPath,
     args: readonly string[],
@@ -31,10 +26,7 @@ export class GitAdapter implements Git {
     }
   }
 
-  /**
-   * Run a git command whose exit code the caller doesn't inspect (`add`,
-   * `commit`). Resolves `false` only on a timeout or spawn failure.
-   */
+  /** Resolves `false` only on a timeout or spawn failure. */
   private async writeGit(cwd: AbsPath, args: readonly string[]): Promise<boolean> {
     try {
       await this.proc.run("git", ["-C", cwd, ...args], { timeoutMs: WRITE_TIMEOUT_MS });

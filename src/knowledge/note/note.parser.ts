@@ -48,10 +48,8 @@ function frontmatterFromYaml(parsed: YamlValue): Frontmatter {
   return fields;
 }
 
-/**
- * A naive frontmatter fallback: one `key: value` pair per line, quotes
- * stripped. Used only when the block isn't valid YAML.
- */
+/** A naive fallback for a block that isn't valid YAML: one `key: value` pair per
+ * line, quotes stripped. */
 function frontmatterFromLines(block: string): Frontmatter {
   const fields = new Map<string, FrontmatterValue>();
   for (const line of block.split(/\r\n|\r|\n/)) {
@@ -64,26 +62,19 @@ function frontmatterFromLines(block: string): Frontmatter {
   return fields;
 }
 
-// `Array.isArray` alone narrows a `readonly T[]` union member in the true
-// branch but NOT away from the false branch (a `readonly` array isn't
-// assignable to the built-in guard's `any[]`, so TS can't exclude it there); a
-// named predicate gives TypeScript an explicit type to exclude on the negative
-// branch instead.
+// A named predicate, because `Array.isArray` alone can't narrow a `readonly T[]`
+// union member away on the false branch (it isn't assignable to `any[]`).
 function isFrontmatterList(value: FrontmatterValue): value is readonly string[] {
   return Array.isArray(value);
 }
 
-/** Read one frontmatter value as a single scalar (first element, if it's a list). */
 function frontmatterScalar(value: FrontmatterValue | undefined): string | undefined {
   if (value === undefined) return undefined;
   return isFrontmatterList(value) ? value[0] : value;
 }
 
-/**
- * Accepts only an optional sign followed by digits (whitespace-trimmed).
- * Unlike `Number.parseInt`, a numeric prefix followed by trailing garbage
- * (e.g. `"5abc"`) is rejected outright rather than parsed as `5`.
- */
+/** Unlike `Number.parseInt`, a numeric prefix followed by trailing garbage (e.g.
+ * `"5abc"`) is rejected outright rather than parsed as `5`. */
 function parsePythonInt(raw: string): number | null {
   const trimmed = raw.trim();
   if (!/^[+-]?\d+$/.test(trimmed)) return null;
@@ -93,16 +84,12 @@ function parsePythonInt(raw: string): number | null {
 
 function frontmatterImportance(value: FrontmatterValue | undefined): number | null {
   const raw = frontmatterScalar(value);
-  // An absent or empty value skips the parse attempt entirely.
   if (raw === undefined || raw === "") return null;
   return parsePythonInt(raw);
 }
 
-/**
- * A `tags` frontmatter value may be a YAML list, or (from the fallback
- * parser, or a single-line flow scalar) a string like `"[a, b, c]"` needing
- * a comma/whitespace split.
- */
+/** A `tags` value may be a YAML list, or (from the fallback parser, or a single-line
+ * flow scalar) a string like `"[a, b, c]"` needing a comma/whitespace split. */
 function frontmatterTags(value: FrontmatterValue | undefined): readonly string[] {
   if (value === undefined) return [];
   if (isFrontmatterList(value)) {
@@ -125,26 +112,19 @@ function stripLeadingBlockquoteMarkers(line: string): string {
   return line.slice(start);
 }
 
-/**
- * One YAML-based frontmatter parser with a tolerant fallback: a note whose
- * frontmatter block isn't valid YAML falls back to a naive line-splitter so
- * a malformed vault file still parses (just without list/multiline field
- * support).
- */
+/** A YAML-based frontmatter parser with a tolerant fallback: an invalid block falls
+ * back to a naive line-splitter so a malformed vault file still parses (just
+ * without list/multiline field support). */
 export class NoteParser {
-  /**
-   * Split a note's text into its frontmatter fields and body. The regex match
-   * is anchored at the true start of the string: a file that doesn't open with
-   * `---` has no frontmatter at all, and the whole text is body.
-   */
+  /** The regex match is anchored at the true start of the string: a file that
+   * doesn't open with `---` has no frontmatter at all, and the whole text is body. */
   parseFrontmatter(text: string): ParsedFrontmatter {
     const match = FRONTMATTER.exec(text);
     if (match === null) return { frontmatter: new Map(), body: text };
     const block = match[1] ?? "";
     const body = text.slice(match[0].length);
     try {
-      // `YAML.parse` is typed `any`; annotating the binding narrows it to the
-      // concrete `YamlValue` union immediately, before anything inspects its shape.
+      // `YAML.parse` is typed `any`; annotating narrows it to `YamlValue` immediately.
       const parsed: YamlValue = parseYaml(block);
       return { frontmatter: frontmatterFromYaml(parsed), body };
     } catch {
@@ -152,7 +132,6 @@ export class NoteParser {
     }
   }
 
-  /** Wikilink targets in a note body, with any `|display` label stripped. */
   extractWikilinks(body: string): readonly string[] {
     const targets: string[] = [];
     for (const match of body.matchAll(WIKILINK)) {
@@ -161,7 +140,6 @@ export class NoteParser {
     return targets;
   }
 
-  /** `- rel_type [[Target]]` lines, target cleaned the same way as `extractWikilinks`. */
   extractTypedRelations(body: string): readonly NoteRelation[] {
     const relations: NoteRelation[] = [];
     for (const match of body.matchAll(TYPED_RELATION)) {
@@ -173,7 +151,6 @@ export class NoteParser {
     return relations;
   }
 
-  /** Inline `#tag` occurrences, unfiltered and undeduplicated — callers combine as needed. */
   extractInlineTags(body: string): readonly string[] {
     const tags: string[] = [];
     for (const match of body.matchAll(INLINE_TAG)) {
@@ -182,11 +159,8 @@ export class NoteParser {
     return tags;
   }
 
-  /**
-   * Strip wikilinks down to display text, drop `**`/backticks, collapse
-   * whitespace, and truncate at `maxLen` on the last space. Used for the
-   * KB-map feature descriptions pulled from a note's blockquote.
-   */
+  /** Strips wikilinks down to display text, drops `**`/backticks, collapses
+   * whitespace, and truncates at `maxLen` on the last space. */
   cleanInline(text: string, maxLen: number): string {
     let cleaned = text.replace(/\[\[[^\]|]*\|([^\]]*)\]\]/g, "$1");
     cleaned = cleaned.replace(/\[\[([^\]]*)\]\]/g, "$1");
@@ -201,12 +175,8 @@ export class NoteParser {
     return cleaned;
   }
 
-  /**
-   * Full note parse: frontmatter + title + tags (frontmatter ∪ inline) + typed
-   * and plain-wikilink relations + importance. `fallbackTitle` is the note's
-   * filename stem, used when no `# ` heading is present; domain code has no
-   * path, so the caller (which does) supplies it.
-   */
+  /** `fallbackTitle` is used when no `# ` heading is present; this module has no
+   * notion of paths, so the caller (which does) supplies the filename stem. */
   parse(text: string, fallbackTitle: string): ParsedNote {
     const { frontmatter, body } = this.parseFrontmatter(text);
     const titleMatch = TITLE.exec(body);
@@ -232,12 +202,8 @@ export class NoteParser {
     };
   }
 
-  /**
-   * Parses a feature's index note: `epic:` comes from the shared frontmatter
-   * parser; the title is the first `# ` heading (with the KB-index home-note
-   * suffix stripped), and the description is every contiguous blockquote line
-   * starting right after it, joined and cleaned.
-   */
+  /** The title is the first `# ` heading (KB-index suffix stripped); the description
+   * is every contiguous blockquote line right after it, joined and cleaned. */
   parseIndex(text: string): ParsedIndexNote {
     const { frontmatter, body } = this.parseFrontmatter(text);
     const epic = frontmatterScalar(frontmatter.get("epic")) ?? "";

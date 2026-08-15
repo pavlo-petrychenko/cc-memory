@@ -1,12 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
 
 import { runCli } from "@/cli/main.ts";
 import { LogLevel } from "@/core/index.ts";
-import { DatabaseAdapter } from "@/platform/index.ts";
-import type { SqlDatabase } from "@/platform/index.ts";
+import { UninstallCommand } from "@/install/index.ts";
+import { SqliteAdapter } from "@/platform/index.ts";
+import type { Sqlite } from "@/platform/index.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 
@@ -15,13 +13,13 @@ import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
  * the workspace id rather than accepting an override, so a plain in-memory
  * `Container` needs its `openDatabase` redirected to `:memory:` to avoid trying to
  * open a real SQLite file under a `home` that doesn't exist on disk — never a
- * `SqlDatabase` fake (CLAUDE.md), still the real `bun:sqlite` engine. */
-function makeInMemoryOnlyOpenDb(): (path: string) => SqlDatabase {
-  const handles = new Map<string, SqlDatabase>();
+ * `Sqlite` fake (CLAUDE.md), still the real `bun:sqlite` engine. */
+function makeInMemoryOnlyOpenDb(): (path: string) => Sqlite {
+  const handles = new Map<string, Sqlite>();
   return (path: string) => {
     const existing = handles.get(path);
     if (existing !== undefined) return existing;
-    const db = new DatabaseAdapter(":memory:");
+    const db = new SqliteAdapter(":memory:");
     handles.set(path, db);
     return db;
   };
@@ -157,14 +155,14 @@ describe("runCli dispatch", () => {
   // `src/session/commands/hookDispatch/hookDispatch.command.test.ts`.
 
   /**
-   * `dispatch`'s `case CliCommand.Install`/`Uninstall` call
-   * `install(parsed)`/`uninstall()` with NO `container` argument, unlike
-   * every other case here — so the `container` this test builds via
-   * `makeTestContainer` is NEVER what `install`/`uninstall` actually run
-   * against; they always build their OWN container from the real
-   * `process.env` (`install.command.ts`'s doc comment explains why). Faking
-   * that by mutating `process.env.HOME` mid-process does NOT work under
-   * Bun — `os.homedir()` resolves `$HOME` once at startup and does not
+   * `dispatch`'s `case CliCommand.Install`/`Uninstall` construct
+   * `new InstallCommand()`/`new UninstallCommand()` with NO `container`
+   * argument, unlike every other case here — so the `container` this test
+   * builds via `makeTestContainer` is NEVER what `install`/`uninstall`
+   * actually run against; they always build their OWN container from the
+   * real `process.env` (`install.command.ts`'s doc comment explains why).
+   * Faking that by mutating `process.env.HOME` mid-process does NOT work
+   * under Bun — `os.homedir()` resolves `$HOME` once at startup and does not
    * observe a later reassignment in the same process, so doing so would
    * turn this test into a real, unwanted `memory install`/`uninstall` run
    * against this machine's actual `~/.claude/settings.json`,
@@ -172,14 +170,15 @@ describe("runCli dispatch", () => {
    *
    * So each case below is picked because it is safe REGARDLESS of that
    * limitation: `install --dry-run` structurally never writes anything
-   * (`runInstall` returns before any mutation — see `run.ts`), and
-   * `uninstall` only ever reads `~/.claude/memory/installed.json` before
-   * deciding what to do — so the second test asserts that file does NOT
-   * exist first and refuses to run otherwise, rather than silently trusting
-   * that assumption forever. Full behavioral coverage of both functions —
-   * including every unsafe path (a real write to the user home) —
-   * lives in `src/install/commands/install/install.command.test.ts`, entirely
-   * against an explicit fake `Container` (`procFake`), never the real default.
+   * (`InstallService.install` returns before any mutation — see
+   * `install.service.ts`), and `uninstall` only ever reads
+   * `~/.claude/memory/installed.json` before deciding what to do — so the
+   * second test asserts that file does NOT exist first and refuses to run
+   * otherwise, rather than silently trusting that assumption forever. Full
+   * behavioral coverage of both commands — including every unsafe path (a
+   * real write to the user home) — lives in
+   * `src/install/commands/install/install.command.test.ts`, entirely against
+   * an explicit fake `Container` (`procFake`), never the real default.
    */
   test("install --dry-run dispatches to install (always safe: dry-run never writes)", async () => {
     const container = makeTestContainer({ stdio: makeIoFake() });
@@ -187,19 +186,15 @@ describe("runCli dispatch", () => {
     expect(outcome.exitCode).toBe(0);
   });
 
-  test("uninstall dispatches to uninstall (guarded: refuses to run for real if this machine has ever been cut over)", async () => {
-    const realManifestPath = join(homedir(), ".claude", "memory", "installed.json");
-    if (existsSync(realManifestPath)) {
-      throw new Error(
-        "Refusing to run this test: a REAL ~/.claude/memory/installed.json exists on " +
-          "this machine, meaning cc-memory has actually been cut over. Calling the real " +
-          "`uninstall()` here (main.ts's dispatch passes no container, so it always uses " +
-          "the real one) would reverse that real install. Remove or rewrite this test " +
-          "instead of letting it run.",
-      );
-    }
+  /**
+   * Constructs `UninstallCommand` directly rather than routing through
+   * `runCli`. Going through dispatch would build a real container and reverse
+   * this machine's actual install — there is no `--dry-run` equivalent for
+   * uninstall to make that safe, unlike the `install` case above.
+   */
+  test("uninstall exits 0 against a fake container", async () => {
     const container = makeTestContainer({ stdio: makeIoFake() });
-    const outcome = await runCli(["uninstall"], container, CONFIG);
+    const outcome = await new UninstallCommand(container).execute();
     expect(outcome.exitCode).toBe(0);
   });
 

@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
-import { IndexBuildService } from "@/retrieval/store/indexBuild/index.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
+import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
 import { NoteListService } from "@/retrieval/store/noteList/noteList.service.ts";
+import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 import {
   setupIndexFixture,
   teardownIndexFixture,
@@ -21,8 +23,9 @@ const ALL_NOTE_PATHS = [
   "Gamma/Apart.md",
 ] as const;
 
-const indexBuildService = new IndexBuildService();
-const noteListService = new NoteListService();
+const connectionService = new IndexConnectionService(new SchemaService());
+const indexBuildService = new IndexBuildService(connectionService);
+const noteListService = new NoteListService(connectionService);
 
 let fixture: IndexFixture;
 

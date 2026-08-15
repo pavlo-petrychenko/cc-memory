@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { KbMapService } from "@/knowledge/kbMap/kbMap.service.ts";
-import { NoteParser } from "@/knowledge/note/index.ts";
+import { NoteParser } from "@/knowledge/note/note.parser.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 
 /**
@@ -36,7 +36,7 @@ function makeWorkspace(overrides: Partial<Workspace> = {}): Workspace {
     exclude: ["_Worklogs", "Archive", ".obsidian"],
     // SAFETY: `bun:sqlite`'s own special literal for an in-memory database —
     // never touches a real `.claude/memory/**/index.db` file (CLAUDE.md's
-    // "never fake `SqlDatabase`" rule still applies, but `KbMapService.build` never opens
+    // "never fake `Sqlite`" rule still applies, but `KbMapService.build` never opens
     // this path at all — it's unused by anything under test here).
     indexDb: ":memory:" as AbsPath,
     matchedPrefix: KB,

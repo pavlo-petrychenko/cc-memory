@@ -2,17 +2,10 @@ import { join } from "node:path";
 
 import { spawn } from "bun";
 
-/**
- * Spawn the built CLI and normalize its output, for the end-to-end tests that compare
- * against the golden files under `testing/golden/`.
- *
- * Normalization is deliberately minimal: the temp-directory prefix becomes a
- * placeholder, the two genuinely volatile timestamps are masked, and float scores are
- * rounded. Anything more would start hiding real output differences, which defeats the
- * point of comparing against a golden.
- *
- * Callers must have run `ensureDistBuilt()` first.
- */
+/** Spawns the built CLI and normalizes its output for golden-file comparison:
+ * the temp-directory prefix becomes a placeholder, volatile timestamps are
+ * masked, float scores are rounded — nothing more, or real differences would
+ * get hidden. Callers must have run `ensureDistBuilt()` first. */
 const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
 const DIST_ENTRYPOINT = join(REPO_ROOT, "dist", "memory.js");
 const DEFAULT_TIMEOUT_MS = 15_000;

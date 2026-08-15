@@ -1,14 +1,8 @@
-/**
- * Salient-token extraction for search queries.
- *
- * The vault's `porter unicode61` FTS5 tokenizer splits `snake_case`/`kebab-case`/
- * `dotted.names` at index time but leaves `camelCase` glued. So for a prompt like
- * "overallScore", we emit BOTH the glued lowercase form (`overallscore`, matches a
- * literal camelCase hit) AND the camel-split parts (`overall`, `score`, matches a
- * snake/kebab/spaced note) — this symmetry is why `overallScore` and
- * `overall score` retrieve each other regardless of which form the note was
- * written in.
- */
+/** Salient-token extraction for search queries. The `porter unicode61` FTS5
+ * tokenizer splits `snake_case`/`kebab-case`/`dotted.names` at index time but
+ * leaves `camelCase` glued, so a term like "overallScore" emits BOTH the glued
+ * lowercase form and the camel-split parts — this symmetry is why `overallScore`
+ * and `overall score` retrieve each other regardless of which form was written. */
 
 import {
   CAMEL_SPLIT,
@@ -22,10 +16,7 @@ export class TokenizerParser {
     return token.length >= 2 && !PURE_DIGITS.test(token) && !STOPWORDS.has(token);
   }
 
-  /**
-   * Expand one raw word-chunk into FTS-matchable terms: the glued lowercase
-   * form, plus every kept camel/underscore-split part.
-   */
+  /** The glued lowercase form, plus every kept camel/underscore-split part. */
   subtokens(chunk: string): ReadonlySet<string> {
     const out = new Set<string>();
     const glued = chunk.replaceAll("_", "").toLowerCase();
@@ -37,7 +28,6 @@ export class TokenizerParser {
     return out;
   }
 
-  /** Distinct lowercased query terms extracted from arbitrary prompt text. */
   salientTokens(text: string): ReadonlySet<string> {
     const tokens = new Set<string>();
     for (const match of text.matchAll(CHUNK)) {
@@ -46,12 +36,9 @@ export class TokenizerParser {
     return tokens;
   }
 
-  /**
-   * Salient terms in prompt order, for building NEAR adjacency pairs. Unlike
-   * `salientTokens` (a set), this keeps sequence and per-chunk sub-word order:
-   * per chunk, the camel-split parts that pass `keep`; if none pass, the
-   * glued form (if it passes `keep`).
-   */
+  /** For building NEAR adjacency pairs. Unlike `salientTokens` (a set), this keeps
+   * sequence: per chunk, the camel-split parts that pass `keep`, or the glued form
+   * if none do. */
   orderedTerms(text: string): readonly string[] {
     const terms: string[] = [];
     for (const chunkMatch of text.matchAll(CHUNK)) {

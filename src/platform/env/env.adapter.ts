@@ -1,30 +1,27 @@
 import { homedir } from "node:os";
 
 import type { AbsPath } from "@/core/index.ts";
+import { absPath, parentDir } from "@/core/index.ts";
 import type { Env } from "@/platform/env/env.typedefs.ts";
 
-/**
- * The real `Env`, reading the actual process for the home directory and cwd.
- *
- * SAFETY: `os.homedir()`/`process.cwd()` are always absolute, and the OS never
- * hands back a path needing further normalization here — this is the only place
- * outside `core/utils/paths/paths.utils.ts` an `AbsPath` cast is warranted, because
- * there is no relative or `~`-prefixed input to run through `expandPath`.
- */
+/** The real `Env`, reading the actual process for the home directory and cwd. */
 export class EnvAdapter implements Env {
   get(name: string): string | undefined {
     return process.env[name];
   }
 
   home(): AbsPath {
-    // SAFETY: `os.homedir()` always returns an absolute, OS-native path — no
-    // `~`/relative segment to normalize.
-    return homedir() as AbsPath;
+    return absPath(homedir());
   }
 
   cwd(): AbsPath {
-    // SAFETY: `process.cwd()` always returns an absolute, OS-native path, same
-    // reasoning as `home()` above.
-    return process.cwd() as AbsPath;
+    return absPath(process.cwd());
+  }
+
+  repoRoot(): AbsPath {
+    const runningFilePath = absPath(new URL(import.meta.url).pathname);
+    // `dist/memory.js` sits two path segments below the repo root; `import.meta.url`
+    // resolves to the bundle's own URL at runtime, so its parent's parent is the root.
+    return parentDir(parentDir(runningFilePath));
   }
 }

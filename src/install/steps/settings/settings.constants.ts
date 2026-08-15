@@ -1,14 +1,11 @@
 import { HookName } from "@/session/index.ts";
 import { HookEvent } from "@/session/index.ts";
 
-// A literal `~/`-prefix — matches every other `*_HOME_RELATIVE_PATH` constant
-// in this codebase (`registry.service.ts`, `manifest.ts`).
 export const SETTINGS_HOME_RELATIVE_PATH = "~/.claude/settings.json";
 
-/** `event -> (hook name for "memory hook <name>", timeout seconds)`:
- * `SessionStart` gets 10s, the other four get 15s. The list's order decides
- * where a brand-new event key lands in `settings.json`'s `hooks` object (see
- * `settings.service.ts`'s `registerOurHooks`). */
+/** `event -> (hook name, timeout seconds)`: `SessionStart` gets 10s, the other
+ * four get 15s. The list's order decides where a brand-new event lands in
+ * `settings.json`'s `hooks` object. */
 export const hookRegistrations: readonly {
   readonly event: HookEvent;
   readonly name: HookName;
@@ -24,7 +21,13 @@ export const hookRegistrations: readonly {
 export const HOOK_REGISTRATION_ORDER: readonly {
   readonly event: HookEvent;
   readonly name: string;
-}[] = hookRegistrations.map(({ event, name }) => ({ event, name }));
+}[] = [
+  { event: HookEvent.SessionStart, name: HookName.SessionStart },
+  { event: HookEvent.UserPromptSubmit, name: HookName.MemoryInject },
+  { event: HookEvent.Stop, name: HookName.WrapGate },
+  { event: HookEvent.PostCompact, name: HookName.CompactCheckpoint },
+  { event: HookEvent.SessionEnd, name: HookName.WorklogFloor },
+];
 
 /** A substring test, kept as a one-time fallback for entries an earlier
  * installer left behind before this manifest existed at all. */

@@ -1,15 +1,10 @@
 import type { WorkingMemoryInput } from "@/worklog/formatters/workingMemory/workingMemory.typedefs.ts";
 
-/**
- * Renders the working-memory block injected at SessionStart. This text is
- * agent-visible and must stay exact, including both "no working memory yet"
- * phrasings.
- */
+/** Renders the working-memory block injected at SessionStart. Agent-visible text —
+ * must stay exact, including both "no working memory yet" phrasings. */
 export class WorkingMemoryFormatter {
-  // `bun test --coverage` treats a class with no explicit constructor as
-  // having an unreachable synthetic one, which drags its function-coverage
-  // percentage down even at 100% line coverage — a non-empty (if inert)
-  // constructor body keeps that synthetic slot out of the count.
+  // A non-empty constructor keeps bun's coverage report from counting an
+  // unreachable synthetic default constructor against this class.
 
   format(input: WorkingMemoryInput): string {
     const head = `# Working memory — workspace \`${input.workspaceId}\`, worktree \`${input.slug}\``;

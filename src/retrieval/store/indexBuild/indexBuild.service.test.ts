@@ -4,10 +4,11 @@ import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import type { FileSystem } from "@/platform/index.ts";
-import { IndexConnectionService } from "@/retrieval/store/connection/index.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
 import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
-import { NoteListService } from "@/retrieval/store/noteList/index.ts";
-import { SCHEMA_VERSION } from "@/retrieval/store/schema/index.ts";
+import { NoteListService } from "@/retrieval/store/noteList/noteList.service.ts";
+import { SCHEMA_VERSION } from "@/retrieval/store/schema/schema.constants.ts";
+import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 
@@ -17,7 +18,7 @@ const HOME = "/home/test" as AbsPath;
 // Container.openDatabase's per-path memoization, not a real filesystem path.
 const IN_MEMORY_DB = ":memory:" as AbsPath;
 
-const connectionService = new IndexConnectionService();
+const connectionService = new IndexConnectionService(new SchemaService());
 const indexBuildService = new IndexBuildService(connectionService);
 const noteListService = new NoteListService(connectionService);
 

@@ -6,7 +6,8 @@ import { expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { FileSystemAdapter } from "@/platform/index.ts";
 import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
-import { SCHEMA_VERSION } from "@/retrieval/store/schema/index.ts";
+import { SCHEMA_VERSION } from "@/retrieval/store/schema/schema.constants.ts";
+import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
 import { createTempDir, type TempDir } from "@/testing/utils/tempDir.utils.ts";
@@ -17,7 +18,7 @@ const HOME = "/home/test" as AbsPath;
 // Container.openDatabase's per-path memoization, not a real filesystem path.
 const IN_MEMORY_DB = ":memory:" as AbsPath;
 
-const connectionService = new IndexConnectionService();
+const connectionService = new IndexConnectionService(new SchemaService());
 
 function makeWorkspace(indexDb: AbsPath): Workspace {
   const kb = expandPath("/home/test/kb", HOME);
@@ -74,7 +75,7 @@ describe("index/db IndexConnectionService.open — schema-version / shared-handl
     expect(second.db.query("SELECT * FROM notes", [])).toEqual([]);
   });
 
-  test("repeated opens of the same path share one SqlDatabase handle", async () => {
+  test("repeated opens of the same path share one Sqlite handle", async () => {
     const container = makeTestContainer({ fs: makeFsMemoryFake() });
     const workspace = makeWorkspace(IN_MEMORY_DB);
 

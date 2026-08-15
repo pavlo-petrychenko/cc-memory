@@ -1,15 +1,6 @@
-/**
- * The FTS5 index schema. The `porter unicode61` tokenizer and column order
- * on `notes_fts`/`worklog_fts` are load-bearing for retrieval and must not
- * drift from what `search.service.ts`'s SQL expects.
- *
- * `worklog_files` is what makes worklog indexing incremental-by-mtime
- * instead of a full `DELETE FROM worklog_fts` + reinsert on every
- * `SessionStart` (`indexBuild.service.ts`). `CREATE TABLE IF NOT EXISTS` is
- * additive-safe — an already-`SCHEMA_VERSION`-2 database picks it up on its
- * next open with no data loss, so this does not require bumping
- * `SCHEMA_VERSION`.
- */
+/** The `porter unicode61` tokenizer and column order on `notes_fts`/`worklog_fts`
+ * are load-bearing for retrieval (C7) and must not drift from what
+ * `search.service.ts`'s SQL expects. */
 export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS notes(
   id INTEGER PRIMARY KEY, path TEXT UNIQUE, title TEXT, type TEXT,
@@ -27,9 +18,6 @@ CREATE TABLE IF NOT EXISTS worklog_files(
 );
 `;
 
-/**
- * Bump when the FTS schema/tokenizer changes; `connection.service.ts`'s
- * `openIndexDb` detects a lower stored `PRAGMA user_version` and does a
- * one-time full rebuild — the DB is derived and disposable.
- */
+/** Bump when the FTS schema/tokenizer changes; `connection.service.ts` detects a
+ * lower stored `PRAGMA user_version` and does a one-time full rebuild. */
 export const SCHEMA_VERSION = 2;

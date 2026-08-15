@@ -1,12 +1,13 @@
 import type { AbsPath } from "@/core/index.ts";
+import { absPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import type { SqlDatabase } from "@/platform/index.ts";
-import { FtsQueryBuilder } from "@/retrieval/query/index.ts";
-import { Ranker } from "@/retrieval/ranking/index.ts";
+import type { Sqlite } from "@/platform/index.ts";
+import { FtsQueryBuilder } from "@/retrieval/query/ftsQuery/ftsQuery.builder.ts";
+import { Ranker } from "@/retrieval/ranking/ranking.ranker.ts";
 import { SearchKind, type FusedHit, type Hit } from "@/retrieval/retrieval.typedefs.ts";
-import { IndexConnectionService } from "@/retrieval/store/connection/index.ts";
-import { LinkGraphService } from "@/retrieval/store/graph/index.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
+import { LinkGraphService } from "@/retrieval/store/graph/graph.service.ts";
 import {
   DEFAULT_KIND,
   DEFAULT_LIMIT,
@@ -18,8 +19,6 @@ import type {
   SearchRow,
 } from "@/retrieval/store/search/search.typedefs.ts";
 
-/** Collapses any run of whitespace to a single space and trims leading/
- * trailing empty tokens. */
 function collapseWhitespace(text: string): string {
   return text
     .split(/\s+/u)
@@ -27,15 +26,11 @@ function collapseWhitespace(text: string): string {
     .join(" ");
 }
 
-/**
- * Execute one prebuilt FTS5 MATCH. An empty (or all-whitespace) query
- * short-circuits to `[]` without touching the database; an FTS5 syntax
- * error is swallowed to `[]` rather than thrown — this is what makes a
- * natural prompt containing `OR`/`AND`/`NEAR`/quotes always safe to search
- * with.
- */
+/** An empty query short-circuits to `[]`; an FTS5 syntax error is swallowed to `[]`
+ * rather than thrown — this is what makes a natural prompt containing
+ * `OR`/`AND`/`NEAR`/quotes always safe to search with. */
 function runMatch(
-  db: SqlDatabase,
+  db: Sqlite,
   matchQuery: string,
   limit: number,
   kind: SearchKind,
@@ -44,11 +39,7 @@ function runMatch(
   try {
     const rows = db.query<SearchRow>(SEARCH_SQL[kind], [matchQuery, limit]);
     return rows.map((row) => ({
-      // SAFETY: the `path` column is only ever written by
-      // `indexBuild.service.ts`'s upserts, which always bind an
-      // already-validated `AbsPath` — reading it back restores the brand
-      // SQLite's storage necessarily erases.
-      path: row.path as AbsPath,
+      path: absPath(row.path),
       title: row.title,
       snippet: collapseWhitespace(row.snip),
       score: row.score,
@@ -60,18 +51,12 @@ function runMatch(
 
 export class SearchService {
   constructor(
-    private readonly connectionService: IndexConnectionService = new IndexConnectionService(),
-    private readonly ftsQueryBuilder: FtsQueryBuilder = new FtsQueryBuilder(),
-    private readonly ranker: Ranker = new Ranker(),
-    private readonly linkGraphService: LinkGraphService = new LinkGraphService(),
+    private readonly connectionService: IndexConnectionService,
+    private readonly ftsQueryBuilder: FtsQueryBuilder,
+    private readonly ranker: Ranker,
+    private readonly linkGraphService: LinkGraphService,
   ) {}
 
-  /**
-   * Single BM25 query over one workspace. `query` is natural text: it is
-   * always tokenized via `ftsQuery` and never interpreted as raw FTS5 syntax,
-   * so any prompt (including one containing `OR`/`AND`/`NEAR`/quotes) is safe
-   * and never errors.
-   */
   async search(
     container: Container,
     workspace: Workspace,
@@ -87,19 +72,9 @@ export class SearchService {
     );
   }
 
-  /**
-   * Proximity-aware retrieval: fuse a token-OR ranking with a phrase/`NEAR`
-   * ranking via Reciprocal Rank Fusion, plus the small wikilink-corroboration
-   * bonus. Returns `[]` EARLY when the token query yields no candidates at
-   * all — phrase hits are always a subset of token hits (`NEAR` requires both
-   * terms to already match), so the token list is the complete candidate set.
-   * Degrades to pure BM25 ordering when `phraseQuery` has no adjacent-term
-   * pair to build a `NEAR` clause from.
-   *
-   * Reuses the SAME `SqlDatabase` handle for the token search, the phrase search and
-   * the in-link count (via `openIndexDb`/`Container.openDatabase`'s per-path
-   * memoization) instead of opening three separate connections.
-   */
+  /** Fuses a token-OR ranking with a phrase/`NEAR` ranking via RRF, plus a small
+   * wikilink-corroboration bonus. Returns `[]` early when the token query yields no
+   * candidates — phrase hits are always a subset of token hits. */
   async searchFused(
     container: Container,
     workspace: Workspace,

@@ -1,33 +1,24 @@
 import type { AbsPath } from "@/core/index.ts";
-import { expandPath } from "@/core/index.ts";
-import { MANIFEST_HOME_RELATIVE_PATH } from "@/install/steps/manifest/manifest.constants.ts";
+import { manifestPath } from "@/core/index.ts";
 import type {
   InstalledManifest,
   SkillManifestEntry,
 } from "@/install/steps/manifest/manifest.typedefs.ts";
-import {
-  type JsonObject,
-  JsonFileService,
-  type JsonValue,
-} from "@/install/utils/jsonFile/index.ts";
+import { JsonFileService } from "@/install/utils/jsonFile/jsonFile.service.ts";
+import type {
+  JsonObject,
+  JsonValue,
+} from "@/install/utils/jsonFile/jsonFile.typedefs.ts";
 import type { FileSystem } from "@/platform/index.ts";
 
-/**
- * `~/.claude/memory/installed.json` — a record of exactly what THIS
- * installer wrote last time, rather than an installer having to guess by
- * matching a substring in an existing command string. Read before every
- * install/uninstall so:
- *   - hook groups get purged by their EXACT former command string, not a
- *     substring — a moved/renamed repo still gets cleaned up (no orphans);
- *   - `uninstall` reverses exactly these artifacts, nothing guessed;
- *   - the one-time legacy substring purge (for entries left by an install
- *     that predates this manifest) runs exactly once.
- */
+/** `~/.claude/memory/installed.json` — a record of exactly what THIS installer
+ * wrote last time, so hook groups get purged by exact command string, `uninstall`
+ * reverses exactly these artifacts, and the one-time legacy purge runs exactly once. */
 export class ManifestService {
   constructor(private readonly fs: FileSystem) {}
 
   static defaultPath(home: AbsPath): AbsPath {
-    return expandPath(MANIFEST_HOME_RELATIVE_PATH, home);
+    return manifestPath(home);
   }
 
   private static isStringRecord(
@@ -52,15 +43,6 @@ export class ManifestService {
     return value !== undefined && JsonFileService.isString(value) ? value : null;
   }
 
-  /**
-   * Validate a parsed `installed.json` into a typed `InstalledManifest`, or
-   * `null` for anything that doesn't match — a missing, corrupt, or
-   * pre-manifest-era file are all treated identically to "no manifest yet"
-   * (the same degrade-gracefully stance `registry.service.ts`'s
-   * `loadRegistry` takes for an absent `registry.toml`, since a broken
-   * manifest just means this run falls back to the one-time legacy
-   * substring purge).
-   */
   private static parseManifest(value: JsonObject): InstalledManifest | null {
     const schemaVersion = value["schemaVersion"];
     const repoRoot = value["repoRoot"];
@@ -109,14 +91,10 @@ export class ManifestService {
     };
   }
 
-  /** `null` for "no manifest yet" — either the file doesn't exist, or it
-   * exists but doesn't parse as our schema (a hand-edit, a future schema
-   * bump, or simple corruption). Both cases fall back to first-run behavior
-   * rather than failing the install. */
   async load(path: AbsPath): Promise<InstalledManifest | null> {
     const result = await new JsonFileService(this.fs).readObjectFile(path);
     if (!result.ok) return null;
-    if (Object.keys(result.value).length === 0) return null; // missing file -> `{}`
+    if (Object.keys(result.value).length === 0) return null;
     return ManifestService.parseManifest(result.value);
   }
 

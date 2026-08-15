@@ -1,8 +1,5 @@
-/**
- * A read-only snapshot of the process environment, as an adapter would hand it
- * to `parseConfig`. Domain code never reads `process.env`/`Bun.env` itself — dates,
- * times, paths and env vars all arrive as parameters.
- */
+/** A read-only snapshot of the process environment, as an adapter would hand it
+ * to `parseConfig`. Domain code never reads `process.env`/`Bun.env` itself. */
 export type EnvSnapshot = Readonly<Record<string, string | undefined>>;
 
 /** Log verbosity for the rotating `ccmem.log`. */

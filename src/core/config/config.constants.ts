@@ -1,4 +1,3 @@
-/** `process.env`/`Bun.env` key names for every `CCMEM_*` tunable. */
 export const ENV_INJECT_MIN_SCORE = "CCMEM_INJECT_MIN_SCORE";
 export const ENV_LINK_BOOST = "CCMEM_LINK_BOOST";
 export const ENV_INJECT_LOG = "CCMEM_INJECT_LOG";
@@ -7,9 +6,7 @@ export const ENV_BLOCK_DRIFT = "CCMEM_BLOCK_DRIFT";
 export const ENV_GATE_DISABLE = "CCMEM_GATE_DISABLE";
 export const ENV_LOG_LEVEL = "CCMEM_LOG_LEVEL";
 
-/** The exact value that disables `CCMEM_INJECT_LOG`; any other value leaves it on. */
 export const INJECT_LOG_DISABLED_VALUE = "0";
-/** The exact value that disables the wrap-gate via `CCMEM_GATE_DISABLE`. */
 export const GATE_DISABLED_VALUE = "1";
 
 export const INJECT_MIN_SCORE_DEFAULT = 0.2;

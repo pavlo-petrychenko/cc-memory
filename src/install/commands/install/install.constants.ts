@@ -1,3 +1,5 @@
+import type { CommandDescriptor } from "@/cli/help/help.typedefs.ts";
+
 export const INSTALL_BANNER = "Installing cc-memory…";
 export const INSTALL_DRY_RUN_BANNER =
   "Installing cc-memory… (dry run — nothing will be written)";
@@ -8,3 +10,17 @@ export const SETTINGS_DIFF_HEADER = "settings.json diff:";
 export const UNINSTALL_BANNER = "Uninstalling cc-memory…";
 export const UNINSTALL_NOTHING_MESSAGE =
   "no installed.json manifest found; nothing to uninstall";
+
+export const INSTALL_DESCRIPTOR: CommandDescriptor = {
+  name: "install",
+  usage: ["install [--dry-run]"],
+  summary: "wire into Claude Code",
+  hidden: false,
+};
+
+export const UNINSTALL_DESCRIPTOR: CommandDescriptor = {
+  name: "uninstall",
+  usage: ["uninstall"],
+  summary: "wire out of Claude Code",
+  hidden: false,
+};

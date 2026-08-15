@@ -1,13 +1,36 @@
+import type { CommandDescriptor } from "@/cli/help/help.typedefs.ts";
+
 export const NO_WORKSPACES_MESSAGE = "(no workspaces)";
+
+export const WORKSPACE_ADD_DESCRIPTOR: CommandDescriptor = {
+  name: "workspace add",
+  usage: [
+    "workspace add <id> --match <prefix>… [--kb PATH] [--worklogs PATH] [--exclude E…]",
+  ],
+  summary: "register a new workspace",
+  hidden: false,
+};
+
+export const WORKSPACE_RM_DESCRIPTOR: CommandDescriptor = {
+  name: "workspace rm",
+  usage: ["workspace rm <id> [--purge]"],
+  summary: "remove a workspace registration",
+  hidden: false,
+};
+
+export const WORKSPACE_LS_DESCRIPTOR: CommandDescriptor = {
+  name: "workspace ls",
+  usage: ["workspace ls"],
+  summary: "list registered workspaces",
+  hidden: false,
+};
 
 export const DEFAULT_EXCLUDE = ["_Worklogs", "Archive", ".obsidian"];
 
-/** Written only when `<kb>/.gitignore` doesn't exist yet. */
 export const GITIGNORE_CONTENT = ".obsidian/workspace*\n.obsidian/cache\n.DS_Store\n";
 
-export const GIT_INIT_TIMEOUT_MS = 10_000; // matches git.adapter.ts's WRITE_TIMEOUT_MS
+export const GIT_INIT_TIMEOUT_MS = 10_000;
 
-// The home note's frontmatter and heading — written once at workspace creation.
 export const HOME_NOTE_HEADER_PREFIX = "---\ntype: index\n---\n# ";
 export const HOME_NOTE_HEADER_SUFFIX = " — Knowledge Base Index\n\n";
 export const HOME_NOTE_BODY_PREFIX = "> Knowledge base for the **";

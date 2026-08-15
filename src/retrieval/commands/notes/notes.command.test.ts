@@ -6,11 +6,19 @@ import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
 import { NotesCommand } from "@/retrieval/commands/notes/notes.command.ts";
-import { IndexBuildService } from "@/retrieval/store/index.ts";
+import { NotesFormatter } from "@/retrieval/commands/notes/notes.formatter.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
+import { IndexBuildService } from "@/retrieval/store/indexBuild/indexBuild.service.ts";
+import { NoteListService } from "@/retrieval/store/noteList/noteList.service.ts";
+import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeIoFake, type IoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestContainer } from "@/testing/fixtures/testContainer.fixture.ts";
-import { expandWorkspace, saveRegistry } from "@/workspace/index.ts";
+import {
+  expandWorkspace,
+  RegistryService,
+  RegistryTomlSerializer,
+} from "@/workspace/index.ts";
 
 // SAFETY: a fixed test fixture, matching the test container fixture's DEFAULT_HOME.
 const HOME = "/home/test" as AbsPath;
@@ -25,8 +33,12 @@ const PRIMARY: RawWorkspace = {
   indexDb: ":memory:",
 };
 
-const indexBuildService = new IndexBuildService();
-const notesCommand = new NotesCommand();
+const connectionService = new IndexConnectionService(new SchemaService());
+const indexBuildService = new IndexBuildService(connectionService);
+const notesCommand = new NotesCommand(
+  new NoteListService(connectionService),
+  new NotesFormatter(),
+);
 
 function notesArgs(overrides: Partial<NotesArgs> = {}): NotesArgs {
   return {
@@ -52,7 +64,9 @@ async function seedIndexedWorkspace(): Promise<SeededFixture> {
   );
   // SAFETY: fixed literal test fixture paths.
   fs.seedFile("/vault-primary/Loose.md" as AbsPath, "# Loose\nNo frontmatter.\n");
-  await saveRegistry(fs, REGISTRY_PATH, [PRIMARY]);
+  await new RegistryService(fs, new RegistryTomlSerializer()).save(REGISTRY_PATH, [
+    PRIMARY,
+  ]);
   await indexBuildService.build(container, expandWorkspace(PRIMARY, HOME));
   return { container, io };
 }

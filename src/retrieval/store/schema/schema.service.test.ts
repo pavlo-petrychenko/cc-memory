@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { DatabaseAdapter } from "@/platform/index.ts";
+import { SqliteAdapter } from "@/platform/index.ts";
 import { SCHEMA, SCHEMA_VERSION } from "@/retrieval/store/schema/schema.constants.ts";
 import { SchemaService } from "@/retrieval/store/schema/schema.service.ts";
 
@@ -12,7 +12,7 @@ describe("index/schema", () => {
   });
 
   test("SCHEMA creates notes, notes_fts, links, worklog_fts and worklog_files", () => {
-    const db = new DatabaseAdapter(":memory:");
+    const db = new SqliteAdapter(":memory:");
     db.exec(SCHEMA);
 
     const tableNames = db
@@ -31,7 +31,7 @@ describe("index/schema", () => {
   });
 
   test("SCHEMA is idempotent (CREATE ... IF NOT EXISTS)", () => {
-    const db = new DatabaseAdapter(":memory:");
+    const db = new SqliteAdapter(":memory:");
     db.exec(SCHEMA);
     db.exec(SCHEMA); // must not throw on a second exec
     expect(db.getUserVersion()).toBe(0);
@@ -39,7 +39,7 @@ describe("index/schema", () => {
   });
 
   test("reset drops and recreates every table, then stamps PRAGMA user_version", () => {
-    const db = new DatabaseAdapter(":memory:");
+    const db = new SqliteAdapter(":memory:");
     db.exec(SCHEMA);
     db.run("INSERT INTO notes(path,title,type,importance,mtime) VALUES(?,?,?,?,?)", [
       "a.md",

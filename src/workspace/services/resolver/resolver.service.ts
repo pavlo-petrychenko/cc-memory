@@ -1,58 +1,17 @@
 import type { AbsPath } from "@/core/index.ts";
-import { isUnder, sanitizeSlug } from "@/core/index.ts";
+import { absPath, isUnder, sanitizeSlug } from "@/core/index.ts";
 import type { RawWorkspace, Workspace, WorktreeSlug } from "@/core/index.ts";
 import type { Git } from "@/platform/index.ts";
-import { expandWorkspace, RegistryService } from "@/workspace/services/registry/index.ts";
+import type { RegistryService } from "@/workspace/services/registry/registry.service.ts";
 import { PATH_SEPARATOR } from "@/workspace/services/resolver/resolver.constants.ts";
 
-/**
- * Resolve a `cwd` to exactly one workspace by longest-prefix match, or `null`
- * if `cwd` is under no workspace. This is the encapsulation choke point: a
- * session sees memory for the single workspace returned here and nothing
- * else.
- *
- * `cwd` arrives already expanded (`Env.cwd()` returns an `AbsPath` directly),
- * so there is nothing left to expand here. This free function is the
- * canonical implementation; `WorkspaceResolverService` is a
- * constructor-injected facade over it.
- */
-export function resolveWorkspace(
-  raws: readonly RawWorkspace[],
-  cwd: AbsPath,
-  home: AbsPath,
-): Workspace | null {
-  let best: Workspace | null = null;
-  let bestPrefixLength = -1;
-
-  for (const raw of raws) {
-    const expanded = expandWorkspace(raw, home);
-    for (const prefix of expanded.match) {
-      const isMatch = cwd === prefix || cwd.startsWith(`${prefix}${PATH_SEPARATOR}`);
-      if (!isMatch || prefix.length <= bestPrefixLength) continue;
-      bestPrefixLength = prefix.length;
-      // `expandWorkspace`'s own default `matchedPrefix` is overridden here with
-      // the prefix that actually won this cwd's resolution.
-      best = { ...expanded, matchedPrefix: prefix };
-    }
-  }
-
-  return best;
-}
-
-/** `path` relative to `prefix`, given `path` is known to be `prefix` or nested
- * under it (every caller below establishes this before calling). */
 function relativeToPrefix(path: AbsPath, prefix: AbsPath): string {
   return path === prefix ? "" : path.slice(prefix.length + 1);
 }
 
-/**
- * A worktree's identity within a workspace. Prefers the git worktree root —
- * so distinct git worktrees of one repo get distinct slugs, and subdirs of a
- * repo collapse to the repo root — but only when that root actually lies
- * inside the matched prefix; otherwise falls back to `cwd` (which is
- * guaranteed to be `ws.matchedPrefix` or nested under it, since `ws` was
- * itself resolved for this `cwd`).
- */
+/** Prefers the git worktree root — so distinct worktrees of one repo get distinct
+ * slugs, and subdirs collapse to the repo root — but only when that root actually
+ * lies inside the matched prefix; otherwise falls back to `cwd`. */
 export async function worktreeSlug(
   git: Git,
   cwd: AbsPath,
@@ -63,33 +22,26 @@ export async function worktreeSlug(
 
   let base: AbsPath = cwd;
   if (toplevelOutput !== "") {
-    // SAFETY: `git rev-parse --show-toplevel`, on the clean exit that is the only
-    // way `Git.showToplevel` returns anything non-empty, always prints an
-    // absolute, canonical path with no `.`/`..`/duplicate-slash segments — git's
-    // own internals normalize it, so no further normalization is needed here.
-    const toplevel = toplevelOutput as AbsPath;
+    // A clean `git rev-parse --show-toplevel` always prints an absolute, canonical
+    // path already — no further normalization needed, just `absPath`'s validation.
+    const toplevel = absPath(toplevelOutput);
     if (isUnder(toplevel, prefix)) base = toplevel;
   }
 
   const relative = relativeToPrefix(base, prefix);
   if (relative === "") return "_root";
-  // `sanitizeSlug`'s own per-character replacement already turns `/` into
-  // `-`, so it can be applied directly to the relative path without a
-  // separate path-separator substitution first.
   return sanitizeSlug(relative);
 }
 
-/**
- * Constructor-injected facade over `resolveWorkspace`/`worktreeSlug` above,
- * for callers (`commands/resolve`, `targetResolution`) that hold an instance
- * rather than threading `git` through every call.
- */
 export class WorkspaceResolverService {
   constructor(
     private readonly registryService: RegistryService,
     private readonly git: Git,
   ) {}
 
+  /** Longest-prefix match, or `null` if `cwd` is under no workspace — the
+   * encapsulation choke point: a session sees memory for the single workspace
+   * returned here and nothing else. */
   resolveWorkspace(
     raws: readonly RawWorkspace[],
     cwd: AbsPath,

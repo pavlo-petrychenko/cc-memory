@@ -1,16 +1,8 @@
-/**
- * Process stdio, as a seam: hook entrypoints read a JSON payload from stdin and
- * always print exactly one line of JSON before exiting 0; the CLI writes to
- * stdout and exits with a mapped code. Going through this port instead of
- * `process.stdin`/`console.log`/`process.exit` directly is what lets
- * `session/runtime/runtime.service.ts` and `cli/main.ts` be tested by feeding
- * a fake stdin and asserting on captured writes, with no real process exit
- * ending the test run.
- */
+/** Process stdio, as a seam: going through this port instead of
+ * `process.stdin`/`console.log`/`process.exit` directly is what lets a hook or the
+ * CLI be tested with a fake stdin and no real process exit ending the test run. */
 export type Stdio = {
-  /** The full stdin stream, read to completion. */
   readonly readStdin: () => Promise<string>;
-  /** One line to stdout. */
   readonly write: (text: string) => void;
   readonly exit: (code: number) => void;
 };

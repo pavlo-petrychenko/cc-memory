@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
 import { SettingsService } from "@/install/steps/settings/settings.service.ts";
-import { JsonFileService, type JsonObject } from "@/install/utils/jsonFile/index.ts";
+import { JsonFileService } from "@/install/utils/jsonFile/jsonFile.service.ts";
+import type { JsonObject } from "@/install/utils/jsonFile/jsonFile.typedefs.ts";
 import { HookEvent } from "@/session/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 

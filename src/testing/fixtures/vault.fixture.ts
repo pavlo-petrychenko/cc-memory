@@ -1,12 +1,6 @@
-/**
- * Synthetic vault + registry.toml builder for tests that need a real vault on disk.
- *
- * An 8-note corpus across Alpha/Beta/Gamma exercising camelCase-vs-prose
- * matching, title-vs-body BM25 weighting, adjacent-vs-distant term pairs and
- * a typed `depends_on` relation, plus a SECOND, unrelated workspace so
- * cross-workspace isolation (invariant #2 in CLAUDE.md) is exercised, not
- * just retrieval.
- */
+/** Synthetic vault + registry.toml builder for tests that need a real vault on disk:
+ * an 8-note corpus exercising camelCase-vs-prose matching, BM25 weighting, term
+ * pairs and a typed relation, plus a second workspace for isolation (invariant #2). */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
@@ -17,13 +11,9 @@ export type FixtureWorkspace = {
   readonly id: string;
   /** The directory registered as this workspace's `match` prefix. */
   readonly matchPrefix: string;
-  /**
-   * A real git repo one level below `matchPrefix`, used as the hook/CLI
-   * `cwd`. It is nested (not `matchPrefix` itself) so `resolve.slug()`
-   * — which prefers the git worktree top over a plain relpath — still
-   * resolves to `slug` below: the toplevel of this repo sits exactly one
-   * path segment under the (non-repo) match prefix.
-   */
+  /** A real git repo one level below `matchPrefix`, used as the hook/CLI `cwd` — nested
+   * so a worktree-slug resolution that prefers the git toplevel still resolves to
+   * `slug` below. */
   readonly projectDir: string;
   readonly slug: string;
   readonly kbDir: string;
@@ -35,27 +25,13 @@ export type FixtureVault = {
   readonly root: string;
   readonly registryPath: string;
   readonly workspaces: readonly FixtureWorkspace[];
-  /** A directory under no workspace's match prefix — the "cwd outside any
-   * workspace" arm of the hook/CLI payload matrix. */
+  /** A directory under no workspace's match prefix. */
   readonly outsideDir: string;
   readonly env: Readonly<Record<string, string>>;
 };
 
-/**
- * Git identity (+ a FIXED commit date) for every repo this fixture touches.
- * `$HOME` is sandboxed to the fixture root (no real ~/.gitconfig reachable),
- * so both our own setup commands below and the app's own git calls during a
- * case (workspace add's `git init`, `memory commit`, wrap-gate's `git
- * status`/`rev-parse`) need identity supplied via env rather than a config
- * file. The fixed author/committer DATE matters too: without it, two
- * independently-built fixtures commit
- * identical content at two different real timestamps, producing two
- * different commit hashes — and `worklog-floor.py`'s SessionEnd hook writes
- * `git log --oneline` (hash included) straight into a worklog file, which
- * IS content-diffed (unlike `.git/` itself — see tests/helpers/tempdir.ts).
- * A fixed date makes every commit this fixture or the app makes through it
- * fully reproducible.
- */
+/** Git identity + a FIXED commit date, so hashes stay reproducible — a worklog
+ * file's `git log --oneline` line is content-diffed by tests. */
 const GIT_ENV = {
   GIT_AUTHOR_NAME: "cc-memory test fixture",
   GIT_AUTHOR_EMAIL: "fixture@example.invalid",
@@ -129,9 +105,6 @@ const PRIMARY_WORKLOGS = {
     "## 10:00 — incident\n**Changes:** deployment rollback incident on the gateway.\n",
 } satisfies Readonly<Record<string, string>>;
 
-// A second, unrelated workspace: a search/inject resolved from `primary`'s
-// cwd must never surface this content, and vice versa (CLAUDE.md invariant
-// #2 — cwd resolves to exactly one workspace).
 const SECONDARY_NOTES = {
   "Widgets/Widget Guide.md": `---
 type: note
@@ -196,16 +169,8 @@ function buildWorkspace(
   return { id, matchPrefix, projectDir, slug: "wt1", kbDir, worklogsDir, indexDbPath };
 }
 
-/**
- * Build a synthetic vault + registry.toml under `root` (a freshly created
- * temp dir — see tests/helpers/tempdir.ts) and return everything a
- * case needs to target it.
- *
- * `root` doubles as the sandboxed `$HOME`: every path cc-memory normally
- * resolves under `~` (the registry, each workspace's index_db) lands inside
- * it, via the returned `env.HOME` — so a case run through this fixture never
- * touches the real `~/.claude`.
- */
+/** `root` doubles as the sandboxed `$HOME` (via the returned `env.HOME`), so a case
+ * run through this fixture never touches the real `~/.claude`. */
 export function buildFixtureVault(root: string): FixtureVault {
   const primary = buildWorkspace(root, "primary", PRIMARY_NOTES, PRIMARY_WORKLOGS);
   const secondary = buildWorkspace(

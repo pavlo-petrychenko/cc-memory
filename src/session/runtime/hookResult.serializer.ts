@@ -2,8 +2,6 @@ import { type HookResult, HookResultKind } from "@/session/session.typedefs.ts";
 
 /** Renders a `HookResult` to the hook stdin/stdout JSON protocol. */
 export class HookResultSerializer {
-  /** Returns `null` for the silent case: the runtime prints nothing at all
-   * rather than an empty line. */
   serialize(result: HookResult): string | null {
     switch (result.kind) {
       case HookResultKind.Silent:

@@ -4,18 +4,16 @@ import type { CompactCheckpointPayload } from "@/session/payload/payload.typedef
 import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.ts";
 import { HookResultKind } from "@/session/session.typedefs.ts";
 import type { HookResult } from "@/session/session.typedefs.ts";
-import { WorklogStoreService } from "@/worklog/index.ts";
+import type { WorklogStoreService } from "@/worklog/index.ts";
 import { worktreeSlug } from "@/workspace/index.ts";
 
-/**
- * `PostCompact`: persist the compaction summary Claude Code hands back after
- * compacting into today's worklog journal, so distilled context survives the
- * reset. Write-only.
- */
+/** `PostCompact`: persists the compaction summary into today's worklog journal, so
+ * distilled context survives the reset. Write-only. */
 export class CompactCheckpointHook implements HookHandler<CompactCheckpointPayload> {
   constructor(
     private readonly container: Container,
     private readonly formatter: CompactCheckpointFormatter,
+    private readonly worklogStoreService: WorklogStoreService,
   ) {}
 
   async handle(payload: HookInput<CompactCheckpointPayload>): Promise<HookResult> {
@@ -28,11 +26,7 @@ export class CompactCheckpointHook implements HookHandler<CompactCheckpointPaylo
     const block = this.formatter.formatCompactBlock({ trigger, summary });
 
     try {
-      const worklogStoreService = new WorklogStoreService(
-        this.container.fs,
-        this.container.git,
-      );
-      await worklogStoreService.appendToDated(workspace, slug, date, block);
+      await this.worklogStoreService.appendToDated(workspace, slug, date, block);
     } catch {
       // best-effort write only.
     }

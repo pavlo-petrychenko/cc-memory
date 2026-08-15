@@ -1,4 +1,5 @@
 import type { AbsPath, Config } from "@/core/index.ts";
+import { joinAbs, parentDir } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
 import {
   DEFAULT_SESSION_ID,
@@ -18,37 +19,13 @@ import type { WrapGatePayload } from "@/session/payload/payload.typedefs.ts";
 import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.ts";
 import { HookEvent, HookResultKind } from "@/session/session.typedefs.ts";
 import type { HookResult } from "@/session/session.typedefs.ts";
-import { WorklogStoreService } from "@/worklog/index.ts";
+import type { WorklogStoreService } from "@/worklog/index.ts";
 import { worktreeSlug } from "@/workspace/index.ts";
 
-/**
- * `Stop`: the wrap-gate. Nudges (non-blocking) on the first stop(s) with
- * uncommitted work, escalating to a hard block only after repeated stops
- * with sustained drift. State lives in one `wrap-state.json` per workspace,
- * keyed by session id and pruned of entries older than 7 days on every
- * write, rather than one marker file per session — a shared file with
- * pruning can't accumulate unboundedly the way per-session marker files did.
- */
-
-function parentDir(path: AbsPath): AbsPath {
-  const lastSlashIndex = path.lastIndexOf("/");
-  const sliced = lastSlashIndex <= 0 ? "/" : path.slice(0, lastSlashIndex);
-  // SAFETY: slicing an absolute, normalized path at a `/` boundary yields
-  // another absolute, normalized path.
-  return sliced as AbsPath;
-}
-
-function joinAbsPath(base: AbsPath, name: string): AbsPath {
-  // `base` is exactly the filesystem root ("/") when `parentDir` had nothing
-  // to strip (e.g. a test's `indexDb: ":memory:"`) — appending a plain
-  // `/${name}` there would double the slash (`"//wrap-state.json"`), a
-  // distinct path from `"/wrap-state.json"`.
-  const separator = base.endsWith("/") ? "" : "/";
-  const joined = `${base}${separator}${name}`;
-  // SAFETY: `base` is an already-absolute, normalized `AbsPath`; `name` is
-  // the fixed literal `"wrap-state.json"` — never `.`/`..`/`~`.
-  return joined as AbsPath;
-}
+/** `Stop`: the wrap-gate. Nudges (non-blocking) on the first stop(s) with
+ * uncommitted work, escalating to a hard block only after repeated stops with
+ * sustained drift. State lives in one `wrap-state.json` per workspace, keyed by
+ * session id and pruned of entries older than 7 days on every write. */
 
 function isJsonRecordValue(value: JsonValue | undefined): value is JsonRecord {
   return (
@@ -70,9 +47,6 @@ function isJsonString(value: JsonValue | undefined): value is string {
   );
 }
 
-/** One marker's shape, validated field by field — a malformed individual
- * entry is dropped rather than invalidating every other session's state in
- * the same shared file. */
 function parseWrapStateEntry(value: JsonValue | undefined): WrapStateEntry | null {
   if (!isJsonRecordValue(value)) return null;
   const sig = value["sig"];
@@ -82,8 +56,6 @@ function parseWrapStateEntry(value: JsonValue | undefined): WrapStateEntry | nul
   return { sig, ts, nudges };
 }
 
-/** Prune entries older than 7 days on every write, so the shared state file
- * never grows unboundedly. */
 function pruneStaleEntries(map: WrapStateMap, nowMs: number): WrapStateMap {
   return Object.fromEntries(
     Object.entries(map).filter(([, entry]) => nowMs - entry.ts <= SEVEN_DAYS_MS),
@@ -100,13 +72,9 @@ export class WrapGateHook implements HookHandler<WrapGatePayload> {
     private readonly config: Config,
     private readonly payloadParser: PayloadParser,
     private readonly formatter: WrapGateFormatter,
-    private readonly worklogStoreService: WorklogStoreService = new WorklogStoreService(
-      container.fs,
-      container.git,
-    ),
+    private readonly worklogStoreService: WorklogStoreService,
   ) {}
 
-  /** A missing or unreadable state file reads as `{}`. */
   private async readWrapStateMap(path: AbsPath): Promise<WrapStateMap> {
     let text: string;
     try {
@@ -148,7 +116,7 @@ export class WrapGateHook implements HookHandler<WrapGatePayload> {
       .split(/\r\n|\r|\n/)
       .filter((line) => line.trim() !== "").length;
 
-    const markerPath = joinAbsPath(parentDir(workspace.indexDb), WRAP_STATE_FILENAME);
+    const markerPath = joinAbs(parentDir(workspace.indexDb), WRAP_STATE_FILENAME);
 
     if (dirtyCount === 0) {
       try {

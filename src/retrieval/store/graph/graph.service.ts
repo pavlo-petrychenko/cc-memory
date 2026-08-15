@@ -2,30 +2,23 @@ import type { AbsPath } from "@/core/index.ts";
 import { relKey } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { IndexConnectionService } from "@/retrieval/store/connection/index.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
 import { DEFAULT_NEIGHBORS_LIMIT } from "@/retrieval/store/graph/graph.constants.ts";
 
-/** The final `/`-separated segment of a relative key. */
 function basename(path: string): string {
   const lastSlashIndex = path.lastIndexOf("/");
   return lastSlashIndex === -1 ? path : path.slice(lastSlashIndex + 1);
 }
 
-/** A wikilink `dst` may carry a `|display` label (`[[Target|display]]`
- * flattened into `links.dst` unchanged at index time) — strip it before
- * resolving, same as `extractWikilinks`/`extractTypedRelations` do at parse
- * time. */
+/** A wikilink `dst` may carry a `|display` label — strip it before resolving. */
 function beforePipe(raw: string): string {
   const pipeIndex = raw.indexOf("|");
   return (pipeIndex === -1 ? raw : raw.slice(0, pipeIndex)).trim();
 }
 
 export class LinkGraphService {
-  constructor(
-    private readonly connectionService: IndexConnectionService = new IndexConnectionService(),
-  ) {}
+  constructor(private readonly connectionService: IndexConnectionService) {}
 
-  /** 1-hop wikilink neighbors of a note, by link target name. */
   async neighbors(
     container: Container,
     workspace: Workspace,
@@ -40,14 +33,9 @@ export class LinkGraphService {
     return rows.map((row) => row.dst);
   }
 
-  /**
-   * Within a candidate set ONLY, count how many OTHER candidates link to each
-   * one. Feeds the RRF corroboration bonus in `store/search/`'s `searchFused`.
-   * A wikilink `dst` is resolved to a candidate by relpath-minus-`.md` first
-   * (`relKey`), then by basename; self-links are skipped. Returns an empty map
-   * for fewer than 2 candidates — "corroboration" needs at least one other
-   * candidate to corroborate from.
-   */
+  /** Within a candidate set only, counts how many OTHER candidates link to each
+   * one, feeding the RRF corroboration bonus. Returns an empty map for fewer than
+   * 2 candidates — corroboration needs at least one other candidate. */
   async inlinkCounts(
     container: Container,
     workspace: Workspace,

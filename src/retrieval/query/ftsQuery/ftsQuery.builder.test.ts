@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
 import { FtsQueryBuilder } from "@/retrieval/query/ftsQuery/ftsQuery.builder.ts";
+import { TokenizerParser } from "@/retrieval/query/tokenizer/tokenizer.parser.ts";
 
-const ftsQueryBuilder = new FtsQueryBuilder();
+const ftsQueryBuilder = new FtsQueryBuilder(new TokenizerParser());
 
 describe("FtsQueryBuilder.ftsQuery", () => {
   test("ORs quoted salient tokens, sorted", () => {

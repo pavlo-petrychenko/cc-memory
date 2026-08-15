@@ -72,11 +72,11 @@ test("a cross-module import names the module's index.ts, never a file inside it"
   expect(crossModuleImports.length).toBeGreaterThan(100);
 
   const violations = crossModuleImports
-    .filter(({ specifier }) => {
+    .filter(({ specifier, targetModule }) => {
       if (BARREL_EXEMPT_SPECIFIERS.has(specifier)) return false;
       if (BARREL_EXEMPT_PREFIXES.some((prefix) => specifier.startsWith(prefix)))
         return false;
-      if (specifier.endsWith("/index.ts")) return false;
+      if (specifier === `${targetModule}/index.ts`) return false;
       return !DECLARATION_SUFFIXES.some((suffix) => specifier.endsWith(suffix));
     })
     .map(({ importer, specifier }) => `${importer} -> @/${specifier}`);
@@ -86,6 +86,7 @@ test("a cross-module import names the module's index.ts, never a file inside it"
 
 test("only tests reach into testing/", async () => {
   const crossModuleImports = await collectCrossModuleImports();
+  expect(crossModuleImports.length).toBeGreaterThan(100);
 
   const violations = crossModuleImports
     .filter(({ importer, specifier }) => {
@@ -100,10 +101,21 @@ test("only tests reach into testing/", async () => {
 /**
  * A cycle between two modules means they are really one module wearing two names.
  *
- * `core/` is the shared kernel every module may depend on and `cli/` is the composition
- * shell that may depend on all of them, so neither can be half of a cycle by design.
+ * `core/` is the shared kernel every module may depend on and nothing in `core/` may
+ * depend back on a feature module, so it cannot be half of a cycle by design.
+ *
+ * `testing/` is not production code — `isProductionFile` already keeps it from ever
+ * being the importing side below, and the "only tests reach into testing/" test above
+ * keeps production code from being the imported side. It is listed here only as
+ * defense in depth: fixtures under `testing/` legitimately import across many feature
+ * modules to assemble a scenario, which is expected test-support fan-out, not a design
+ * flaw, so it must never be reported as one of "cycles" below.
+ *
+ * `cli/` is checked like any other module below — it is the one module that was
+ * actually found in a cycle, so exempting it would hide a real regression rather than
+ * a structural non-issue.
  */
-const CYCLE_EXEMPT_MODULES: ReadonlySet<string> = new Set(["core", "cli", "testing"]);
+const CYCLE_EXEMPT_MODULES: ReadonlySet<string> = new Set(["core", "testing"]);
 
 test("no import cycles between top-level modules", async () => {
   const crossModuleImports = (await collectCrossModuleImports()).filter(({ importer }) =>
@@ -111,10 +123,14 @@ test("no import cycles between top-level modules", async () => {
   );
 
   const dependencies = new Map<string, Set<string>>();
-  for (const { importer, targetModule } of crossModuleImports) {
+  for (const { importer, specifier, targetModule } of crossModuleImports) {
     const owner = importer.split("/")[0] ?? importer;
     if (CYCLE_EXEMPT_MODULES.has(owner) || CYCLE_EXEMPT_MODULES.has(targetModule))
       continue;
+    // A declaration edge (a type or a frozen value) is erased before runtime and
+    // cannot form a load-order cycle, so it cannot make two modules "really one
+    // module wearing two names" the way a shared implementation import can.
+    if (DECLARATION_SUFFIXES.some((suffix) => specifier.endsWith(suffix))) continue;
     const existing = dependencies.get(owner) ?? new Set<string>();
     existing.add(targetModule);
     dependencies.set(owner, existing);

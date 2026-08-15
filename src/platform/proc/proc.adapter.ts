@@ -1,12 +1,8 @@
 import { COMMAND_NOT_FOUND_EXIT_CODE } from "@/platform/proc/proc.constants.ts";
 import type { Proc, ProcResult, ProcRunOptions } from "@/platform/proc/proc.typedefs.ts";
 
-/**
- * The real `Proc`, over `Bun.spawn`. Captures stdout/stderr as text and rejects
- * on timeout. A killed-for-timeout process has no meaningful exit code to
- * report, so there is nothing useful to put in a `ProcResult` — the rejection
- * IS the signal.
- */
+/** The real `Proc`, over `Bun.spawn`. Rejects on timeout — a killed process has no
+ * meaningful exit code, so the rejection IS the signal. */
 export class ProcAdapter implements Proc {
   async run(
     command: string,
@@ -25,13 +21,9 @@ export class ProcAdapter implements Proc {
     if (options.cwd !== undefined) spawnOptions.cwd = options.cwd;
     if (options.env !== undefined) spawnOptions.env = { ...process.env, ...options.env };
 
-    // `Bun.spawn` THROWS when the binary does not exist, rather than resolving
-    // with a failure — but a missing tool is a normal condition here, not an
-    // exceptional one: `git` need not be installed, and every caller already
-    // treats a non-zero exit as "this did not work". Catching the throw and
-    // reporting exit code 127, the shell's conventional "command not found",
-    // lets those callers handle it without knowing anything new, and keeps a
-    // missing binary from crashing a command mid-run.
+    // `Bun.spawn` throws when the binary doesn't exist; catching it and reporting
+    // exit code 127 ("command not found") lets every caller treat a missing tool
+    // the same as any other non-zero exit, instead of crashing mid-run.
     let child: Bun.Subprocess<"ignore" | "pipe", "pipe", "pipe">;
     try {
       child = Bun.spawn([command, ...args], spawnOptions);

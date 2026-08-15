@@ -7,22 +7,17 @@ import type { JsonRecord } from "@/session/payload/payload.typedefs.ts";
 import type { HookResultSerializer } from "@/session/runtime/hookResult.serializer.ts";
 import type { HookHandler } from "@/session/runtime/runtime.typedefs.ts";
 import { type HookResult, HookResultKind } from "@/session/session.typedefs.ts";
-import { defaultRegistryPath, loadRegistry } from "@/workspace/index.ts";
-import { resolveWorkspace } from "@/workspace/index.ts";
+import {
+  defaultRegistryPath,
+  loadRegistry,
+  RegistryService,
+  RegistryTomlSerializer,
+  WorkspaceResolverService,
+} from "@/workspace/index.ts";
 
-/**
- * The shared preamble/postamble every hook needs: read stdin, resolve
- * exactly one workspace for the cwd or go silent (the cwd-to-workspace
- * isolation boundary), run the event's handler, render the result through
- * the hook protocol, write stdout, and — no matter what happens above — exit
- * 0 having LOGGED any failure instead of swallowing it blind.
- *
- * `container` arrives via the constructor rather than being reached for, so
- * this whole pipeline is testable in-process with a fake —
- * `commands/hookDispatch/hookDispatch.command.ts`'s `hook()` is the one
- * place that supplies a REAL container for an actual invocation of `memory
- * hook <name>`.
- */
+/** The shared preamble/postamble every hook needs: resolve exactly one workspace
+ * for the cwd or go silent, run the handler, and — no matter what happens — exit 0,
+ * having LOGGED any failure instead of swallowing it blind. */
 export class HookRuntimeService {
   constructor(
     private readonly container: Container,
@@ -30,19 +25,13 @@ export class HookRuntimeService {
     private readonly hookResultSerializer: HookResultSerializer,
   ) {}
 
-  /** Falls back to the process cwd when the payload's `cwd` field is either
-   * absent or present-but-empty. */
   private resolveHookCwd(rawCwd: string | null): AbsPath {
     if (rawCwd === null || rawCwd === "") return this.container.env.cwd();
     return expandPath(rawCwd, this.container.env.home());
   }
 
-  /**
-   * Loads the registry and resolves it against `cwd`. A malformed (present
-   * but unparsable) registry is treated as "no workspace" AND logged — this
-   * is the hook-specific handling of a `RegistryError`, unlike the CLI,
-   * which reports it to the caller.
-   */
+  /** A malformed registry is treated as "no workspace" AND logged — unlike the
+   * CLI, which reports a `RegistryError` to the caller instead. */
   private async resolveWorkspaceForHook(cwd: AbsPath): Promise<Workspace | null> {
     const home = this.container.env.home();
     const registryResult = await loadRegistry(
@@ -55,19 +44,20 @@ export class HookRuntimeService {
       );
       return null;
     }
-    return resolveWorkspace(registryResult.value, cwd, home);
+    const registryService = new RegistryService(
+      this.container.fs,
+      new RegistryTomlSerializer(),
+    );
+    const resolverService = new WorkspaceResolverService(
+      registryService,
+      this.container.git,
+    );
+    return resolverService.resolveWorkspace(registryResult.value, cwd, home);
   }
 
-  /**
-   * Run one hook event end to end. `parsePayload` needs `payload.cwd` to
-   * resolve a workspace BEFORE it knows whether `handler` should run at all
-   * — no workspace means `handler.handle` is never called, matching "no
-   * resolved workspace ⇒ silent for EVERY hook".
-   *
-   * Never throws and never leaves `container.stdio.exit` uncalled: every
-   * step from the stdin read onward is inside the `try`, and the `finally`
-   * always exits 0, regardless of which branch above it ran.
-   */
+  /** No resolved workspace means `handler.handle` is never called. Never throws and
+   * never leaves `container.stdio.exit` uncalled: the `finally` always exits 0,
+   * regardless of which branch above it ran. */
   async run<TPayload extends { readonly cwd: string | null }>(
     hookLabel: string,
     parsePayload: (record: JsonRecord) => TPayload,

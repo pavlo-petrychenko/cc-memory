@@ -1,7 +1,7 @@
 import type { AbsPath } from "@/core/index.ts";
-import { expandPath } from "@/core/index.ts";
+import { absPath, expandPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
-import { PRE_CCMEMORY_BACKUP_SUFFIX } from "@/install/steps/manifest/index.ts";
+import { PRE_CCMEMORY_BACKUP_SUFFIX } from "@/install/steps/manifest/manifest.constants.ts";
 import {
   hookRegistrations,
   LEGACY_HOOK_SUBSTRINGS,
@@ -13,26 +13,17 @@ import type {
   PurgeHooksResult,
   RegisterHooksResult,
 } from "@/install/steps/settings/settings.typedefs.ts";
-import {
-  type JsonFileError,
-  type JsonObject,
-  JsonFileService,
-  type JsonValue,
-} from "@/install/utils/jsonFile/index.ts";
+import { JsonFileService } from "@/install/utils/jsonFile/jsonFile.service.ts";
+import type {
+  JsonFileError,
+  JsonObject,
+  JsonValue,
+} from "@/install/utils/jsonFile/jsonFile.typedefs.ts";
 import type { FileSystem } from "@/platform/index.ts";
 import type { HookEvent } from "@/session/index.ts";
 
-/**
- * `~/.claude/settings.json` surgery — purge our own hook groups (by
- * manifest), re-register the 5 hooks at their current location, and preserve
- * every foreign entry (any other tool's config a user has installed)
- * byte-for-byte.
- *
- * The surgery itself (`surgerize` and its helpers) is pure over an
- * already-loaded document; only `load`/`save`/`backupIfNeeded` below touch
- * the filesystem, through the `FileSystem` injected once via the
- * constructor.
- */
+/** `~/.claude/settings.json` surgery: purge our own hook groups, re-register the 5
+ * hooks at their current location, and preserve every foreign entry byte-for-byte. */
 export class SettingsService {
   constructor(private readonly fs: FileSystem) {}
 
@@ -41,20 +32,15 @@ export class SettingsService {
   }
 
   static defaultBackupPath(home: AbsPath): AbsPath {
-    // SAFETY: appending a fixed literal suffix to an absolute, normalized
-    // path introduces no `~`, `.` or `..` segment.
-    return `${SettingsService.defaultPath(home)}${PRE_CCMEMORY_BACKUP_SUFFIX}` as AbsPath;
+    return absPath(`${SettingsService.defaultPath(home)}${PRE_CCMEMORY_BACKUP_SUFFIX}`);
   }
 
-  /** `<abs-bun> <repo>/dist/memory.js hook <name>`. */
   static hookCommand(bunPath: string, distPath: string, hookName: string): string {
     return `${bunPath} ${distPath} hook ${hookName}`;
   }
 
-  /** The `command` string of every `{type,command,timeout}` entry inside one
-   * hook group, tolerant of anything that doesn't match the expected shape
-   * (a foreign tool's group is preserved either way — this is only used to
-   * decide whether a group is OURS, never to reconstruct it). */
+  /** Tolerant of anything that doesn't match the expected shape — a foreign tool's
+   * group is preserved either way; this only decides whether a group is OURS. */
   static commandsInGroup(group: JsonValue): readonly string[] {
     if (!JsonFileService.isObject(group)) return [];
     const hooksField = group["hooks"];
@@ -70,14 +56,9 @@ export class SettingsService {
     return commands;
   }
 
-  /**
-   * Remove every hook GROUP this installer owns from `hooksByEvent` — first
-   * by exact former command string (`manifestCommands`: survives a
-   * moved/renamed repo), then — only when `runLegacyPurge` — by the legacy
-   * substring test, so a settings.json that predates the manifest still gets
-   * cleaned up exactly once. An event whose only groups were ours drops the
-   * key entirely.
-   */
+  /** Purges by exact former command string first (survives a moved/renamed repo),
+   * then — only when `runLegacyPurge` — by legacy substring, so a pre-manifest
+   * settings.json still gets cleaned up exactly once. */
   private static purgeOurHooks(
     hooksByEvent: JsonObject,
     manifestCommands: ReadonlySet<string>,
@@ -89,7 +70,7 @@ export class SettingsService {
 
     for (const [event, groupsValue] of Object.entries(hooksByEvent)) {
       if (!JsonFileService.isArray(groupsValue)) {
-        keptEntries.push([event, groupsValue]); // not our shape — leave untouched
+        keptEntries.push([event, groupsValue]);
         continue;
       }
       const afterManifestPurge = groupsValue.filter((group) => {
@@ -118,21 +99,15 @@ export class SettingsService {
     };
   }
 
-  /**
-   * Re-register the 5 hooks at their current location. Appends a fresh group
-   * to whichever array already survived the purge for that event (preserving
-   * both the event key's position in `hooksByEvent` and any foreign groups
-   * already in it); a brand-new event key is inserted in `hookRegistrations`
-   * order, at the end.
-   */
+  /** Appends a fresh group to whichever array survived the purge for that event,
+   * preserving both the event's position and any foreign groups already in it. */
   private static registerOurHooks(
     hooksByEvent: JsonObject,
     bunPath: string,
     distPath: string,
   ): RegisterHooksResult {
-    // A plain mutable `Map` (never spread inside the loop below — oxc's
-    // `no-accumulating-spread`: re-spreading an object on every iteration is
-    // quadratic) — converted back to a `JsonObject` once, after the loop.
+    // A plain `Map`, never re-spread inside the loop (quadratic) — converted back
+    // to a `JsonObject` once, after the loop.
     const hooks = new Map<string, JsonValue>(Object.entries(hooksByEvent));
     const hookCommands: Record<string, string> = {};
 
@@ -151,10 +126,6 @@ export class SettingsService {
     return { hooks: Object.fromEntries(hooks), hookCommands };
   }
 
-  /** The whole `settings.json` surgery, pure over an already-loaded
-   * document: purge, then re-register. Split out from I/O (`load`/`save`
-   * below, orchestrated by `install.service.ts`) so the merge logic itself
-   * is trivially table-tested. */
   static surgerize(
     settings: JsonObject,
     manifestCommands: ReadonlySet<string>,
@@ -180,7 +151,6 @@ export class SettingsService {
     return { settings: { ...settings, hooks: finalHooks }, hookCommands, summary };
   }
 
-  /** The purge summary log line, with correct singular/plural pluralization. */
   static purgeSummaryLine(summary: HookPurgeSummary): string | null {
     const removed = summary.purgedByManifestCount + summary.purgedByLegacyCount;
     if (removed === 0) return null;
@@ -188,7 +158,6 @@ export class SettingsService {
     return `purged ${removed} stale cc-memory/legacy hook entr${suffix}`;
   }
 
-  /** One log line per registered hook. */
   static hookRegisteredLine(event: HookEvent, hookName: string): string {
     return `hook ${event} -> ${hookName}`;
   }
@@ -197,14 +166,9 @@ export class SettingsService {
     return new JsonFileService(this.fs).readObjectFile(path);
   }
 
-  /**
-   * Back up the raw (unparsed) `settings.json` bytes ONCE — before this
-   * installer's very first write. `alreadyBackedUp` comes from the
-   * manifest's `settingsBackupPath`: once it is non-null, every later
-   * install run skips this regardless of whether the file on disk still
-   * exists, so a user deleting the backup by hand can't trigger a second,
-   * now-already-mutated "pristine" copy.
-   */
+  /** Backs up the raw `settings.json` bytes ONCE, before this installer's first
+   * write. `alreadyBackedUp` comes from the manifest, so a user deleting the
+   * backup by hand can't trigger a second, already-mutated "pristine" copy. */
   async backupIfNeeded(
     settingsPath: AbsPath,
     backupPath: AbsPath,
@@ -221,13 +185,8 @@ export class SettingsService {
     await new JsonFileService(this.fs).writeObjectAtomic(path, settings);
   }
 
-  /**
-   * A minimal unified-diff-style comparison of two texts, line by line, via
-   * a plain O(n·m) LCS table — `settings.json` is a handful of lines even
-   * with every hook group, so this is well within budget. Used only by
-   * `--dry-run` to show the reviewer exactly what would change, never by the
-   * real write path (`save` above writes the serialized JSON directly).
-   */
+  /** A minimal line-by-line diff via a plain O(n·m) LCS table, for `--dry-run` only
+   * — `settings.json` is a handful of lines even with every hook group. */
   static diffLines(before: string, after: string): readonly string[] {
     const beforeLines = before.split("\n");
     const afterLines = after.split("\n");

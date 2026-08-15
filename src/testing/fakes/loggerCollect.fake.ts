@@ -10,8 +10,7 @@ export type LoggerFake = Logger & {
   readonly entries: readonly CollectedLogEntry[];
 };
 
-/** A `Logger` that collects every call in order instead of writing anywhere —
- * what a hook/CLI test asserts "the failure was logged" against. */
+/** A `Logger` that collects every call in order instead of writing anywhere. */
 export function makeLoggerFake(): LoggerFake {
   const entries: CollectedLogEntry[] = [];
   const record = (level: LogLevel, message: string): void => {

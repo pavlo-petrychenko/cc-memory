@@ -1,27 +1,13 @@
-import { stripChars } from "@/core/index.ts";
+import { relativeTo, stripChars } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import type { Container } from "@/platform/index.ts";
-import { IndexConnectionService } from "@/retrieval/store/connection/index.ts";
+import { IndexConnectionService } from "@/retrieval/store/connection/connection.service.ts";
 import type { NoteSummary } from "@/retrieval/store/noteList/noteList.typedefs.ts";
 
-/** Every indexed path is always under `kb`, so this is just prefix-stripping;
- * falls back to the raw path unchanged otherwise. */
-function relativeToKb(path: string, kb: string): string {
-  const prefix = `${kb}/`;
-  return path.startsWith(prefix) ? path.slice(prefix.length) : path;
-}
-
 export class NoteListService {
-  constructor(
-    private readonly connectionService: IndexConnectionService = new IndexConnectionService(),
-  ) {}
+  constructor(private readonly connectionService: IndexConnectionService) {}
 
-  /**
-   * Enumerate every indexed note (optionally under a folder prefix), sorted by
-   * path. Exhaustive (not recall-limited like `store/search/`'s BM25 queries)
-   * — the basis for auditing a whole feature folder. An empty or absent
-   * `folder` returns everything.
-   */
+  /** Exhaustive, unlike `store/search/`'s recall-limited BM25 queries. */
   async list(
     container: Container,
     workspace: Workspace,
@@ -39,7 +25,7 @@ export class NoteListService {
       folder !== undefined && folder !== "" ? stripChars(folder, "/") : undefined;
     const results: NoteSummary[] = [];
     for (const row of rows) {
-      const relativePath = relativeToKb(row.path, workspace.kb);
+      const relativePath = relativeTo(row.path, workspace.kb);
       if (
         prefix !== undefined &&
         relativePath !== prefix &&

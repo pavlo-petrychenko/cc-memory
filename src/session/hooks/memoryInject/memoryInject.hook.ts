@@ -1,7 +1,8 @@
 import type { AbsPath, Config, Workspace } from "@/core/index.ts";
+import { absPath, joinAbs, parentDir } from "@/core/index.ts";
 import type { Container, FileSystem } from "@/platform/index.ts";
-import type { FusedHit } from "@/retrieval/index.ts";
-import { SearchKind, SearchService, TokenizerParser } from "@/retrieval/index.ts";
+import type { FusedHit, SearchService, TokenizerParser } from "@/retrieval/index.ts";
+import { SearchKind } from "@/retrieval/index.ts";
 import {
   INJECT_LOG_FILENAME,
   KEPT_LOG_GENERATIONS,
@@ -24,42 +25,15 @@ import type { HookHandler, HookInput } from "@/session/runtime/runtime.typedefs.
 import { HookEvent, HookResultKind } from "@/session/session.typedefs.ts";
 import type { HookResult } from "@/session/session.typedefs.ts";
 
-/**
- * `UserPromptSubmit`: auto-retrieve relevant memory for the prompt via a
- * fused BM25 search, gated by prompt length, salient-token count and a score
- * floor. `inject.jsonl` records the full candidate pool on EVERY call that
- * reaches it — even one that ends up injecting nothing — which is why the
- * log write happens before the emptiness check below.
- */
-
-function parentDir(path: AbsPath): AbsPath {
-  const lastSlashIndex = path.lastIndexOf("/");
-  const sliced = lastSlashIndex <= 0 ? "/" : path.slice(0, lastSlashIndex);
-  // SAFETY: slicing an absolute, normalized path at a `/` boundary yields
-  // another absolute, normalized path.
-  return sliced as AbsPath;
-}
-
-function joinAbsPath(base: AbsPath, name: string): AbsPath {
-  // `base` is exactly the filesystem root ("/") when `parentDir` had nothing
-  // to strip (e.g. a test's `indexDb: ":memory:"`, whose "directory" is the
-  // fixed fallback `"/"`) — appending a plain `/${name}` there would double
-  // the slash (`"//inject.jsonl"`), a distinct path from `"/inject.jsonl"`.
-  const separator = base.endsWith("/") ? "" : "/";
-  const joined = `${base}${separator}${name}`;
-  // SAFETY: `base` is an already-absolute, normalized `AbsPath`; `name` is
-  // the fixed literal `"inject.jsonl"`.
-  return joined as AbsPath;
-}
-
-/** Every indexed path is always under `ws.kb`/`ws.worklogs`, so this is
- * prefix-stripping, not full relpath resolution. */
+/** `UserPromptSubmit`: auto-retrieve relevant memory via a fused BM25 search,
+ * gated by prompt length, salient-token count and a score floor. `inject.jsonl`
+ * records the full candidate pool on EVERY call that reaches it — even one that
+ * ends up injecting nothing. */
 function relativeOrAbsolute(path: AbsPath, base: AbsPath): string {
   const prefix = `${base}/`;
   return path.startsWith(prefix) ? path.slice(prefix.length) : path;
 }
 
-/** Rounds a score to 4 decimal places for the log entry. */
 function round4(value: number): number {
   return Number(value.toFixed(4));
 }
@@ -82,16 +56,12 @@ async function currentLogSize(fs: FileSystem, path: AbsPath): Promise<number> {
   }
 }
 
-// Rotation must happen in strict generation order (newest first): each rename
-// depends on the previous one having completed, so this cannot be a
-// `Promise.all` over independent iterations the way the lint rule expects.
+// Rotation must happen in strict generation order — each rename depends on the
+// previous one having completed — so this cannot be a `Promise.all`.
 async function rotateInjectLog(fs: FileSystem, path: AbsPath): Promise<void> {
   for (let generation = KEPT_LOG_GENERATIONS; generation >= 1; generation -= 1) {
-    // SAFETY: `path` is an already-absolute, normalized `AbsPath`; appending a
-    // fixed `.<generation>` numeric suffix keeps it absolute and normalized.
-    const from = generation === 1 ? path : (`${path}.${generation - 1}` as AbsPath);
-    // SAFETY: same reasoning as `from` above.
-    const to = `${path}.${generation}` as AbsPath;
+    const from = generation === 1 ? path : absPath(`${path}.${generation - 1}`);
+    const to = absPath(`${path}.${generation}`);
     // eslint-disable-next-line no-await-in-loop
     const fromExists = await fs.exists(from);
     if (!fromExists) continue;
@@ -131,8 +101,8 @@ export class MemoryInjectHook implements HookHandler<MemoryInjectPayload> {
     private readonly container: Container,
     private readonly config: Config,
     private readonly formatter: MemoryInjectFormatter,
-    private readonly searchService: SearchService = new SearchService(),
-    private readonly tokenizerParser: TokenizerParser = new TokenizerParser(),
+    private readonly searchService: SearchService,
+    private readonly tokenizerParser: TokenizerParser,
   ) {}
 
   private async logInjectCandidates(
@@ -162,7 +132,7 @@ export class MemoryInjectHook implements HookHandler<MemoryInjectPayload> {
           ),
         },
       };
-      const logPath = joinAbsPath(parentDir(workspace.indexDb), INJECT_LOG_FILENAME);
+      const logPath = joinAbs(parentDir(workspace.indexDb), INJECT_LOG_FILENAME);
       await appendInjectLogLine(this.container.fs, logPath, JSON.stringify(record));
     } catch {
       // logging failures never propagate.

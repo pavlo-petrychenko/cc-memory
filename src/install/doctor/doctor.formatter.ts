@@ -1,14 +1,10 @@
 import type { DoctorReport } from "@/install/doctor/doctor.typedefs.ts";
 import { WorkspaceIndexStatus } from "@/install/doctor/doctor.typedefs.ts";
 
-/** Pure formatting — every line below `doctor.command.ts`'s two byte-frozen
- * lines. The wording here is free to change; only the two lines this class
- * never touches are pinned. */
+/** Pure formatting for every line below `doctor.command.ts`'s two byte-frozen lines. */
 export class DoctorFormatter {
-  // `bun test --coverage` treats a class with no explicit constructor as
-  // having an unreachable synthetic one, which drags its function-coverage
-  // percentage down even at 100% line coverage — a non-empty (if inert)
-  // constructor body keeps that synthetic slot out of the count.
+  // A non-empty constructor keeps bun's coverage report from counting an
+  // unreachable synthetic default constructor against this class.
 
   formatRegistryStatus(registryPath: string, status: string): string {
     return `registry: ${registryPath} ${status}`;

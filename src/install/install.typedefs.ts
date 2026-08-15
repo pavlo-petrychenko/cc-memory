@@ -18,9 +18,6 @@ export type InstallError =
 
 export type InstallReport = {
   readonly dryRun: boolean;
-  /** Human-readable lines describing what was (or, under `--dry-run`, would
-   * be) done — collected instead of printed inline so `install.command.ts`
-   * renders them. */
   readonly actionLines: readonly string[];
   /** Only non-empty when `settings.json` actually changes. */
   readonly settingsDiffLines: readonly string[];

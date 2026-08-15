@@ -10,8 +10,7 @@ export function cliFailure(
 }
 
 /** A diagnostic on stderr paired with an explicit exit code — the one shape
- * `cliFailure`'s "always exit 1" default doesn't cover (see `CliOutcome`'s
- * doc comment). */
+ * `cliFailure`'s "always exit 1" default doesn't cover. */
 export function cliOutcome(exitCode: number, stderrMessage: string | null): CliOutcome {
   return { exitCode, stderrMessage };
 }
