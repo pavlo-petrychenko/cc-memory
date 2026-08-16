@@ -2,10 +2,10 @@ import { expect, test } from "bun:test";
 
 import { Glob } from "bun";
 
-import { wireCli } from "@/cli/cli.wiring.ts";
-import { COMMAND_DESCRIPTORS } from "@/cli/commands/help/help.constants.ts";
-import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
-import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { registerCommands } from "@/core/index.ts";
+import { COMMAND_DESCRIPTORS } from "@/modules/meta/commands/help.constants.ts";
+import { commands } from "@/registry.wiring.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 const SOURCE_ROOT = new URL("../", import.meta.url).pathname;
 
@@ -34,12 +34,11 @@ test("every command and hook class carries its metadata decorator", async () => 
 });
 
 test("--help lists exactly the wired command registry", () => {
-  const container = makeTestGateways({ proc: makeProcFake() });
-  const { commands } = wireCli(container);
+  const handlers = registerCommands(commands, makeAppContext());
 
-  const visibleRegistry = commands
-    .filter((command) => !command.spec.hidden)
-    .map((command) => command.spec.path.join(" "))
+  const visibleRegistry = handlers
+    .filter((handler) => !handler.hidden)
+    .map((handler) => handler.path.join(" "))
     .toSorted();
 
   const helpSurface = COMMAND_DESCRIPTORS.filter((descriptor) => !descriptor.hidden)

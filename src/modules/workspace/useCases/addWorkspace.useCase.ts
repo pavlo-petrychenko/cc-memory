@@ -1,11 +1,12 @@
-import type { AbsPath } from "@/core/index.ts";
+import { UseCase } from "@/core/index.ts";
 import { expandPath, indexDbPath, joinAbs, titleize, tildify } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
+import { WorkspaceAddFormatter } from "@/modules/workspace/commands/workspaceAdd/workspaceAdd.formatter.ts";
 import { WorkspaceRepository } from "@/modules/workspace/registry/workspace.repository.ts";
 import { WorkspaceValidatorService } from "@/modules/workspace/resolution/workspace.validator.service.ts";
+import { WorkspaceIndexBuilderService } from "@/modules/workspace/services/workspaceIndexBuilder.service.ts";
 import { DEFAULT_EXCLUDE } from "@/modules/workspace/workspace.constants.ts";
-import type { WorkspaceIndexBuilder } from "@/modules/workspace/workspace.typedefs.ts";
 
 export type AddWorkspaceInput = {
   readonly id: string;
@@ -15,27 +16,18 @@ export type AddWorkspaceInput = {
   readonly exclude: readonly string[] | null;
 };
 
-export type AddWorkspaceReport = {
-  readonly id: string;
-  readonly kb: AbsPath;
-  readonly worklogs: AbsPath;
-  readonly indexDb: AbsPath;
-  readonly total: number;
-  readonly match: readonly AbsPath[];
-};
-
 /** One user-facing operation: register + scaffold a new workspace. */
-export class AddWorkspaceUseCase {
-  constructor(
-    private readonly repository: WorkspaceRepository,
-    private readonly validatorService: WorkspaceValidatorService,
-    private readonly indexBuilder: WorkspaceIndexBuilder,
-  ) {}
+export class AddWorkspaceUseCase extends UseCase<
+  AddWorkspaceInput,
+  Result<readonly string[], string>
+> {
+  private readonly repository = this.makeRepository(WorkspaceRepository);
+  private readonly validatorService = this.makeService(WorkspaceValidatorService);
+  private readonly indexBuilder = this.makeService(WorkspaceIndexBuilderService);
+  private readonly formatter = new WorkspaceAddFormatter();
 
-  async run(
-    home: AbsPath,
-    input: AddWorkspaceInput,
-  ): Promise<Result<AddWorkspaceReport, string>> {
+  async execute(input: AddWorkspaceInput): Promise<Result<readonly string[], string>> {
+    const home = this.gateways.env.home();
     const registryResult = await this.repository.load(this.repository.defaultPath(home));
     if (!registryResult.ok) {
       return { ok: false, error: `registry error: ${registryResult.error.message}` };
@@ -86,6 +78,9 @@ export class AddWorkspaceUseCase {
       this.validatorService.expandWorkspace(stored, home),
     );
 
-    return { ok: true, value: { id: input.id, kb, worklogs, indexDb, total, match } };
+    return {
+      ok: true,
+      value: this.formatter.workspaceAdded(input.id, kb, worklogs, indexDb, total, match),
+    };
   }
 }

@@ -1,3 +1,5 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, expandPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
@@ -21,8 +23,13 @@ import type {
 
 /** `~/.claude/settings.json` surgery: purge our own hook groups, re-register the 5
  * hooks at their current location, and preserve every foreign entry byte-for-byte. */
-export class SettingsService {
-  constructor(private readonly fs: FileSystem) {}
+export class SettingsService extends Service {
+  private readonly fs: FileSystem;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.fs = ctx.gateways.fs;
+  }
 
   static defaultPath(home: AbsPath): AbsPath {
     return expandPath(SETTINGS_HOME_RELATIVE_PATH, home);
@@ -160,7 +167,7 @@ export class SettingsService {
   }
 
   async load(path: AbsPath): Promise<Result<JsonObject, JsonFileError>> {
-    return new JsonFileService(this.fs).readObjectFile(path);
+    return this.makeService(JsonFileService).readObjectFile(path);
   }
 
   /** Backs up the raw `settings.json` bytes ONCE, before this installer's first
@@ -179,7 +186,7 @@ export class SettingsService {
   }
 
   async save(path: AbsPath, settings: JsonObject): Promise<void> {
-    await new JsonFileService(this.fs).writeObjectAtomic(path, settings);
+    await this.makeService(JsonFileService).writeObjectAtomic(path, settings);
   }
 
   /** A minimal line-by-line diff via a plain O(n·m) LCS table, for `--dry-run` only

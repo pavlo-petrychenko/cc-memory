@@ -6,7 +6,7 @@ import {
   worktreeSlug,
   WorkspaceResolverService,
 } from "@/modules/workspace/resolution/workspace.resolver.service.ts";
-import { WorkspaceValidatorService } from "@/modules/workspace/resolution/workspace.validator.service.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 const HOME = absPath("/home/test");
 
@@ -27,7 +27,7 @@ const inner: RawWorkspace = {
   indexDb: "/tmp/inner.db",
 };
 
-const resolver = new WorkspaceResolverService(new WorkspaceValidatorService());
+const resolver = new WorkspaceResolverService(makeAppContext());
 
 describe("WorkspaceResolverService.resolveWorkspace", () => {
   test("longest prefix wins", () => {

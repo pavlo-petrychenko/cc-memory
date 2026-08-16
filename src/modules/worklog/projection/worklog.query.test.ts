@@ -2,9 +2,9 @@ import { expect, test } from "bun:test";
 
 import { absPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
 import { SearchIndexFake } from "@/gateways/index.ts";
 import { WorklogQuery } from "@/modules/worklog/projection/worklog.query.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 const workspace: Workspace = {
   id: "w",
@@ -27,11 +27,7 @@ test("WorklogQuery fuses token and phrase hits through the SearchIndex", async (
   index.setNextHits([hit]);
   index.setNextInlinks(new Map());
 
-  const query = new WorklogQuery(
-    index,
-    new FtsQueryBuilder(new TokenizerParser()),
-    new Ranker(),
-  );
+  const query = new WorklogQuery(makeAppContext({}, index));
   const fused = await query.searchFused(workspace, "rollback gateway", {
     limit: 5,
     linkBoost: 0.003,

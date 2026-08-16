@@ -3,9 +3,9 @@ import { describe, expect, test } from "bun:test";
 import { absPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { HookRuntimeService } from "@/core/transport/hook/hook.runtime.ts";
+import type { HookHandle } from "@/core/transport/hook/hook.runtime.ts";
 import { HookEvent, HookResultKind } from "@/core/transport/hook/hook.typedefs.ts";
 import type {
-  HookHandler,
   HookResult,
   WorkspaceResolver,
 } from "@/core/transport/hook/hook.typedefs.ts";
@@ -36,34 +36,21 @@ const WORKSPACE: Workspace = {
   matchedPrefix: absPath("/home/test/project"),
 };
 
-type SessionStartLikePayload = { readonly cwd: string | null };
-
-function toHandler(
-  handle: HookHandler<SessionStartLikePayload>["handle"],
-): HookHandler<SessionStartLikePayload> {
-  return { handle };
-}
-
 async function runWith(
   resolveWorkspace: WorkspaceResolver,
-  handler: HookHandler<SessionStartLikePayload>,
+  handle: HookHandle,
   logger = makeLoggerFake(),
 ) {
   const io = makeIoFake();
   const container = makeTestGateways({ stdio: io, logger });
-  const payloadParser = new PayloadParser();
   const service = new HookRuntimeService(
     container,
-    payloadParser,
+    new PayloadParser(),
     new HookResultSerializer(),
     resolveWorkspace,
   );
   io.setStdin(JSON.stringify({ cwd: CWD }));
-  await service.run(
-    "test-hook",
-    (record) => payloadParser.parseSessionStart(record),
-    handler,
-  );
+  await service.run("test-hook", handle);
   return { io, logger };
 }
 
@@ -71,9 +58,9 @@ describe("HookRuntimeService.run (shared preamble/postamble)", () => {
   test("a handler exception is logged and still exits 0", async () => {
     const { io, logger } = await runWith(
       async () => WORKSPACE,
-      toHandler(() => {
+      () => {
         throw new Error("deliberate handler failure");
-      }),
+      },
     );
     expect(io.written).toEqual([]);
     expect(io.exitCode).toBe(0);
@@ -87,9 +74,9 @@ describe("HookRuntimeService.run (shared preamble/postamble)", () => {
   test("a rejected handler promise is caught, logged, and exits 0", async () => {
     const { io, logger } = await runWith(
       async () => WORKSPACE,
-      toHandler(async () => {
+      async () => {
         throw new Error("deliberate async failure");
-      }),
+      },
     );
     expect(io.written).toEqual([]);
     expect(io.exitCode).toBe(0);
@@ -100,10 +87,10 @@ describe("HookRuntimeService.run (shared preamble/postamble)", () => {
     let handlerCalled = false;
     const { io } = await runWith(
       async () => null,
-      toHandler(async (): Promise<HookResult> => {
+      async (): Promise<HookResult> => {
         handlerCalled = true;
         return { kind: HookResultKind.Silent };
-      }),
+      },
     );
     expect(handlerCalled).toBe(false);
     expect(io.written).toEqual([]);
@@ -113,11 +100,11 @@ describe("HookRuntimeService.run (shared preamble/postamble)", () => {
   test("a resolved workspace calls the handler and serializes its result", async () => {
     const { io } = await runWith(
       async () => WORKSPACE,
-      toHandler(async (): Promise<HookResult> => ({
+      async (): Promise<HookResult> => ({
         kind: HookResultKind.Context,
         event: HookEvent.SessionStart,
         text: "hello",
-      })),
+      }),
     );
     expect(io.written).toEqual([
       JSON.stringify({

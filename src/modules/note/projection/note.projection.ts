@@ -1,3 +1,5 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Projection } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { Collection, type IndexDocument, type SearchIndex } from "@/gateways/index.ts";
 import type { Note } from "@/modules/note/note.entity.ts";
@@ -27,8 +29,13 @@ function toIndexDocument(document: NoteDocument): IndexDocument {
 
 /** The write side of the note read model: project `Note`s into the
  * `notes`/`notes_fts`/`links` tables and prune paths that left the vault. */
-export class NoteProjection {
-  constructor(private readonly index: SearchIndex) {}
+export class NoteProjection extends Projection {
+  private readonly index: SearchIndex;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.index = ctx.searchIndex;
+  }
 
   resetIfStale(workspace: Workspace): Promise<boolean> {
     return this.index.resetIfStale(workspace);

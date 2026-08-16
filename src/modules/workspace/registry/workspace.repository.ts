@@ -1,3 +1,5 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Repository } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, joinAbs, parentDir, registryPath } from "@/core/index.ts";
 import type { RawWorkspace, Workspace, WorktreeSlug } from "@/core/index.ts";
@@ -27,15 +29,23 @@ function homeNoteContent(title: string, id: string): string {
 
 /** The workspace registry — the source of truth this module owns. The ONLY
  * layer here that touches the filesystem, git or subprocesses. */
-export class WorkspaceRepository {
-  constructor(
-    private readonly fs: FileSystem,
-    private readonly git: Git,
-    private readonly proc: Proc,
-    private readonly parser: WorkspaceParser,
-    private readonly serializer: WorkspaceSerializer,
-    private readonly resolverService: WorkspaceResolverService,
-  ) {}
+export class WorkspaceRepository extends Repository {
+  private readonly fs: FileSystem;
+  private readonly git: Git;
+  private readonly proc: Proc;
+  private readonly parser: WorkspaceParser;
+  private readonly serializer: WorkspaceSerializer;
+  private readonly resolverService: WorkspaceResolverService;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.fs = ctx.gateways.fs;
+    this.git = ctx.gateways.git;
+    this.proc = ctx.gateways.proc;
+    this.parser = new WorkspaceParser();
+    this.serializer = new WorkspaceSerializer();
+    this.resolverService = this.makeService(WorkspaceResolverService);
+  }
 
   defaultPath(home: AbsPath): AbsPath {
     return registryPath(home);

@@ -1,3 +1,5 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Projection } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { Collection, type IndexDocument, type SearchIndex } from "@/gateways/index.ts";
@@ -27,8 +29,13 @@ function toIndexDocument(document: WorklogDocument): IndexDocument {
 
 /** The write side of the worklog read model: project worklog files into the
  * `worklog_fts`/`worklog_files` tables and prune paths that left the worklogs. */
-export class WorklogProjection {
-  constructor(private readonly index: SearchIndex) {}
+export class WorklogProjection extends Projection {
+  private readonly index: SearchIndex;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.index = ctx.searchIndex;
+  }
 
   resetIfStale(workspace: Workspace): Promise<boolean> {
     return this.index.resetIfStale(workspace);

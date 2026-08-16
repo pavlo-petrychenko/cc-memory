@@ -1,28 +1,20 @@
 import { expect, test } from "bun:test";
 
-import type {
-  Command as CommandContract,
-  CommandDescriptor,
-} from "@/core/entry/entry.typedefs.ts";
-import { Command } from "@/core/index.ts";
-import { LogLevel } from "@/core/index.ts";
-import { absPath } from "@/core/index.ts";
+import { Command, registerCommands } from "@/core/index.ts";
+import type { AppContext } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
-import type {
-  ArgsError,
-  CommandResult,
-  RunContext,
-} from "@/core/transport/cli/cli.typedefs.ts";
+import { UseCase } from "@/core/index.ts";
+import type { ArgsError, CommandResult } from "@/core/transport/cli/cli.typedefs.ts";
 import {
   cliFailure,
   cliOutcome,
   flagValue,
   hasFlag,
   intFlag,
-  registerCommand,
   requirePositional,
   variadicValues,
 } from "@/core/transport/cli/cli.utils.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 test("cliFailure defaults to exit code 1 and cliOutcome is explicit", () => {
   expect(cliFailure("boom")).toEqual({ exitCode: 1, stderrMessage: "boom" });
@@ -54,46 +46,33 @@ test("requirePositional takes the first token or reports the missing name", () =
   });
 });
 
-const CONTEXT: RunContext = {
-  home: absPath("/home"),
-  cwd: absPath("/cwd"),
-  config: {
-    injectMinScore: 0.2,
-    linkBoost: 0.003,
-    injectLogEnabled: true,
-    blockAfter: 2,
-    blockDrift: 5,
-    gateDisabled: false,
-    logLevel: LogLevel.Warn,
-  },
-};
+type PingOptions = { readonly loud: boolean };
 
-const SPEC: CommandDescriptor = {
+class PingUseCase extends UseCase<PingOptions, Result<readonly string[], string>> {
+  async execute(options: PingOptions): Promise<Result<readonly string[], string>> {
+    return { ok: true, value: [options.loud ? "PONG!" : "pong"] };
+  }
+}
+
+@Command({
   path: ["ping"],
   usage: ["ping"],
   summary: "pong",
   hidden: false,
-};
+  Handler: PingUseCase,
+  mapOptions: (tokens): Result<PingOptions, ArgsError> => ({
+    ok: true,
+    value: { loud: tokens.includes("--loud") },
+  }),
+})
+class PingCommand {}
 
-type PingOptions = { readonly loud: boolean };
+test("registerCommands wraps a command class into a handler without a type assertion", async () => {
+  const ctx: AppContext = makeAppContext();
+  const [registered] = registerCommands([PingCommand], ctx);
+  if (registered === undefined) throw new Error("expected one command handler");
 
-@Command(SPEC)
-class PingCommand implements CommandContract<PingOptions> {
-  parse(tokens: readonly string[]): Result<PingOptions, ArgsError> {
-    return { ok: true, value: { loud: tokens.includes("--loud") } };
-  }
-
-  async run(options: PingOptions, _context: RunContext): Promise<CommandResult> {
-    return {
-      lines: [options.loud ? "PONG!" : "pong"],
-      exitCode: 0,
-      stderrMessage: null,
-    };
-  }
-}
-
-test("registerCommand wraps a command without a type assertion at the call site", async () => {
-  const registered = registerCommand(new PingCommand());
-  expect(registered.spec).toBe(SPEC);
-  expect((await registered.invoke(["--loud"], CONTEXT)).lines).toEqual(["PONG!"]);
+  expect(registered.path).toEqual(["ping"]);
+  const result: CommandResult = await registered.invoke(["--loud"]);
+  expect(result.lines).toEqual(["PONG!"]);
 });

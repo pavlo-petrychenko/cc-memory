@@ -2,6 +2,13 @@ export type { JournalEntry, WorktreeState } from "@/modules/worklog/worklog.enti
 export { WorklogProjection } from "@/modules/worklog/projection/worklog.projection.ts";
 export { WorklogQuery } from "@/modules/worklog/projection/worklog.query.ts";
 export { WorklogService } from "@/modules/worklog/services/worklog.service.ts";
+export { CommitWorklogUseCase } from "@/modules/worklog/useCases/commitWorklog.useCase.ts";
+export { WrapGateUseCase } from "@/modules/worklog/useCases/wrapGate.useCase.ts";
+export { AppendCompactUseCase } from "@/modules/worklog/useCases/appendCompact.useCase.ts";
+export { WriteStateFloorUseCase } from "@/modules/worklog/useCases/writeStateFloor.useCase.ts";
+export { WrapGateHookResolver } from "@/modules/worklog/hooks/wrapGate/wrapGate.hook.ts";
+export { CompactCheckpointHookResolver } from "@/modules/worklog/hooks/compactCheckpoint/compactCheckpoint.hook.ts";
+export { WorklogFloorHookResolver } from "@/modules/worklog/hooks/worklogFloor/worklogFloor.hook.ts";
 export { CommitCommand } from "@/modules/worklog/commands/commit/commit.command.ts";
 export { CommitFormatter } from "@/modules/worklog/commands/commit/commit.formatter.ts";
 export { WorklogFloorFormatter } from "@/modules/worklog/formatters/worklogFloor/worklogFloor.formatter.ts";

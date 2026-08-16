@@ -1,28 +1,24 @@
-import type {
-  FormatterConstructor,
-  UseCaseConstructor,
-} from "@/core/base/constructor.typedefs.ts";
+import type { UseCaseConstructor } from "@/core/base/constructor.typedefs.ts";
 import type { AppContext } from "@/core/base/context.typedefs.ts";
 import type { Result } from "@/core/core.typedefs.ts";
 import { ARGS_PARSE_ERROR_EXIT_CODE } from "@/core/transport/cli/cli.constants.ts";
 import type { ArgsError, CommandResult } from "@/core/transport/cli/cli.typedefs.ts";
 
-/** A use-case result the CLI can render: one line, several lines, or nothing. */
-export type Renderable = string | null | readonly string[];
-
 export const COMMAND_METADATA = Symbol("command");
 
-export interface CommandParams<Options, Output extends Renderable> {
+/** A command's use case returns the rendered stdout lines, or an error message. */
+export type CommandOutput = Result<readonly string[], string>;
+
+export interface CommandParams<Options> {
   readonly path: readonly string[];
   readonly usage: readonly string[];
   readonly summary: string;
   readonly hidden: boolean;
-  readonly Handler: UseCaseConstructor<Options, Output>;
+  readonly Handler: UseCaseConstructor<Options, CommandOutput>;
   readonly mapOptions: (
     tokens: readonly string[],
     ctx: AppContext,
   ) => Result<Options, ArgsError>;
-  readonly PostProcessing?: FormatterConstructor<Output>;
 }
 
 export type CommandClass = abstract new (...args: never[]) => object;
@@ -30,9 +26,7 @@ export type CommandClass = abstract new (...args: never[]) => object;
 /** Attaches `params` to a command class under `COMMAND_METADATA` — the only
  * effect. Registration stays an explicit list in `registry.ts`; nothing runs at
  * import time. */
-export function Command<Options, Output extends Renderable>(
-  params: CommandParams<Options, Output>,
-) {
+export function Command<Options>(params: CommandParams<Options>) {
   return function <T extends CommandClass>(
     target: T,
     _context: ClassDecoratorContext<T>,
@@ -50,18 +44,8 @@ export interface CommandHandler {
   readonly invoke: (tokens: readonly string[]) => Promise<CommandResult>;
 }
 
-function isRenderableList(output: Renderable): output is readonly string[] {
-  return Object.prototype.toString.call(output) === "[object Array]";
-}
-
-function toLines(output: Renderable): readonly string[] {
-  if (output === null) return [];
-  if (isRenderableList(output)) return output;
-  return [output];
-}
-
 type DecoratedCommand = {
-  readonly [COMMAND_METADATA]?: CommandParams<unknown, Renderable>;
+  readonly [COMMAND_METADATA]?: CommandParams<unknown>;
 };
 
 export function registerCommands(
@@ -90,11 +74,11 @@ export function registerCommands(
             stderrMessage: options.error.message,
           };
         }
-        const output = await useCase.execute(options.value);
-        const rendered = params.PostProcessing
-          ? new params.PostProcessing().format(output)
-          : output;
-        return { lines: toLines(rendered), exitCode: 0, stderrMessage: null };
+        const result = await useCase.execute(options.value);
+        if (!result.ok) {
+          return { lines: [], exitCode: 1, stderrMessage: result.error };
+        }
+        return { lines: result.value, exitCode: 0, stderrMessage: null };
       },
     };
   });

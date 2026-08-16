@@ -4,6 +4,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { MANIFEST_SCHEMA_VERSION } from "@/modules/installation/steps/manifest/manifest.constants.ts";
 import { ManifestService } from "@/modules/installation/steps/manifest/manifest.repository.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 // SAFETY: fixed test fixture, never a real filesystem lookup — matches
 // `testGateways.fixture.ts`'s `DEFAULT_HOME`.
@@ -19,7 +20,7 @@ describe("ManifestService — ~/.claude/memory/installed.json", () => {
 
   test("load is null when the file does not exist (first run)", async () => {
     const fs = makeFsMemoryFake();
-    const service = new ManifestService(fs);
+    const service = new ManifestService(makeAppContext({ fs }));
     const manifest = await service.load(ManifestService.defaultPath(HOME));
     expect(manifest).toBeNull();
   });
@@ -27,7 +28,7 @@ describe("ManifestService — ~/.claude/memory/installed.json", () => {
   test("load is null for corrupt JSON (degrades to first-run, never throws)", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(ManifestService.defaultPath(HOME), "not json {{{");
-    const service = new ManifestService(fs);
+    const service = new ManifestService(makeAppContext({ fs }));
     const manifest = await service.load(ManifestService.defaultPath(HOME));
     expect(manifest).toBeNull();
   });
@@ -38,14 +39,14 @@ describe("ManifestService — ~/.claude/memory/installed.json", () => {
       ManifestService.defaultPath(HOME),
       JSON.stringify({ unrelatedField: true }),
     );
-    const service = new ManifestService(fs);
+    const service = new ManifestService(makeAppContext({ fs }));
     const manifest = await service.load(ManifestService.defaultPath(HOME));
     expect(manifest).toBeNull();
   });
 
   test("save then load round-trips every field exactly", async () => {
     const fs = makeFsMemoryFake();
-    const service = new ManifestService(fs);
+    const service = new ManifestService(makeAppContext({ fs }));
     const path = ManifestService.defaultPath(HOME);
     await service.save(path, {
       schemaVersion: MANIFEST_SCHEMA_VERSION,
@@ -79,7 +80,7 @@ describe("ManifestService — ~/.claude/memory/installed.json", () => {
 
   test("save then load round-trips a null backup path and an empty skills list", async () => {
     const fs = makeFsMemoryFake();
-    const service = new ManifestService(fs);
+    const service = new ManifestService(makeAppContext({ fs }));
     const path = ManifestService.defaultPath(HOME);
     await service.save(path, {
       schemaVersion: MANIFEST_SCHEMA_VERSION,
@@ -101,7 +102,7 @@ describe("ManifestService — ~/.claude/memory/installed.json", () => {
 
   test("load rejects a skills entry with the wrong shape", async () => {
     const fs = makeFsMemoryFake();
-    const service = new ManifestService(fs);
+    const service = new ManifestService(makeAppContext({ fs }));
     const path = ManifestService.defaultPath(HOME);
     await fs.writeFile(
       path,
@@ -123,7 +124,7 @@ describe("ManifestService — ~/.claude/memory/installed.json", () => {
 
   test("load rejects a hookCommands value that isn't all strings", async () => {
     const fs = makeFsMemoryFake();
-    const service = new ManifestService(fs);
+    const service = new ManifestService(makeAppContext({ fs }));
     const path = ManifestService.defaultPath(HOME);
     await fs.writeFile(
       path,

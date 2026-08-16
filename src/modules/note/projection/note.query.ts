@@ -1,5 +1,7 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Projection } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { FtsQueryBuilder, Ranker } from "@/core/index.ts";
+import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
 import type { FusedHit } from "@/core/index.ts";
 import { Collection, type SearchIndex } from "@/gateways/index.ts";
 import { NOTE_BM25_WEIGHTS } from "@/modules/note/note.constants.ts";
@@ -16,12 +18,17 @@ export const NOTE_DEFAULT_LIMIT = 5;
 /** The read side of the note read model: BM25 over `notes_fts` (title ×10, tags
  * ×5, body ×1) fused with a phrase/`NEAR` query via RRF, plus the
  * link-corroboration bonus. */
-export class NoteQuery {
-  constructor(
-    private readonly index: SearchIndex,
-    private readonly ftsQueryBuilder: FtsQueryBuilder,
-    private readonly ranker: Ranker,
-  ) {}
+export class NoteQuery extends Projection {
+  private readonly index: SearchIndex;
+  private readonly ftsQueryBuilder: FtsQueryBuilder;
+  private readonly ranker: Ranker;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.index = ctx.searchIndex;
+    this.ftsQueryBuilder = new FtsQueryBuilder(new TokenizerParser());
+    this.ranker = new Ranker();
+  }
 
   async searchFused(
     workspace: Workspace,

@@ -1,3 +1,5 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { joinAbs, parentDir } from "@/core/index.ts";
 import { registryPath } from "@/core/index.ts";
@@ -7,8 +9,13 @@ import type { SeedRegistryOutcome } from "@/modules/installation/steps/seed/seed
 
 /** Seeds `registry.toml` from `registry.example.toml` IF one doesn't already
  * exist — never overwrites a real registry. */
-export class SeedService {
-  constructor(private readonly fs: FileSystem) {}
+export class SeedService extends Service {
+  private readonly fs: FileSystem;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.fs = ctx.gateways.fs;
+  }
 
   static defaultExampleRegistryPath(repoRoot: AbsPath): AbsPath {
     return joinAbs(repoRoot, EXAMPLE_REGISTRY_RELATIVE_PATH);

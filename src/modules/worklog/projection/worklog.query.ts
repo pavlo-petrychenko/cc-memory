@@ -1,5 +1,7 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Projection } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { FtsQueryBuilder, Ranker } from "@/core/index.ts";
+import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
 import type { FusedHit } from "@/core/index.ts";
 import { Collection, type SearchIndex } from "@/gateways/index.ts";
 import { WORKLOG_BM25_WEIGHTS } from "@/modules/worklog/worklog.constants.ts";
@@ -13,12 +15,17 @@ export const WORKLOG_DEFAULT_LIMIT = 5;
 
 /** The read side of the worklog read model: BM25 over `worklog_fts` (slug ×3,
  * date ×1, body ×1) fused with a phrase/`NEAR` query via RRF. */
-export class WorklogQuery {
-  constructor(
-    private readonly index: SearchIndex,
-    private readonly ftsQueryBuilder: FtsQueryBuilder,
-    private readonly ranker: Ranker,
-  ) {}
+export class WorklogQuery extends Projection {
+  private readonly index: SearchIndex;
+  private readonly ftsQueryBuilder: FtsQueryBuilder;
+  private readonly ranker: Ranker;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.index = ctx.searchIndex;
+    this.ftsQueryBuilder = new FtsQueryBuilder(new TokenizerParser());
+    this.ranker = new Ranker();
+  }
 
   async searchFused(
     workspace: Workspace,

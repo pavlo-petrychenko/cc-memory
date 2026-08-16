@@ -71,11 +71,14 @@ const DECLARATION_SUFFIXES = [".typedefs.ts", ".constants.ts"];
  * which reads better than a barrel that would pull every fake — and every port adapter
  * behind them — into any file touching one.
  *
- * `version.ts` is a single top-level constant rather than a module, so it has no index to
- * import through.
+ * `version.ts` and `registry.wiring.ts` are top-level composition files rather than
+ * modules, so they have no index to import through.
  */
 const BARREL_EXEMPT_PREFIXES = ["testing/", "cli/"];
-const BARREL_EXEMPT_SPECIFIERS: ReadonlySet<string> = new Set(["version.ts"]);
+const BARREL_EXEMPT_SPECIFIERS: ReadonlySet<string> = new Set([
+  "version.ts",
+  "registry.wiring.ts",
+]);
 
 test("a cross-module import names the module's index.ts, never a file inside it", async () => {
   const crossModuleImports = await collectCrossModuleImports();

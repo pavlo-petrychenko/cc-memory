@@ -10,6 +10,10 @@ export class StdioAdapter implements Stdio {
     process.stdout.write(`${text}\n`);
   }
 
+  writeStderr(text: string): void {
+    process.stderr.write(`${text}\n`);
+  }
+
   exit(code: number): void {
     process.exit(code);
   }

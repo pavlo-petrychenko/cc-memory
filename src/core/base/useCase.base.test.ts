@@ -21,7 +21,11 @@ const CONFIG: Config = {
 
 // SAFETY: the base classes under test only store the gateways reference and pass
 // it through `make*` — they never dereference a member, so an empty object stands in.
-const CTX: AppContext = { gateways: {} as AppContext["gateways"], config: CONFIG };
+const CTX: AppContext = {
+  gateways: {} as AppContext["gateways"],
+  searchIndex: {} as AppContext["searchIndex"],
+  config: CONFIG,
+};
 
 class TestRepository extends Repository {
   kind(): string {

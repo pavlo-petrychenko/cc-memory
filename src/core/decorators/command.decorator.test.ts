@@ -4,6 +4,7 @@ import type { AppContext } from "@/core/base/context.typedefs.ts";
 import { UseCase } from "@/core/base/useCase.base.ts";
 import type { Config } from "@/core/config/config.typedefs.ts";
 import { LogLevel } from "@/core/config/config.typedefs.ts";
+import type { Result } from "@/core/core.typedefs.ts";
 
 import { Command, type CommandHandler, registerCommands } from "./command.decorator.ts";
 
@@ -19,17 +20,15 @@ const CONFIG: Config = {
 
 // SAFETY: the decorator under test only stores the ctx and passes it through to
 // the use case constructor; it never dereferences a gateway member.
-const CTX: AppContext = { gateways: {} as AppContext["gateways"], config: CONFIG };
+const CTX: AppContext = {
+  gateways: {} as AppContext["gateways"],
+  searchIndex: {} as AppContext["searchIndex"],
+  config: CONFIG,
+};
 
-class GreetUseCase extends UseCase<{ name: string }, string> {
-  async execute(options: { name: string }): Promise<string> {
-    return `hello ${options.name}`;
-  }
-}
-
-class LoudFormatter {
-  format(input: string): string | null {
-    return `LOUD: ${input}`;
+class GreetUseCase extends UseCase<{ name: string }, Result<readonly string[], string>> {
+  async execute(options: { name: string }): Promise<Result<readonly string[], string>> {
+    return { ok: true, value: [`hello ${options.name}`] };
   }
 }
 
@@ -46,7 +45,6 @@ class LoudFormatter {
     }
     return { ok: true, value: { name } };
   },
-  PostProcessing: LoudFormatter,
 })
 class GreetCommand {}
 
@@ -74,10 +72,10 @@ describe("@Command + registerCommands", () => {
     });
   });
 
-  test("success runs the use case through PostProcessing", async () => {
+  test("success runs the use case and returns its lines", async () => {
     const result = await singleHandler().invoke(["world"]);
     expect(result).toEqual({
-      lines: ["LOUD: hello world"],
+      lines: ["hello world"],
       exitCode: 0,
       stderrMessage: null,
     });

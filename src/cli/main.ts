@@ -1,36 +1,41 @@
-import { wireCli } from "@/cli/cli.wiring.ts";
-import { runCli as dispatchCli } from "@/core/index.ts";
-import type { Config } from "@/core/index.ts";
 import { ConfigParser } from "@/core/index.ts";
-import type { CliOutcome } from "@/core/index.ts";
+import type { AbsPath, Workspace } from "@/core/index.ts";
+import type { AppContext } from "@/core/index.ts";
+import { registerCommands, registerHooks, runCli } from "@/core/index.ts";
+import { runHookDispatch } from "@/core/index.ts";
 import { AppGateways } from "@/gateways/index.ts";
-import type { Gateways } from "@/gateways/index.ts";
-
-/** The testable entry: wire everything, run argv, write stdout lines, and return
- * the outcome (stderr + exit code) for `main`'s guard to finish. */
-export async function runCli(
-  argv: readonly string[],
-  container: Gateways,
-  config: Config,
-): Promise<CliOutcome> {
-  const { commands } = wireCli(container);
-  const context = {
-    home: container.env.home(),
-    cwd: container.env.cwd(),
-    config,
-  };
-  const result = await dispatchCli(argv, commands, context);
-  for (const line of result.lines) container.stdio.write(line);
-  return { exitCode: result.exitCode, stderrMessage: result.stderrMessage };
-}
+import { SearchIndexAdapter } from "@/gateways/index.ts";
+import { TargetResolutionService } from "@/modules/workspace/index.ts";
+import { commands, hooks } from "@/registry.wiring.ts";
 
 if (import.meta.main) {
-  const envSnapshot = process.env;
-  const container = new AppGateways(envSnapshot);
-  const config = new ConfigParser().parse(envSnapshot);
-  const outcome = await runCli(process.argv.slice(2), container, config);
-  if (outcome.stderrMessage !== null) {
-    process.stderr.write(`${outcome.stderrMessage}\n`);
+  const env = process.env;
+  const gateways = new AppGateways(env);
+  const config = new ConfigParser().parse(env);
+  const searchIndex = new SearchIndexAdapter(gateways.fs, (path) =>
+    gateways.openDatabase(path),
+  );
+  const ctx: AppContext = { gateways, config, searchIndex };
+
+  const argv = process.argv.slice(2);
+
+  if (argv[0] === "hook") {
+    const targetResolution = new TargetResolutionService(ctx);
+    const resolveWorkspace = (cwd: AbsPath): Promise<Workspace | null> =>
+      targetResolution.resolveWorkspaceOrNull(gateways.env.home(), cwd);
+    await runHookDispatch(
+      argv[1] ?? "",
+      registerHooks(hooks, ctx),
+      gateways,
+      resolveWorkspace,
+    );
+  } else {
+    const handlers = registerCommands(commands, ctx);
+    const result = await runCli(argv, handlers);
+    for (const line of result.lines) gateways.stdio.write(line);
+    if (result.stderrMessage !== null) {
+      process.stderr.write(`${result.stderrMessage}\n`);
+    }
+    gateways.stdio.exit(result.exitCode);
   }
-  container.stdio.exit(outcome.exitCode);
 }

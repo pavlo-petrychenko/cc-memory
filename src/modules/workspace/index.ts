@@ -8,12 +8,13 @@ export { WorkspaceLsFormatter } from "@/modules/workspace/commands/workspaceLs/w
 export { WorkspaceRmFormatter } from "@/modules/workspace/commands/workspaceRm/workspaceRm.formatter.ts";
 export { WorkspaceParser } from "@/modules/workspace/registry/workspace.parser.ts";
 export { WorkspaceRepository } from "@/modules/workspace/registry/workspace.repository.ts";
+export { WorkspaceSerializer } from "@/modules/workspace/registry/workspace.serializer.ts";
 export {
   worktreeSlug,
   WorkspaceResolverService,
 } from "@/modules/workspace/resolution/workspace.resolver.service.ts";
-export { WorkspaceSerializer } from "@/modules/workspace/registry/workspace.serializer.ts";
 export { TargetResolutionService } from "@/modules/workspace/resolution/workspace.target.service.ts";
+export { WorkspaceIndexBuilderService } from "@/modules/workspace/services/workspaceIndexBuilder.service.ts";
 export {
   expandWorkspace,
   findWorkspace,
@@ -35,7 +36,3 @@ export {
   RegistryErrorKind,
 } from "@/modules/workspace/workspace.typedefs.ts";
 export { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/modules/workspace/workspace.constants.ts";
-export {
-  makeWorkspaceContext,
-  type WorkspaceContext,
-} from "@/modules/workspace/workspace.wiring.ts";

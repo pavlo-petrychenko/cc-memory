@@ -5,6 +5,7 @@ import { BunPathService } from "@/modules/installation/steps/bunPath/bunPath.rep
 import { BunPathErrorKind } from "@/modules/installation/steps/bunPath/bunPath.typedefs.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 // SAFETY: fixed test fixture, never a real filesystem lookup.
 const REAL_BUN_PATH = "/usr/local/Cellar/bun/1.3.14/bin/bun" as AbsPath;
@@ -22,7 +23,7 @@ describe("BunPathService — readlink -f $(which bun), verified to exist", () =>
     });
     const fs = makeFsMemoryFake();
     fs.seedFile(REAL_BUN_PATH, "");
-    const service = new BunPathService(proc, fs);
+    const service = new BunPathService(makeAppContext({ proc, fs }));
 
     const result = await service.resolve();
 
@@ -38,7 +39,7 @@ describe("BunPathService — readlink -f $(which bun), verified to exist", () =>
     const proc = makeProcFake();
     proc.enqueue({ kind: "resolve", result: { stdout: "", stderr: "", exitCode: 1 } });
     const fs = makeFsMemoryFake();
-    const service = new BunPathService(proc, fs);
+    const service = new BunPathService(makeAppContext({ proc, fs }));
 
     const result = await service.resolve();
 
@@ -52,7 +53,7 @@ describe("BunPathService — readlink -f $(which bun), verified to exist", () =>
       result: { stdout: "   \n", stderr: "", exitCode: 0 },
     });
     const fs = makeFsMemoryFake();
-    const service = new BunPathService(proc, fs);
+    const service = new BunPathService(makeAppContext({ proc, fs }));
 
     const result = await service.resolve();
 
@@ -70,7 +71,7 @@ describe("BunPathService — readlink -f $(which bun), verified to exist", () =>
       result: { stdout: "", stderr: "broken", exitCode: 1 },
     });
     const fs = makeFsMemoryFake();
-    const service = new BunPathService(proc, fs);
+    const service = new BunPathService(makeAppContext({ proc, fs }));
 
     const result = await service.resolve();
 
@@ -95,7 +96,7 @@ describe("BunPathService — readlink -f $(which bun), verified to exist", () =>
       },
     });
     const fs = makeFsMemoryFake(); // the "resolved" path was never seeded — doesn't exist
-    const service = new BunPathService(proc, fs);
+    const service = new BunPathService(makeAppContext({ proc, fs }));
 
     const result = await service.resolve();
 

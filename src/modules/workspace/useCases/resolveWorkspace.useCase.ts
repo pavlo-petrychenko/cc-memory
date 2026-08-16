@@ -1,34 +1,54 @@
-import type { AbsPath } from "@/core/index.ts";
+import { UseCase } from "@/core/index.ts";
+import { expandPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
-import type { Workspace } from "@/core/index.ts";
+import { ResolveFormatter } from "@/modules/workspace/commands/resolve/resolve.formatter.ts";
 import { WorkspaceRepository } from "@/modules/workspace/registry/workspace.repository.ts";
-import { TargetResolutionService } from "@/modules/workspace/resolution/workspace.target.service.ts";
+import { WorkspaceResolverService } from "@/modules/workspace/resolution/workspace.resolver.service.ts";
 
 export type ResolveWorkspaceInput = {
-  readonly cwd: AbsPath;
-  readonly explicitId: string | null;
+  readonly cwd: string | null;
 };
 
-/** One user-facing operation: resolve exactly one workspace for a cwd/--workspace. */
-export class ResolveWorkspaceUseCase {
-  constructor(
-    private readonly repository: WorkspaceRepository,
-    private readonly targetResolutionService: TargetResolutionService,
-  ) {}
+/** One user-facing operation: resolve exactly one workspace for a cwd. No match
+ * is a success (exit 0) with a message, unlike `search`/`notes`. */
+export class ResolveWorkspaceUseCase extends UseCase<
+  ResolveWorkspaceInput,
+  Result<readonly string[], string>
+> {
+  private readonly repository = this.makeRepository(WorkspaceRepository);
+  private readonly resolverService = this.makeService(WorkspaceResolverService);
+  private readonly formatter = new ResolveFormatter();
 
-  async run(
-    home: AbsPath,
+  async execute(
     input: ResolveWorkspaceInput,
-  ): Promise<Result<Workspace, string>> {
+  ): Promise<Result<readonly string[], string>> {
+    const home = this.gateways.env.home();
     const registryResult = await this.repository.load(this.repository.defaultPath(home));
     if (!registryResult.ok) {
       return { ok: false, error: `registry error: ${registryResult.error.message}` };
     }
-    return this.targetResolutionService.resolveWorkspaceForCwd(
+
+    const cwd =
+      input.cwd !== null ? expandPath(input.cwd, home) : this.gateways.env.cwd();
+    const workspace = this.resolverService.resolveWorkspace(
       registryResult.value,
+      cwd,
       home,
-      input.cwd,
-      input.explicitId,
     );
+    if (workspace === null) {
+      return { ok: true, value: [this.formatter.noWorkspaceForCwd(cwd)] };
+    }
+
+    const slug = await this.repository.worktreeSlug(cwd, workspace);
+    return {
+      ok: true,
+      value: this.formatter.resolveLines(
+        workspace.id,
+        slug,
+        workspace.kb,
+        workspace.worklogs,
+        workspace.indexDb,
+      ),
+    };
   }
 }

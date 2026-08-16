@@ -1,21 +1,25 @@
-import type { AbsPath } from "@/core/index.ts";
+import { UseCase } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import { WorkspaceLsFormatter } from "@/modules/workspace/commands/workspaceLs/workspaceLs.formatter.ts";
 import { WorkspaceRepository } from "@/modules/workspace/registry/workspace.repository.ts";
 import { WorkspaceValidatorService } from "@/modules/workspace/resolution/workspace.validator.service.ts";
-import type { WorkspaceLsRow } from "@/modules/workspace/workspace.typedefs.ts";
-import type { WorkspaceIndexBuilder } from "@/modules/workspace/workspace.typedefs.ts";
+import { WorkspaceIndexBuilderService } from "@/modules/workspace/services/workspaceIndexBuilder.service.ts";
+import { NO_WORKSPACES_MESSAGE } from "@/modules/workspace/workspace.constants.ts";
 
 /** One user-facing operation: list registered workspaces with their note counts. */
-export class ListWorkspacesUseCase {
-  constructor(
-    private readonly repository: WorkspaceRepository,
-    private readonly validatorService: WorkspaceValidatorService,
-    private readonly indexBuilder: WorkspaceIndexBuilder,
-    private readonly formatter: WorkspaceLsFormatter,
-  ) {}
+export class ListWorkspacesUseCase extends UseCase<
+  Record<string, never>,
+  Result<readonly string[], string>
+> {
+  private readonly repository = this.makeRepository(WorkspaceRepository);
+  private readonly validatorService = this.makeService(WorkspaceValidatorService);
+  private readonly indexBuilder = this.makeService(WorkspaceIndexBuilderService);
+  private readonly formatter = new WorkspaceLsFormatter();
 
-  async run(home: AbsPath): Promise<Result<readonly WorkspaceLsRow[], string>> {
+  async execute(
+    _options: Record<string, never>,
+  ): Promise<Result<readonly string[], string>> {
+    const home = this.gateways.env.home();
     const registryResult = await this.repository.load(this.repository.defaultPath(home));
     if (!registryResult.ok) {
       return { ok: false, error: `registry error: ${registryResult.error.message}` };
@@ -33,6 +37,8 @@ export class ListWorkspacesUseCase {
         };
       }),
     );
-    return { ok: true, value: rows };
+
+    if (rows.length === 0) return { ok: true, value: [NO_WORKSPACES_MESSAGE] };
+    return { ok: true, value: rows.flatMap((row) => [row.summaryLine, row.matchLine]) };
   }
 }

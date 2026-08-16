@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import { SkillsService } from "@/modules/installation/steps/skills/skills.repository.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — matches
 // `testGateways.fixture.ts`'s `DEFAULT_HOME`.
@@ -20,7 +21,7 @@ function fixturePath(...segments: readonly string[]): AbsPath {
 describe("SkillsService — symlinking src/skills into ~/.claude/skills", () => {
   test("discoverNames returns [] when the source directory doesn't exist", async () => {
     const fs = makeFsMemoryFake();
-    const service = new SkillsService(fs);
+    const service = new SkillsService(makeAppContext({ fs }));
     expect(await service.discoverNames(SOURCE_DIR)).toEqual([]);
   });
 
@@ -29,7 +30,7 @@ describe("SkillsService — symlinking src/skills into ~/.claude/skills", () => 
     fs.seedDir(fixturePath(SOURCE_DIR, "/remember"));
     fs.seedDir(fixturePath(SOURCE_DIR, "/save-learning"));
     fs.seedFile(fixturePath(SOURCE_DIR, "/README.md"), "not a skill");
-    const service = new SkillsService(fs);
+    const service = new SkillsService(makeAppContext({ fs }));
 
     const names = await service.discoverNames(SOURCE_DIR);
 
@@ -38,7 +39,7 @@ describe("SkillsService — symlinking src/skills into ~/.claude/skills", () => 
 
   test("a brand-new skill (no manifest entry, nothing pre-existing) is symlinked with backedUp: false", async () => {
     const fs = makeFsMemoryFake();
-    const service = new SkillsService(fs);
+    const service = new SkillsService(makeAppContext({ fs }));
     const outcome = await service.install(SOURCE_DIR, TARGET_DIR, ["remember"], []);
 
     expect(outcome.skills).toEqual([{ name: "remember", backedUp: false }]);
@@ -50,7 +51,7 @@ describe("SkillsService — symlinking src/skills into ~/.claude/skills", () => 
     const fs = makeFsMemoryFake();
     const targetPath = fixturePath(TARGET_DIR, "/remember");
     fs.seedFile(fixturePath(targetPath, "/SKILL.md"), "a real, foreign skill file");
-    const service = new SkillsService(fs);
+    const service = new SkillsService(makeAppContext({ fs }));
 
     const outcome = await service.install(SOURCE_DIR, TARGET_DIR, ["remember"], []);
 
@@ -74,7 +75,7 @@ describe("SkillsService — symlinking src/skills into ~/.claude/skills", () => 
       fixturePath(targetPath, "/SKILL.md"),
       "a second, unrelated real directory",
     );
-    const service = new SkillsService(fs);
+    const service = new SkillsService(makeAppContext({ fs }));
 
     const outcome = await service.install(SOURCE_DIR, TARGET_DIR, ["remember"], []);
 
@@ -89,7 +90,7 @@ describe("SkillsService — symlinking src/skills into ~/.claude/skills", () => 
     const fs = makeFsMemoryFake();
     const targetPath = fixturePath(TARGET_DIR, "/remember");
     await fs.symlink(fixturePath(SOURCE_DIR, "/remember"), targetPath);
-    const service = new SkillsService(fs);
+    const service = new SkillsService(makeAppContext({ fs }));
 
     const outcome = await service.install(
       SOURCE_DIR,
@@ -107,7 +108,7 @@ describe("SkillsService — symlinking src/skills into ~/.claude/skills", () => 
   test("a skill already in the manifest but deleted by hand is re-linked", async () => {
     const fs = makeFsMemoryFake();
     const targetPath = fixturePath(TARGET_DIR, "/remember");
-    const service = new SkillsService(fs);
+    const service = new SkillsService(makeAppContext({ fs }));
 
     const outcome = await service.install(
       SOURCE_DIR,
@@ -122,7 +123,7 @@ describe("SkillsService — symlinking src/skills into ~/.claude/skills", () => 
 
   test("multiple skills all get processed, each with its own outcome", async () => {
     const fs = makeFsMemoryFake();
-    const service = new SkillsService(fs);
+    const service = new SkillsService(makeAppContext({ fs }));
     const outcome = await service.install(
       SOURCE_DIR,
       TARGET_DIR,
