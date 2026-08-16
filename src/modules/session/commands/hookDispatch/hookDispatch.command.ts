@@ -23,10 +23,8 @@ import type {
 import { HookName } from "@/core/transport/hook/hook.typedefs.ts";
 import { SearchIndexAdapter } from "@/gateways/index.ts";
 import type { Gateways, SearchIndex } from "@/gateways/index.ts";
+import { KbMapFormatter, KbMapService } from "@/modules/kb/index.ts";
 import {
-  BuildKbMapUseCase,
-  KbMapFormatter,
-  KbMapService,
   NoteParser,
   NoteProjection,
   NoteQuery,
@@ -71,7 +69,7 @@ function makeNoteModule(container: Gateways, index: SearchIndex) {
   return {
     reprojectNotes: new ReprojectNotesUseCase(repository, projection),
     searchNotes: new SearchNotesUseCase(query),
-    buildKbMap: new BuildKbMapUseCase(new KbMapService(container.fs, new NoteParser())),
+    buildKbMap: new KbMapService(container.fs, new NoteParser()),
     kbMapFormatter: new KbMapFormatter(),
   };
 }

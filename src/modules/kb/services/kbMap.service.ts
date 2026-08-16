@@ -2,12 +2,12 @@ import type { AbsPath } from "@/core/index.ts";
 import { joinAbs, tildify } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import type { FileSystem } from "@/gateways/index.ts";
+import type { KbMapFeature, KbMapInput } from "@/modules/kb/kbMap.typedefs.ts";
+import { NoteParser } from "@/modules/note/index.ts";
 import {
   DAILY_JOURNAL_FILENAME,
   MARKDOWN_EXTENSION,
 } from "@/modules/note/note.constants.ts";
-import type { KbMapFeature, KbMapInput } from "@/modules/note/services/kbMap.typedefs.ts";
-import { NoteParser } from "@/modules/note/services/note.parser.ts";
 
 function compareCaseInsensitive(left: string, right: string): number {
   const lowerLeft = left.toLowerCase();

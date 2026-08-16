@@ -5,8 +5,9 @@ import { HookEvent, HookResultKind } from "@/core/transport/hook/hook.typedefs.t
 import type { HookResult } from "@/core/transport/hook/hook.typedefs.ts";
 import type { SessionStartPayload } from "@/core/transport/hook/payload.typedefs.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import type { KbMapFormatter } from "@/modules/note/index.ts";
-import { BuildKbMapUseCase, ReprojectNotesUseCase } from "@/modules/note/index.ts";
+import type { KbMapFormatter } from "@/modules/kb/index.ts";
+import { KbMapService } from "@/modules/kb/index.ts";
+import { ReprojectNotesUseCase } from "@/modules/note/index.ts";
 import { CONTEXT_SEPARATOR } from "@/modules/session/hooks/sessionStart/sessionStart.constants.ts";
 import type {
   WorkingMemoryFormatter,
@@ -24,7 +25,7 @@ export class SessionStartHook implements HookHandler<SessionStartPayload> {
     private readonly container: Gateways,
     private readonly reprojectNotes: ReprojectNotesUseCase,
     private readonly reprojectWorklog: ReprojectWorklogUseCase,
-    private readonly buildKbMap: BuildKbMapUseCase,
+    private readonly buildKbMap: KbMapService,
     private readonly kbMapFormatter: KbMapFormatter,
     private readonly worklogStoreService: WorklogStoreService,
     private readonly workingMemoryFormatter: WorkingMemoryFormatter,
@@ -45,7 +46,7 @@ export class SessionStartHook implements HookHandler<SessionStartPayload> {
       cwd,
       workspace,
     );
-    const kbMapInput = await this.buildKbMap.run(workspace, this.container.env.home());
+    const kbMapInput = await this.buildKbMap.build(workspace, this.container.env.home());
     const kbMapText = kbMapInput === null ? "" : this.kbMapFormatter.format(kbMapInput);
 
     const state = await this.worklogStoreService.readState(workspace, slug);

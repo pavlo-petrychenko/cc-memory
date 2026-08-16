@@ -1,9 +1,8 @@
 import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
 import { SearchIndexAdapter } from "@/gateways/index.ts";
 import type { Gateways, SearchIndex } from "@/gateways/index.ts";
+import { KbMapService } from "@/modules/kb/index.ts";
 import {
-  BuildKbMapUseCase,
-  KbMapService,
   ListNotesUseCase,
   NoteParser,
   NoteProjection,
@@ -36,7 +35,7 @@ export function makeNoteModule(container: Gateways, index: SearchIndex) {
     reprojectNotes: new ReprojectNotesUseCase(repository, projection),
     searchNotes: new SearchNotesUseCase(query),
     listNotes: new ListNotesUseCase(repository),
-    buildKbMap: new BuildKbMapUseCase(new KbMapService(container.fs, new NoteParser())),
+    buildKbMap: new KbMapService(container.fs, new NoteParser()),
   };
 }
 
