@@ -1,4 +1,4 @@
-import type { Proc, ProcResult, ProcRunOptions } from "@/platform/index.ts";
+import type { Proc, ProcResult, ProcRunOptions } from "@/gateways/index.ts";
 
 export type RecordedProcCall = {
   readonly command: string;

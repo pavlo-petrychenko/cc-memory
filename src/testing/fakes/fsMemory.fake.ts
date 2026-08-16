@@ -1,6 +1,6 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, parentDir } from "@/core/index.ts";
-import type { FileStat, FileSystem } from "@/platform/index.ts";
+import type { FileStat, FileSystem } from "@/gateways/index.ts";
 
 type MemoryFile = { readonly kind: "file"; contents: string; mtimeMs: number };
 type MemoryDir = { readonly kind: "dir" };

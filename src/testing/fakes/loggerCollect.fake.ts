@@ -1,5 +1,5 @@
 import { LogLevel } from "@/core/index.ts";
-import type { Logger } from "@/platform/index.ts";
+import type { Logger } from "@/gateways/index.ts";
 
 export type CollectedLogEntry = {
   readonly level: LogLevel;

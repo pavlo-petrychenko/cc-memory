@@ -75,6 +75,7 @@ test("a *.constants.ts file declares only values, never behavior", async () => {
 const ALLOWED_SUFFIXES = [
   ".typedefs.ts",
   ".constants.ts",
+  ".entity.ts",
   ".service.ts",
   ".adapter.ts",
   ".command.ts",
@@ -86,6 +87,14 @@ const ALLOWED_SUFFIXES = [
   ".builder.ts",
   ".ranker.ts",
   ".utils.ts",
+  ".decorator.ts",
+  ".runner.ts",
+  ".useCase.ts",
+  ".repository.ts",
+  ".projection.ts",
+  ".query.ts",
+  ".wiring.ts",
+  ".fake.ts",
 ];
 
 /** Files that are entry points or barrels rather than one of the kinds above. */
@@ -108,7 +117,20 @@ test("every production file carries a role suffix, so its name says what is insi
   expect(violations).toEqual([]);
 });
 
-test("every top-level module exposes an index.ts, and no directory below top level does", async () => {
+/** Module roots are top-level directories, except that `modules/` is a container
+ * whose real modules live one level down. `cli/` is the shell, not a module. */
+function moduleRootOf(directory: string): string {
+  const segments = directory.split("/");
+  if (segments[0] === "modules" && segments[1] !== undefined) {
+    return `${segments[0]}/${segments[1]}`;
+  }
+  return segments[0] ?? directory;
+}
+
+/** `cli/` is the shell, not a module — it owns no `index.ts`. */
+const NO_BARREL_ROOTS: ReadonlySet<string> = new Set(["cli"]);
+
+test("every module root exposes an index.ts, and no directory below a module root does", async () => {
   const paths = [...new Glob("**/*.ts").scanSync(SOURCE_ROOT)].filter(isProductionFile);
 
   const directories = new Set(
@@ -120,18 +142,17 @@ test("every top-level module exposes an index.ts, and no directory below top lev
       .map((path) => path.slice(0, -"/index.ts".length)),
   );
 
-  const topLevelModules = new Set(
-    [...directories].map((directory) => directory.split("/")[0] ?? directory),
-  );
-  expect(topLevelModules.size).toBeGreaterThan(0);
+  const moduleRoots = new Set([...directories].map(moduleRootOf));
+  expect(moduleRoots.size).toBeGreaterThan(0);
 
-  const missingRootBarrel = [...topLevelModules]
+  const missingRootBarrel = [...moduleRoots]
+    .filter((moduleName) => !NO_BARREL_ROOTS.has(moduleName))
     .filter((moduleName) => !withIndex.has(moduleName))
     .toSorted();
   expect(missingRootBarrel).toEqual([]);
 
   const nestedBarrels = [...directories]
-    .filter((directory) => directory.includes("/"))
+    .filter((directory) => !moduleRoots.has(directory))
     .filter((directory) => withIndex.has(directory))
     .toSorted();
   expect(nestedBarrels).toEqual([]);

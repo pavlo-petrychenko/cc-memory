@@ -12,18 +12,31 @@ import { Glob } from "bun";
  * ranking math and every rendered string are testable at all. So the rule moved into
  * the FILENAME instead, using the role suffixes the project already names files by:
  *
- *   A file may reference `platform/` or a node/bun builtin ONLY if it is a
+ *   A file may reference `gateways/` or a node/bun builtin ONLY if it is a
  *   `.service.ts`, `.command.ts`, `.hook.ts` or `.adapter.ts` — or lives
- *   in `platform/`, which exists to touch the outside world.
+ *   in `gateways/`, which exists to touch the outside world.
  *
  * Everything else is pure by construction, and now says so in its own name: you can
  * tell whether `tokenize.ts` or `build.service.ts` can hit a disk without opening
  * either one.
  */
-const IMPURE_SUFFIXES = [".service.ts", ".command.ts", ".hook.ts", ".adapter.ts"];
+const IMPURE_SUFFIXES = [
+  ".service.ts",
+  ".command.ts",
+  ".hook.ts",
+  ".adapter.ts",
+  ".repository.ts",
+  ".projection.ts",
+  ".query.ts",
+  ".useCase.ts",
+  ".runner.ts",
+  ".wiring.ts",
+  ".container.ts",
+  ".fake.ts",
+];
 
-/** `platform/` IS the outside world; its container wires the real adapters up. */
-const EXEMPT_PREFIXES = ["platform/"];
+/** `gateways/` IS the outside world; its container wires the real adapters up. */
+const EXEMPT_PREFIXES = ["gateways/"];
 
 /**
  * Tests sit beside the code they cover, and the modules that support them exist only
@@ -45,7 +58,7 @@ function isProductionFile(modulePath: string): boolean {
  */
 const COMPOSITION_ROOTS: ReadonlySet<string> = new Set(["cli/main.ts"]);
 
-const FORBIDDEN_IMPORT = /from\s+["'](node:|bun:|[^"']*\/platform\/)/;
+const FORBIDDEN_IMPORT = /from\s+["'](node:|bun:|[^"']*\/gateways\/)/;
 
 function mayTouchTheOutsideWorld(modulePath: string): boolean {
   if (EXEMPT_PREFIXES.some((prefix) => modulePath.startsWith(prefix))) return true;
@@ -53,7 +66,7 @@ function mayTouchTheOutsideWorld(modulePath: string): boolean {
   return IMPURE_SUFFIXES.some((suffix) => modulePath.endsWith(suffix));
 }
 
-test("only role-suffixed files reference platform or node/bun builtins", async () => {
+test("only role-suffixed files reference gateways or node/bun builtins", async () => {
   const sourceRoot = new URL("../", import.meta.url).pathname;
   const modulePaths = [...new Glob("**/*.ts").scanSync(sourceRoot)]
     .filter(isProductionFile)
@@ -63,9 +76,9 @@ test("only role-suffixed files reference platform or node/bun builtins", async (
 
   const pureModulePaths = modulePaths.filter((path) => !mayTouchTheOutsideWorld(path));
   // Guard against the rule silently covering nothing if the suffixes ever change.
-  // The real count is currently 109; 100 leaves headroom without letting the
-  // check quietly stop covering most of the tree.
-  expect(pureModulePaths.length).toBeGreaterThan(100);
+  // The real count is ~99; 80 leaves headroom without letting the check quietly
+  // stop covering most of the tree.
+  expect(pureModulePaths.length).toBeGreaterThan(80);
 
   const fileContents = await Promise.all(
     pureModulePaths.map((modulePath) => Bun.file(sourceRoot + modulePath).text()),

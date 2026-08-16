@@ -7,7 +7,7 @@
 # clock returns a time, or that a test fake does what the fake obviously does — which
 # costs maintenance and buys nothing.
 #
-# `platform/`, `src/testing/` and `src/quality/` are excluded because they are exactly
+# `gateways/`, `src/testing/` and `src/quality/` are excluded because they are exactly
 # that plumbing: thin adapters over Bun/node APIs, the fixtures and fakes the real
 # tests are built from, and the structural tests that assert on the repo's own shape.
 #
@@ -30,4 +30,4 @@
 coverageThreshold = { lines = 0.6, functions = 0 }
 coverageSkipTestFiles = true
 coverageReporter = ["text"]
-coveragePathIgnorePatterns = ["src/testing/**", "src/quality/**", "src/platform/**"]
+coveragePathIgnorePatterns = ["src/testing/**", "src/quality/**", "src/gateways/**"]

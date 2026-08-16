@@ -38,6 +38,7 @@ export default defineConfig({
     "anti-slop/require-safety-comment-for-type-assertion": "error",
 
     // Readability rules the reviewer asked for explicitly (see CLAUDE.md § Readability).
+    "no-extraneous-class": ["error", { allowWithDecorator: true }],
     "no-nested-ternary": "error",
     "no-else-return": "error",
     "max-depth": ["error", 4],

@@ -16,6 +16,16 @@ const SOURCE_ROOT = new URL("../", import.meta.url).pathname;
 
 const IMPORT_SPECIFIER = /from\s+"@\/([^"]+)"/g;
 
+/** The module a path belongs to: its top-level directory, except that files under
+ * `modules/` belong to their second-level module (`modules/note`, …). */
+function moduleNameOf(path: string): string {
+  const segments = path.split("/");
+  if (segments[0] === "modules" && segments[1] !== undefined) {
+    return `${segments[0]}/${segments[1]}`;
+  }
+  return segments[0] ?? path;
+}
+
 /** Not production modules: tests, and the fakes and fixtures that exist to serve them. */
 function isProductionFile(modulePath: string): boolean {
   if (modulePath.endsWith(".test.ts")) return false;
@@ -33,15 +43,15 @@ async function collectCrossModuleImports(): Promise<readonly CrossModuleImport[]
 
   const perFile = await Promise.all(
     paths.map(async (importer) => {
-      const owner = importer.split("/")[0] ?? importer;
+      const owner = moduleNameOf(importer);
       const text = await Bun.file(SOURCE_ROOT + importer).text();
       return [...text.matchAll(IMPORT_SPECIFIER)]
         .map((match) => match[1] ?? "")
-        .filter((specifier) => (specifier.split("/")[0] ?? "") !== owner)
+        .filter((specifier) => moduleNameOf(specifier) !== owner)
         .map((specifier) => ({
           importer,
           specifier,
-          targetModule: specifier.split("/")[0] ?? specifier,
+          targetModule: moduleNameOf(specifier),
         }));
     }),
   );
@@ -64,7 +74,7 @@ const DECLARATION_SUFFIXES = [".typedefs.ts", ".constants.ts"];
  * `version.ts` is a single top-level constant rather than a module, so it has no index to
  * import through.
  */
-const BARREL_EXEMPT_PREFIXES = ["testing/"];
+const BARREL_EXEMPT_PREFIXES = ["testing/", "cli/"];
 const BARREL_EXEMPT_SPECIFIERS: ReadonlySet<string> = new Set(["version.ts"]);
 
 test("a cross-module import names the module's index.ts, never a file inside it", async () => {
@@ -124,7 +134,7 @@ test("no import cycles between top-level modules", async () => {
 
   const dependencies = new Map<string, Set<string>>();
   for (const { importer, specifier, targetModule } of crossModuleImports) {
-    const owner = importer.split("/")[0] ?? importer;
+    const owner = moduleNameOf(importer);
     if (CYCLE_EXEMPT_MODULES.has(owner) || CYCLE_EXEMPT_MODULES.has(targetModule))
       continue;
     // A declaration edge (a type or a frozen value) is erased before runtime and
