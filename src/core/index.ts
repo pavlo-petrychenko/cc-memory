@@ -1,5 +1,17 @@
 export type { AbsPath, JsonRecord, JsonValue, Result } from "@/core/core.typedefs.ts";
 export type { RawWorkspace, Workspace, WorktreeSlug } from "@/core/domain.typedefs.ts";
+export { UseCase } from "@/core/base/useCase.base.ts";
+export { Service } from "@/core/base/service.base.ts";
+export { Repository } from "@/core/base/repository.base.ts";
+export { Projection } from "@/core/base/projection.base.ts";
+export type { AppContext } from "@/core/base/context.typedefs.ts";
+export type {
+  FormatterConstructor,
+  ProjectionConstructor,
+  RepositoryConstructor,
+  ServiceConstructor,
+  UseCaseConstructor,
+} from "@/core/base/constructor.typedefs.ts";
 export { ConfigParser } from "@/core/config/config.parser.ts";
 export type { Config, EnvSnapshot } from "@/core/config/config.typedefs.ts";
 export { LogLevel } from "@/core/config/config.typedefs.ts";

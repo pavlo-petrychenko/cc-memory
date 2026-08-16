@@ -78,6 +78,7 @@ const ALLOWED_SUFFIXES = [
   ".entity.ts",
   ".service.ts",
   ".adapter.ts",
+  ".base.ts",
   ".command.ts",
   ".hook.ts",
   ".container.ts",

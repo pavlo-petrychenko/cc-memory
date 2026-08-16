@@ -60,6 +60,10 @@ const COMPOSITION_ROOTS: ReadonlySet<string> = new Set(["cli/main.ts"]);
 
 const FORBIDDEN_IMPORT = /from\s+["'](node:|bun:|[^"']*\/gateways\/)/;
 
+/** Type-only imports are erased before runtime (`verbatimModuleSyntax`), so they
+ * cannot reach the outside world and are not forbidden here. */
+const TYPE_ONLY_IMPORT = /^\s*import\s+type\b/;
+
 function mayTouchTheOutsideWorld(modulePath: string): boolean {
   if (EXEMPT_PREFIXES.some((prefix) => modulePath.startsWith(prefix))) return true;
   if (COMPOSITION_ROOTS.has(modulePath)) return true;
@@ -87,6 +91,7 @@ test("only role-suffixed files reference gateways or node/bun builtins", async (
   const violations: string[] = [];
   pureModulePaths.forEach((modulePath, index) => {
     for (const line of (fileContents[index] ?? "").split("\n")) {
+      if (TYPE_ONLY_IMPORT.test(line)) continue;
       if (FORBIDDEN_IMPORT.test(line)) violations.push(`${modulePath}: ${line.trim()}`);
     }
   });
