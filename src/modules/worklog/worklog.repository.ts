@@ -1,3 +1,5 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { joinAbs } from "@/core/index.ts";
 import type { Workspace, WorktreeSlug } from "@/core/index.ts";
@@ -39,11 +41,15 @@ function relativePath(from: AbsPath, to: AbsPath): string {
 
 /** Worklog paths and I/O: `STATE.md` and `<date>.md` under `<kb>/_Worklogs/<slug>/`.
  * The templates live in `worklogFormat` — this service only owns the filesystem side. */
-export class WorklogStoreService {
-  constructor(
-    private readonly fs: FileSystem,
-    private readonly git: Git,
-  ) {}
+export class WorklogStoreService extends Service {
+  private readonly fs: FileSystem;
+  private readonly git: Git;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.fs = ctx.gateways.fs;
+    this.git = ctx.gateways.git;
+  }
 
   worktreeDir(ws: Workspace, slug: WorktreeSlug): AbsPath {
     return joinAbs(ws.worklogs, slug);

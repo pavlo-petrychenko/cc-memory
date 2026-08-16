@@ -1,3 +1,5 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, expandPath, joinAbs } from "@/core/index.ts";
 import type { FileSystem } from "@/gateways/index.ts";
@@ -10,8 +12,13 @@ import type { SkillInstallOutcome } from "@/modules/installation/steps/skills/sk
  * up a pre-existing REAL directory to `<name>.pre-ccmemory.bak` once. Idempotency
  * is decided from the MANIFEST, not `readlink`/`lstat` (the `FileSystem` port has
  * neither): a skill already recorded is trusted and left alone. */
-export class SkillsService {
-  constructor(private readonly fs: FileSystem) {}
+export class SkillsService extends Service {
+  private readonly fs: FileSystem;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.fs = ctx.gateways.fs;
+  }
 
   static defaultTargetDir(home: AbsPath): AbsPath {
     return expandPath(SKILLS_TARGET_HOME_RELATIVE_PATH, home);

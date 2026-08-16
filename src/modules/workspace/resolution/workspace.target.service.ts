@@ -1,3 +1,4 @@
+import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import type { RawWorkspace, Workspace } from "@/core/index.ts";
@@ -8,12 +9,10 @@ import { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/modules/workspace/workspace.cons
 
 /** Target resolution over a loaded registry: map a registry + id/cwd to the
  * workspace(s) a command should act on. */
-export class TargetResolutionService {
-  constructor(
-    private readonly repository: WorkspaceRepository,
-    private readonly validatorService: WorkspaceValidatorService,
-    private readonly resolverService: WorkspaceResolverService,
-  ) {}
+export class TargetResolutionService extends Service {
+  private readonly repository = this.makeRepository(WorkspaceRepository);
+  private readonly validatorService = this.makeService(WorkspaceValidatorService);
+  private readonly resolverService = this.makeService(WorkspaceResolverService);
 
   /** Loads the registry and resolves one-by-id or every registered workspace. */
   async resolveTarget(
@@ -25,6 +24,27 @@ export class TargetResolutionService {
       return { ok: false, error: `registry error: ${registryResult.error.message}` };
     }
     return this.resolveTargetWorkspaces(registryResult.value, home, id);
+  }
+
+  /** Loads the registry and resolves exactly one workspace for a cwd/--workspace. */
+  async resolveWorkspace(
+    home: AbsPath,
+    cwd: AbsPath,
+    explicitId: string | null,
+  ): Promise<Result<Workspace, string>> {
+    const registryResult = await this.repository.load(this.repository.defaultPath(home));
+    if (!registryResult.ok) {
+      return { ok: false, error: `registry error: ${registryResult.error.message}` };
+    }
+    return this.resolveWorkspaceForCwd(registryResult.value, home, cwd, explicitId);
+  }
+
+  /** Loads the registry and resolves one workspace, or null when none matches
+   * (the hook fail-open path: no workspace is silent, not an error). */
+  async resolveWorkspaceOrNull(home: AbsPath, cwd: AbsPath): Promise<Workspace | null> {
+    const registryResult = await this.repository.load(this.repository.defaultPath(home));
+    if (!registryResult.ok) return null;
+    return this.resolverService.resolveWorkspace(registryResult.value, cwd, home);
   }
 
   noSuchWorkspaceMessage(id: string): string {

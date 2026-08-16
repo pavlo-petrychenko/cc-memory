@@ -3,8 +3,8 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { KbMapService } from "@/modules/kb/services/kbMap.service.ts";
-import { NoteParser } from "@/modules/note/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 /**
  * `KbMapService` — the filesystem-facing half of building the KB map
@@ -46,7 +46,7 @@ function makeWorkspace(overrides: Partial<Workspace> = {}): Workspace {
 
 describe("KbMapService", () => {
   test("vault directory missing: null", async () => {
-    const service = new KbMapService(makeFsMemoryFake(), new NoteParser());
+    const service = new KbMapService(makeAppContext({ fs: makeFsMemoryFake() }));
     const workspace = makeWorkspace();
 
     expect(await service.build(workspace, HOME)).toBeNull();
@@ -59,7 +59,7 @@ describe("KbMapService", () => {
       "---\ntype: index\nepic: 'ENG-1'\n---\n# Alpha Feature\n> Index for Alpha.\n",
     );
     const workspace = makeWorkspace();
-    const service = new KbMapService(fs, new NoteParser());
+    const service = new KbMapService(makeAppContext({ fs }));
 
     const result = await service.build(workspace, HOME);
     expect(result).not.toBeNull();
@@ -83,7 +83,7 @@ describe("KbMapService", () => {
     fs.seedDir(KB);
     fs.seedDir(underKb("Beta"));
     const workspace = makeWorkspace();
-    const service = new KbMapService(fs, new NoteParser());
+    const service = new KbMapService(makeAppContext({ fs }));
 
     const result = await service.build(workspace, HOME);
     expect(result?.features).toEqual([
@@ -97,7 +97,7 @@ describe("KbMapService", () => {
     fs.seedDir(underKb("_Worklogs"));
     fs.seedFile(underKb("Gamma/Gamma.md"), "# Gamma\n");
     const workspace = makeWorkspace();
-    const service = new KbMapService(fs, new NoteParser());
+    const service = new KbMapService(makeAppContext({ fs }));
 
     const result = await service.build(workspace, HOME);
     expect(result?.features.map((feature) => feature.name)).toEqual(["Gamma"]);
@@ -108,7 +108,7 @@ describe("KbMapService", () => {
     fs.seedFile(underKb("Roadmap.md"), "# Roadmap\n");
     fs.seedFile(underKb("2026-01-01.md"), "## entry\n");
     const workspace = makeWorkspace();
-    const service = new KbMapService(fs, new NoteParser());
+    const service = new KbMapService(makeAppContext({ fs }));
 
     const result = await service.build(workspace, HOME);
     expect(result?.looseNotes).toEqual(["Roadmap"]);
@@ -120,7 +120,7 @@ describe("KbMapService", () => {
     fs.seedDir(underKb("zebra"));
     fs.seedDir(underKb("Apple"));
     const workspace = makeWorkspace();
-    const service = new KbMapService(fs, new NoteParser());
+    const service = new KbMapService(makeAppContext({ fs }));
 
     const result = await service.build(workspace, HOME);
     expect(result?.features.map((feature) => feature.name)).toEqual(["Apple", "zebra"]);

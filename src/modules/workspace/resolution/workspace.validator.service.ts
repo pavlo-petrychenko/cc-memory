@@ -1,3 +1,4 @@
+import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath, isUnder } from "@/core/index.ts";
 import type { RawWorkspace, Workspace } from "@/core/index.ts";
@@ -101,7 +102,7 @@ export function validateNew(
 /** Pure registry domain logic: expand `~`-relative fields, find by id, and
  * validate a candidate against existing workspaces. No I/O. The free functions
  * above are the canonical API; the class exists for constructor injection. */
-export class WorkspaceValidatorService {
+export class WorkspaceValidatorService extends Service {
   noSuchWorkspaceMessage(id: string): string {
     return noSuchWorkspaceMessage(id);
   }

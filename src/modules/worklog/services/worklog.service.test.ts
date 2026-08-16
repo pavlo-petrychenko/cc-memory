@@ -2,14 +2,10 @@ import { expect, test } from "bun:test";
 
 import { absPath, expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
 import { SearchIndexFake } from "@/gateways/index.ts";
-import { WorklogProjection } from "@/modules/worklog/projection/worklog.projection.ts";
-import { WorklogQuery } from "@/modules/worklog/projection/worklog.query.ts";
 import { WorklogService } from "@/modules/worklog/services/worklog.service.ts";
-import { WorklogStoreService } from "@/modules/worklog/worklog.repository.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
-import { makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 const ws: Workspace = {
   id: "w",
@@ -21,17 +17,6 @@ const ws: Workspace = {
   matchedPrefix: absPath("/repo"),
 };
 
-function makeService(
-  fs: ReturnType<typeof makeFsMemoryFake>,
-  index: SearchIndexFake,
-): WorklogService {
-  return new WorklogService(
-    new WorklogStoreService(fs, makeGitFake()),
-    new WorklogProjection(index),
-    new WorklogQuery(index, new FtsQueryBuilder(new TokenizerParser()), new Ranker()),
-  );
-}
-
 test("reindex reprojects worklog files into the index", async () => {
   const fs = makeFsMemoryFake();
   fs.seedFile(
@@ -40,7 +25,7 @@ test("reindex reprojects worklog files into the index", async () => {
   );
   const index = new SearchIndexFake();
 
-  await makeService(fs, index).reindex(ws);
+  await new WorklogService(makeAppContext({ fs }, index)).reindex(ws);
   expect(index.projected[0]?.documents).toHaveLength(1);
   expect(index.projected[0]?.documents[0]?.slug).toBe("wt1");
 });
@@ -57,9 +42,10 @@ test("search delegates to the worklog query", async () => {
   ]);
   index.setNextInlinks(new Map());
 
-  const hits = await makeService(makeFsMemoryFake(), index).search(ws, "rollback", {
-    limit: 5,
-    linkBoost: 0.003,
-  });
+  const hits = await new WorklogService(makeAppContext({}, index)).search(
+    ws,
+    "rollback",
+    { limit: 5, linkBoost: 0.003 },
+  );
   expect(hits).toHaveLength(1);
 });

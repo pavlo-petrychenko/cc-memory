@@ -29,7 +29,8 @@ test("every module root has a CLAUDE.md, nowhere else, H1 = its own path, <= 20 
           !path.startsWith("testing/") &&
           !path.startsWith("skills/") &&
           path !== "version.ts" &&
-          path !== "version.test.ts",
+          path !== "version.test.ts" &&
+          path !== "registry.wiring.ts",
       )
       .map(moduleRootOf),
   );

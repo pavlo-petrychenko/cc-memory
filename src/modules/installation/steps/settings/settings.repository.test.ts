@@ -1,11 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
 import type { AbsPath } from "@/core/index.ts";
+import { HookEvent } from "@/core/transport/hook/hook.typedefs.ts";
 import { SettingsService } from "@/modules/installation/steps/settings/settings.repository.ts";
 import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.repository.ts";
 import type { JsonObject } from "@/modules/installation/utils/jsonFile/jsonFile.typedefs.ts";
-import { HookEvent } from "@/modules/session/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 const BUN_PATH = "/usr/local/bin/bun";
 const DIST_PATH = "/repo/dist/memory.js";
@@ -294,7 +295,7 @@ describe("SettingsService — backupIfNeeded", () => {
   test("does nothing when already backed up", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(settingsPath, '{"a":1}');
-    const service = new SettingsService(fs);
+    const service = new SettingsService(makeAppContext({ fs }));
     const didBackup = await service.backupIfNeeded(settingsPath, backupPath, true);
     expect(didBackup).toBe(false);
     expect(await fs.exists(backupPath)).toBe(false);
@@ -302,7 +303,7 @@ describe("SettingsService — backupIfNeeded", () => {
 
   test("does nothing when settings.json doesn't exist yet", async () => {
     const fs = makeFsMemoryFake();
-    const service = new SettingsService(fs);
+    const service = new SettingsService(makeAppContext({ fs }));
     const didBackup = await service.backupIfNeeded(settingsPath, backupPath, false);
     expect(didBackup).toBe(false);
   });
@@ -310,7 +311,7 @@ describe("SettingsService — backupIfNeeded", () => {
   test("copies the raw bytes once, before the first write", async () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(settingsPath, '{"hooks":{}}');
-    const service = new SettingsService(fs);
+    const service = new SettingsService(makeAppContext({ fs }));
     const didBackup = await service.backupIfNeeded(settingsPath, backupPath, false);
     expect(didBackup).toBe(true);
     expect(await fs.readFile(backupPath)).toBe('{"hooks":{}}');

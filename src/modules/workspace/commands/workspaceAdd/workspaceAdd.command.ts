@@ -1,34 +1,16 @@
-import type { Command as CommandContract } from "@/core/entry/entry.typedefs.ts";
 import { Command } from "@/core/index.ts";
-import {
-  CLI_SUCCESS,
-  cliFailure,
-  flagValue,
-  requirePositional,
-  variadicValues,
-} from "@/core/index.ts";
-import type { ArgsError, CommandResult, RunContext } from "@/core/index.ts";
-import type { Result } from "@/core/index.ts";
+import { flagValue, requirePositional, variadicValues } from "@/core/index.ts";
+import type { ArgsError, Result } from "@/core/index.ts";
 import { WORKSPACE_ADD_DESCRIPTOR } from "@/modules/workspace/commands/workspaceAdd/workspaceAdd.constants.ts";
-import { WorkspaceAddFormatter } from "@/modules/workspace/commands/workspaceAdd/workspaceAdd.formatter.ts";
 import { AddWorkspaceUseCase } from "@/modules/workspace/useCases/addWorkspace.useCase.ts";
 
-export type WorkspaceAddOptions = {
-  readonly id: string;
-  readonly match: readonly string[];
-  readonly kb: string | null;
-  readonly worklogs: string | null;
-  readonly exclude: readonly string[] | null;
-};
-
-@Command(WORKSPACE_ADD_DESCRIPTOR)
-export class WorkspaceAddCommand implements CommandContract<WorkspaceAddOptions> {
-  constructor(
-    private readonly addWorkspace: AddWorkspaceUseCase,
-    private readonly formatter: WorkspaceAddFormatter,
-  ) {}
-
-  parse(tokens: readonly string[]): Result<WorkspaceAddOptions, ArgsError> {
+@Command({
+  path: WORKSPACE_ADD_DESCRIPTOR.path,
+  usage: WORKSPACE_ADD_DESCRIPTOR.usage,
+  summary: WORKSPACE_ADD_DESCRIPTOR.summary,
+  hidden: WORKSPACE_ADD_DESCRIPTOR.hidden,
+  Handler: AddWorkspaceUseCase,
+  mapOptions: (tokens): Result<AddWorkspaceInput, ArgsError> => {
     const id = requirePositional(tokens, "id");
     if (!id.ok) return { ok: false, error: { message: `workspace add: ${id.error}` } };
     const rest = tokens.slice(1);
@@ -49,20 +31,8 @@ export class WorkspaceAddCommand implements CommandContract<WorkspaceAddOptions>
         exclude: variadicValues(rest, "--exclude"),
       },
     };
-  }
+  },
+})
+export class WorkspaceAddCommand {}
 
-  async run(options: WorkspaceAddOptions, context: RunContext): Promise<CommandResult> {
-    const result = await this.addWorkspace.run(context.home, options);
-    if (!result.ok) return { lines: [], ...cliFailure(result.error) };
-
-    const lines = this.formatter.workspaceAdded(
-      result.value.id,
-      result.value.kb,
-      result.value.worklogs,
-      result.value.indexDb,
-      result.value.total,
-      result.value.match,
-    );
-    return { lines, ...CLI_SUCCESS };
-  }
-}
+type AddWorkspaceInput = Parameters<AddWorkspaceUseCase["execute"]>[0];

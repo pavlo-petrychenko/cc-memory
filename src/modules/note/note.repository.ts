@@ -1,3 +1,5 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Repository } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { joinAbs, relativeTo, stripChars } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
@@ -63,11 +65,15 @@ function fallbackTitleFromPath(path: AbsPath): string {
 }
 
 /** The note vault — the source of truth the index is a projection of. */
-export class NoteRepository {
-  constructor(
-    private readonly fs: FileSystem,
-    private readonly parser: NoteParser,
-  ) {}
+export class NoteRepository extends Repository {
+  private readonly fs: FileSystem;
+  private readonly parser: NoteParser;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.fs = ctx.gateways.fs;
+    this.parser = new NoteParser();
+  }
 
   async scanFiles(workspace: Workspace): Promise<readonly NoteFile[]> {
     if (!(await isDirectory(this.fs, workspace.kb))) return [];

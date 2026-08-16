@@ -1,6 +1,6 @@
 import type { UseCaseConstructor } from "@/core/base/constructor.typedefs.ts";
 import type { AppContext } from "@/core/base/context.typedefs.ts";
-import type { JsonRecord } from "@/core/core.typedefs.ts";
+import type { AbsPath, JsonRecord, Workspace } from "@/core/index.ts";
 import type {
   HookEvent,
   HookName,
@@ -14,7 +14,12 @@ export interface HookParams<Options> {
   readonly event: HookEvent;
   readonly timeoutSeconds: number;
   readonly Handler: UseCaseConstructor<Options, HookResult>;
-  readonly mapOptions: (payload: JsonRecord, ctx: AppContext) => Options;
+  readonly mapOptions: (
+    payload: JsonRecord,
+    workspace: Workspace,
+    cwd: AbsPath,
+    ctx: AppContext,
+  ) => Options;
 }
 
 export type HookClass = abstract new (...args: never[]) => object;
@@ -34,7 +39,11 @@ export function Hook<Options>(params: HookParams<Options>) {
 
 export interface HookHandler {
   readonly name: HookName;
-  readonly handle: (payload: JsonRecord) => Promise<HookResult>;
+  readonly handle: (
+    payload: JsonRecord,
+    workspace: Workspace,
+    cwd: AbsPath,
+  ) => Promise<HookResult>;
 }
 
 type DecoratedHook = {
@@ -55,8 +64,8 @@ export function registerHooks(
     const useCase = new params.Handler(ctx);
     return {
       name: params.name,
-      handle: async (payload) => {
-        const options = params.mapOptions(payload, ctx);
+      handle: async (payload, workspace, cwd) => {
+        const options = params.mapOptions(payload, workspace, cwd, ctx);
         return useCase.execute(options);
       },
     };

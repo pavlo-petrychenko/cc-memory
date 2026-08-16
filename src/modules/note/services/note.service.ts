@@ -1,3 +1,4 @@
+import { Service } from "@/core/index.ts";
 import type { FusedHit } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { NoteRepository } from "@/modules/note/note.repository.ts";
@@ -15,12 +16,10 @@ const MTIME_EPSILON = 1e-6;
 
 /** Note-domain operations: ranked search and (re)projection of the note vault
  * into the derived index. */
-export class NoteService {
-  constructor(
-    private readonly repository: NoteRepository,
-    private readonly projection: NoteProjection,
-    private readonly query: NoteQuery,
-  ) {}
+export class NoteService extends Service {
+  private readonly repository = this.makeRepository(NoteRepository);
+  private readonly projection = this.makeProjection(NoteProjection);
+  private readonly query = this.makeProjection(NoteQuery);
 
   search(
     workspace: Workspace,

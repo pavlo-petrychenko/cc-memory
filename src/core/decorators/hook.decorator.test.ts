@@ -4,6 +4,8 @@ import type { AppContext } from "@/core/base/context.typedefs.ts";
 import { UseCase } from "@/core/base/useCase.base.ts";
 import type { Config } from "@/core/config/config.typedefs.ts";
 import { LogLevel } from "@/core/config/config.typedefs.ts";
+import { absPath } from "@/core/index.ts";
+import type { Workspace } from "@/core/index.ts";
 import {
   HookEvent,
   HookName,
@@ -31,6 +33,17 @@ const CTX: AppContext = {
   config: CONFIG,
 };
 
+const CWD = absPath("/home/test/project");
+const WORKSPACE: Workspace = {
+  id: "w",
+  match: [CWD],
+  kb: absPath("/kb"),
+  worklogs: absPath("/kb/_Worklogs"),
+  exclude: [],
+  indexDb: absPath("/mem/w/index.db"),
+  matchedPrefix: CWD,
+};
+
 type StartOptions = Record<string, never>;
 
 class StartUseCase extends UseCase<StartOptions, HookResult> {
@@ -44,7 +57,7 @@ class StartUseCase extends UseCase<StartOptions, HookResult> {
   event: HookEvent.SessionStart,
   timeoutSeconds: 10,
   Handler: StartUseCase,
-  mapOptions: () => ({}),
+  mapOptions: (_payload, _workspace, _cwd, _ctx) => ({}),
 })
 class SessionStartHook {}
 
@@ -60,7 +73,7 @@ describe("@Hook + registerHooks", () => {
   });
 
   test("handle runs the use case and returns its HookResult", async () => {
-    const result = await singleHandler().handle({});
+    const result = await singleHandler().handle({}, WORKSPACE, CWD);
     expect(result).toEqual({ kind: HookResultKind.Silent });
   });
 });

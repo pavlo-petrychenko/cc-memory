@@ -1,3 +1,5 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { absPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
@@ -15,11 +17,15 @@ import {
 /** Resolves the REAL `bun` binary at install time — never the ephemeral path a
  * version manager (`fnm`, `asdf`, ...) hands out via a per-session `PATH` shim.
  * `readlink -f` walks every symlink hop down to the one real file. */
-export class BunPathService {
-  constructor(
-    private readonly proc: Proc,
-    private readonly fs: FileSystem,
-  ) {}
+export class BunPathService extends Service {
+  private readonly proc: Proc;
+  private readonly fs: FileSystem;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.proc = ctx.gateways.proc;
+    this.fs = ctx.gateways.fs;
+  }
 
   async resolve(): Promise<Result<AbsPath, BunPathError>> {
     const which = await this.proc.run("which", ["bun"], {

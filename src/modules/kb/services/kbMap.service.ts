@@ -1,3 +1,5 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { joinAbs, tildify } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
@@ -35,11 +37,15 @@ async function isFile(fs: FileSystem, path: AbsPath): Promise<boolean> {
 
 /** Scans a workspace's vault top level into a `KbMapInput` — the filesystem-facing
  * half of building the KB map. The string-building half lives in `kbMap.formatter.ts`. */
-export class KbMapService {
-  constructor(
-    private readonly fs: FileSystem,
-    private readonly noteParser: NoteParser,
-  ) {}
+export class KbMapService extends Service {
+  private readonly fs: FileSystem;
+  private readonly noteParser: NoteParser;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.fs = ctx.gateways.fs;
+    this.noteParser = new NoteParser();
+  }
 
   private async readFeature(kb: AbsPath, name: string): Promise<KbMapFeature> {
     const mainNotePath = joinAbs(kb, name, `${name}${MARKDOWN_EXTENSION}`);

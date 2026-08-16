@@ -1,27 +1,15 @@
 import { describe, expect, test } from "bun:test";
 
-import { runCli } from "@/cli/main.ts";
+import { registerCommands, runCli } from "@/core/index.ts";
 import { absPath, expandPath } from "@/core/index.ts";
-import { LogLevel } from "@/core/index.ts";
-import type { Config, RawWorkspace } from "@/core/index.ts";
+import type { RawWorkspace } from "@/core/index.ts";
+import { WorkspaceRepository } from "@/modules/workspace/index.ts";
+import { commands } from "@/registry.wiring.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
-import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
-import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
-import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 const HOME = absPath("/home/test");
 const REGISTRY_PATH = expandPath("~/.claude/memory/registry.toml", HOME);
-
-const CONFIG: Config = {
-  injectMinScore: 0.2,
-  linkBoost: 0.003,
-  injectLogEnabled: true,
-  blockAfter: 2,
-  blockDrift: 5,
-  gateDisabled: false,
-  logLevel: LogLevel.Warn,
-};
 
 const PRIMARY: RawWorkspace = {
   id: "primary",
@@ -33,35 +21,39 @@ const PRIMARY: RawWorkspace = {
 };
 
 async function run(argv: readonly string[]) {
-  const io = makeIoFake();
   const fs = makeFsMemoryFake();
-  const container = makeTestGateways({ stdio: io, fs, proc: makeProcFake() });
-  await makeWorkspaceRepository(fs).save(REGISTRY_PATH, [PRIMARY]);
-  const outcome = await runCli(argv, container, CONFIG);
-  return { outcome, io };
+  const ctx = makeAppContext({ fs });
+  const handlers = registerCommands(commands, ctx);
+  await new WorkspaceRepository(ctx).save(REGISTRY_PATH, [PRIMARY]);
+  return runCli(argv, handlers);
 }
 
 describe("runCli dispatch", () => {
   test("a parse failure maps to exit code 2 with the parser's message on stderr", async () => {
-    const { outcome } = await run(["search"]);
-    expect(outcome).toEqual({ exitCode: 2, stderrMessage: "search: missing <query>" });
+    const outcome = await run(["search"]);
+    expect(outcome).toEqual({
+      lines: [],
+      exitCode: 2,
+      stderrMessage: "search: missing <query>",
+    });
   });
 
   test("resolve dispatches to the resolve command", async () => {
-    const { outcome, io } = await run(["resolve", "--cwd", "/home/test/project"]);
+    const outcome = await run(["resolve", "--cwd", "/home/test/project"]);
     expect(outcome.exitCode).toBe(0);
-    expect(io.written[0]).toBe("workspace: primary");
+    expect(outcome.lines[0]).toBe("workspace: primary");
   });
 
   test("--help lists the real command surface", async () => {
-    const { outcome, io } = await run(["--help"]);
+    const outcome = await run(["--help"]);
     expect(outcome.exitCode).toBe(0);
-    expect(io.written.join("\n")).toContain("memory search");
+    expect(outcome.lines.join("\n")).toContain("memory search");
   });
 
   test("an unknown command exits 2", async () => {
-    const { outcome } = await run(["frobnicate"]);
+    const outcome = await run(["frobnicate"]);
     expect(outcome).toEqual({
+      lines: [],
       exitCode: 2,
       stderrMessage: "unknown command: frobnicate",
     });

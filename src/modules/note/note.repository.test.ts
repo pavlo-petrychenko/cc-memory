@@ -3,8 +3,8 @@ import { describe, expect, test } from "bun:test";
 import { absPath, expandPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { NoteRepository } from "@/modules/note/note.repository.ts";
-import { NoteParser } from "@/modules/note/services/note.parser.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 function workspace(): Workspace {
   return {
@@ -31,7 +31,7 @@ describe("NoteRepository", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(expandPath("/kb/Beta/Body.md", absPath("/")), NOTE_TEXT);
     fs.seedFile(expandPath("/kb/Alpha/Injection Hook.md", absPath("/")), NOTE_TEXT);
-    const repository = new NoteRepository(fs, new NoteParser());
+    const repository = new NoteRepository(makeAppContext({ fs }));
 
     const summaries = await repository.list(workspace());
     expect(summaries.map((summary) => summary.path)).toEqual([
@@ -46,12 +46,12 @@ describe("NoteRepository", () => {
     const fs = makeFsMemoryFake();
     fs.seedFile(expandPath("/kb/A.md", absPath("/")), NOTE_TEXT);
     fs.seedFile(expandPath("/kb/B.md", absPath("/")), NOTE_TEXT);
-    const repository = new NoteRepository(fs, new NoteParser());
+    const repository = new NoteRepository(makeAppContext({ fs }));
     expect(await repository.count(workspace())).toBe(2);
   });
 
   test("readNote returns null for a missing file", async () => {
-    const repository = new NoteRepository(makeFsMemoryFake(), new NoteParser());
+    const repository = new NoteRepository(makeAppContext({ fs: makeFsMemoryFake() }));
     expect(await repository.readNote(workspace(), absPath("/kb/missing.md"))).toBeNull();
   });
 });

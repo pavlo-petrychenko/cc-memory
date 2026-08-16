@@ -1,3 +1,5 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, parentDir } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
@@ -11,8 +13,13 @@ import {
 
 /** Reads and writes a JSON file whose top level is an object — `settings.json` and
  * `installed.json` both are. */
-export class JsonFileService {
-  constructor(private readonly fs: FileSystem) {}
+export class JsonFileService extends Service {
+  private readonly fs: FileSystem;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.fs = ctx.gateways.fs;
+  }
 
   // `Object.prototype.toString` gives the precise representation tag instead of
   // `typeof`, which anti-slop's `no-runtime-typeof` bans as narrowing a

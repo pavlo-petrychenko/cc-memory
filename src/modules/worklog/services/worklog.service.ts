@@ -1,3 +1,4 @@
+import { Service } from "@/core/index.ts";
 import type { FusedHit } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { WorklogProjection } from "@/modules/worklog/projection/worklog.projection.ts";
@@ -14,12 +15,10 @@ const MTIME_EPSILON = 1e-6;
 
 /** Worklog-domain operations: ranked search and (re)projection of the worklog
  * journals into the derived index. */
-export class WorklogService {
-  constructor(
-    private readonly store: WorklogStoreService,
-    private readonly projection: WorklogProjection,
-    private readonly query: WorklogQuery,
-  ) {}
+export class WorklogService extends Service {
+  private readonly store = this.makeService(WorklogStoreService);
+  private readonly projection = this.makeProjection(WorklogProjection);
+  private readonly query = this.makeProjection(WorklogQuery);
 
   search(
     workspace: Workspace,

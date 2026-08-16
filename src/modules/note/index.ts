@@ -15,7 +15,4 @@ export { NoteRepository } from "@/modules/note/note.repository.ts";
 export { NoteProjection } from "@/modules/note/projection/note.projection.ts";
 export { NoteQuery } from "@/modules/note/projection/note.query.ts";
 export { NoteService } from "@/modules/note/services/note.service.ts";
-export { ListNotesUseCase } from "@/modules/note/useCases/listNotes.useCase.ts";
-export { NotesCommand } from "@/modules/note/commands/notes.command.ts";
-export { NotesFormatter } from "@/modules/note/services/notes.formatter.ts";
 export { SearchHitFormatter } from "@/modules/note/services/searchHit.formatter.ts";

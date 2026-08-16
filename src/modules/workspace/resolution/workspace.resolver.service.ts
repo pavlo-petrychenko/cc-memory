@@ -1,3 +1,4 @@
+import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, isUnder, sanitizeSlug } from "@/core/index.ts";
 import type { RawWorkspace, Workspace, WorktreeSlug } from "@/core/index.ts";
@@ -33,8 +34,8 @@ export function worktreeSlug(
 }
 
 /** Pure longest-prefix workspace resolution — no git, no filesystem. */
-export class WorkspaceResolverService {
-  constructor(private readonly validatorService: WorkspaceValidatorService) {}
+export class WorkspaceResolverService extends Service {
+  private readonly validatorService = this.makeService(WorkspaceValidatorService);
 
   /** Longest-prefix match, or `null` if `cwd` is under no workspace — the
    * encapsulation choke point: a session sees memory for the single workspace

@@ -2,9 +2,9 @@ import { expect, test } from "bun:test";
 
 import { absPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
-import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
 import { SearchIndexFake } from "@/gateways/index.ts";
 import { NoteQuery } from "@/modules/note/projection/note.query.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 const workspace: Workspace = {
   id: "w",
@@ -27,11 +27,7 @@ test("NoteQuery fuses token and phrase hits through the SearchIndex", async () =
   index.setNextHits([hit]);
   index.setNextInlinks(new Map());
 
-  const query = new NoteQuery(
-    index,
-    new FtsQueryBuilder(new TokenizerParser()),
-    new Ranker(),
-  );
+  const query = new NoteQuery(makeAppContext({}, index));
   const fused = await query.searchFused(workspace, "injecting tokens", {
     limit: 5,
     linkBoost: 0.003,

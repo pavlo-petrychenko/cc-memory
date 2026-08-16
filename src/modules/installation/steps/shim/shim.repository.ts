@@ -1,3 +1,5 @@
+import type { AppContext } from "@/core/base/context.typedefs.ts";
+import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath, parentDir } from "@/core/index.ts";
 import type { FileSystem } from "@/gateways/index.ts";
@@ -9,8 +11,13 @@ import {
 /** `~/.local/bin/memory` — a 2-line `sh` shim with ABSOLUTE paths baked in, since
  * `#!/usr/bin/env bun` would only resolve when `bun` is on the caller's `PATH`,
  * which isn't guaranteed for a process spawned by another tool. */
-export class ShimService {
-  constructor(private readonly fs: FileSystem) {}
+export class ShimService extends Service {
+  private readonly fs: FileSystem;
+
+  constructor(ctx: AppContext) {
+    super(ctx);
+    this.fs = ctx.gateways.fs;
+  }
 
   static defaultPath(home: AbsPath): AbsPath {
     return expandPath(SHIM_HOME_RELATIVE_PATH, home);

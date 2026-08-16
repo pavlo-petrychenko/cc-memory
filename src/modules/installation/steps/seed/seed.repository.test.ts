@@ -4,6 +4,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { registryPath } from "@/core/index.ts";
 import { SeedService } from "@/modules/installation/steps/seed/seed.repository.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 // SAFETY: fixed test fixtures, never a real filesystem lookup — matches
 // `testGateways.fixture.ts`'s `DEFAULT_HOME`.
@@ -18,7 +19,7 @@ describe("SeedService — seeding registry.toml from registry.example.toml", () 
       SeedService.defaultExampleRegistryPath(REPO_ROOT),
       '[[workspace]]\nid = "example"\n',
     );
-    const service = new SeedService(fs);
+    const service = new SeedService(makeAppContext({ fs }));
 
     const outcome = await service.seed(REPO_ROOT, HOME);
 
@@ -35,7 +36,7 @@ describe("SeedService — seeding registry.toml from registry.example.toml", () 
       '[[workspace]]\nid = "example"\n',
     );
     fs.seedFile(registryPath(HOME), '[[workspace]]\nid = "real"\n');
-    const service = new SeedService(fs);
+    const service = new SeedService(makeAppContext({ fs }));
 
     const outcome = await service.seed(REPO_ROOT, HOME);
 

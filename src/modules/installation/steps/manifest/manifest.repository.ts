@@ -1,6 +1,6 @@
+import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import { manifestPath } from "@/core/index.ts";
-import type { FileSystem } from "@/gateways/index.ts";
 import type {
   InstalledManifest,
   SkillManifestEntry,
@@ -14,9 +14,7 @@ import type {
 /** `~/.claude/memory/installed.json` — a record of exactly what THIS installer
  * wrote last time, so hook groups get purged by exact command string, `uninstall`
  * reverses exactly these artifacts, and the one-time legacy purge runs exactly once. */
-export class ManifestService {
-  constructor(private readonly fs: FileSystem) {}
-
+export class ManifestService extends Service {
   static defaultPath(home: AbsPath): AbsPath {
     return manifestPath(home);
   }
@@ -92,7 +90,7 @@ export class ManifestService {
   }
 
   async load(path: AbsPath): Promise<InstalledManifest | null> {
-    const result = await new JsonFileService(this.fs).readObjectFile(path);
+    const result = await this.makeService(JsonFileService).readObjectFile(path);
     if (!result.ok) return null;
     if (Object.keys(result.value).length === 0) return null;
     return ManifestService.parseManifest(result.value);
@@ -117,7 +115,7 @@ export class ManifestService {
   }
 
   async save(path: AbsPath, manifest: InstalledManifest): Promise<void> {
-    await new JsonFileService(this.fs).writeObjectAtomic(
+    await this.makeService(JsonFileService).writeObjectAtomic(
       path,
       ManifestService.serialize(manifest),
     );

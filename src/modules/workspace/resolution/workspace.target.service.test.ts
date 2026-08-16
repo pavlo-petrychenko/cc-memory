@@ -2,11 +2,9 @@ import { describe, expect, test } from "bun:test";
 
 import { absPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
-import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
+import { TargetResolutionService } from "@/modules/workspace/index.ts";
 import { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/modules/workspace/workspace.constants.ts";
-import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
-import { makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
-import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 const HOME = absPath("/home/test");
 
@@ -26,11 +24,7 @@ const RAWS: readonly RawWorkspace[] = [
   raw("secondary", "/repo/secondary"),
 ];
 
-const service = makeWorkspaceContext(
-  makeFsMemoryFake(),
-  makeGitFake(),
-  makeProcFake(),
-).targetResolutionService;
+const service = new TargetResolutionService(makeAppContext());
 
 describe("TargetResolutionService", () => {
   test("id === null resolves every registered workspace in registry order", () => {

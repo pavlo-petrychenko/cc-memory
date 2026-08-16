@@ -4,6 +4,7 @@ import { absPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { Collection, SearchIndexFake } from "@/gateways/index.ts";
 import { WorklogProjection } from "@/modules/worklog/projection/worklog.projection.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 const workspace: Workspace = {
   id: "w",
@@ -17,7 +18,7 @@ const workspace: Workspace = {
 
 test("WorklogProjection maps worklog files into the Worklog collection", async () => {
   const index = new SearchIndexFake();
-  const projection = new WorklogProjection(index);
+  const projection = new WorklogProjection(makeAppContext({}, index));
 
   await projection.project(workspace, [
     {

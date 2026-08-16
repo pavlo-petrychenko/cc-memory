@@ -1,46 +1,35 @@
 import { describe, expect, test } from "bun:test";
 
-import { WorkspaceAddCommand } from "@/modules/workspace/commands/workspaceAdd/workspaceAdd.command.ts";
-import { WorkspaceAddFormatter } from "@/modules/workspace/commands/workspaceAdd/workspaceAdd.formatter.ts";
-import { WorkspaceValidatorService } from "@/modules/workspace/resolution/workspace.validator.service.ts";
-import { AddWorkspaceUseCase } from "@/modules/workspace/useCases/addWorkspace.useCase.ts";
+import { registerCommands } from "@/core/index.ts";
+import { WorkspaceAddCommand } from "@/modules/workspace/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
-import { makeRunContext } from "@/testing/fixtures/runContext.fixture.ts";
-import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
-const indexBuilder = {
-  buildIndex: async () => 1,
-  noteCount: async () => 1,
-};
-
-function makeCommand() {
-  const fs = makeFsMemoryFake();
-  const useCase = new AddWorkspaceUseCase(
-    makeWorkspaceRepository(fs),
-    new WorkspaceValidatorService(),
-    indexBuilder,
-  );
-  return new WorkspaceAddCommand(useCase, new WorkspaceAddFormatter());
+function makeHandler() {
+  const ctx = makeAppContext({ fs: makeFsMemoryFake() });
+  const [handler] = registerCommands([WorkspaceAddCommand], ctx);
+  if (handler === undefined) throw new Error("expected one command handler");
+  return { handler, ctx };
 }
 
 describe("WorkspaceAddCommand", () => {
-  test("parse requires an id and --match", () => {
-    expect(makeCommand().parse([])).toEqual({
-      ok: false,
-      error: { message: "workspace add: missing <id>" },
+  test("parse requires an id and --match", async () => {
+    const { handler } = makeHandler();
+    expect(await handler.invoke([])).toEqual({
+      lines: [],
+      exitCode: 2,
+      stderrMessage: "workspace add: missing <id>",
     });
-    expect(makeCommand().parse(["acme"])).toEqual({
-      ok: false,
-      error: { message: "workspace add: --match requires at least one path" },
+    expect(await handler.invoke(["acme"])).toEqual({
+      lines: [],
+      exitCode: 2,
+      stderrMessage: "workspace add: --match requires at least one path",
     });
-    expect(makeCommand().parse(["acme", "--match", "/repo"]).ok).toBe(true);
   });
 
   test("run registers the workspace and prints the added lines", async () => {
-    const result = await makeCommand().run(
-      { id: "acme", match: ["/repo"], kb: null, worklogs: null, exclude: null },
-      makeRunContext(),
-    );
+    const { handler } = makeHandler();
+    const result = await handler.invoke(["acme", "--match", "/repo"]);
     expect(result.exitCode).toBe(0);
     expect(result.lines[0]).toBe("✓ workspace 'acme' added");
   });

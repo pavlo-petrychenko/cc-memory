@@ -4,5 +4,6 @@
 export type Stdio = {
   readonly readStdin: () => Promise<string>;
   readonly write: (text: string) => void;
+  readonly writeStderr: (text: string) => void;
   readonly exit: (code: number) => void;
 };

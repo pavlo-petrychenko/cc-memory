@@ -63,13 +63,26 @@ export type {
   RegisteredCommand,
 } from "@/core/entry/entry.typedefs.ts";
 export { matchCommand, runCli } from "@/core/transport/cli/cli.runner.ts";
-export { Command } from "@/core/entry/command.decorator.ts";
-export { Hook } from "@/core/entry/hook.decorator.ts";
+export {
+  Command,
+  registerCommands,
+  type CommandHandler,
+  type CommandParams,
+} from "@/core/decorators/command.decorator.ts";
+export {
+  Hook,
+  registerHooks,
+  type HookHandler,
+  type HookParams,
+} from "@/core/decorators/hook.decorator.ts";
 export { TokenizerParser } from "@/core/search/tokenizer/tokenizer.parser.ts";
 export { FtsQueryBuilder } from "@/core/search/ftsQuery/ftsQuery.builder.ts";
 export { Ranker } from "@/core/search/ranking/rrf.ranker.ts";
 export type { FusedHit, FuseInput, Hit } from "@/core/search/search.typedefs.ts";
-export { HookRuntimeService } from "@/core/transport/hook/hook.runtime.ts";
+export {
+  HookRuntimeService,
+  runHookDispatch,
+} from "@/core/transport/hook/hook.runtime.ts";
 export { HookResultSerializer } from "@/core/transport/hook/hookResult.serializer.ts";
 export { PayloadParser } from "@/core/transport/hook/payload.parser.ts";
 export {
@@ -86,9 +99,6 @@ export {
   HookResultKind,
 } from "@/core/transport/hook/hook.typedefs.ts";
 export type {
-  HookContext,
-  HookHandler,
-  HookInput,
   HookResult,
   WorkspaceResolver,
 } from "@/core/transport/hook/hook.typedefs.ts";

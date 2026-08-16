@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { registerCommands } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import {
   InstallCommand,
@@ -7,10 +8,9 @@ import {
 } from "@/modules/installation/commands/install/install.command.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
-import { makeRunContext } from "@/testing/fixtures/runContext.fixture.ts";
-import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
-function makeInstallCommand() {
+function makeInstallHandler() {
   const proc = makeProcFake();
   proc.enqueue({
     kind: "resolve",
@@ -23,13 +23,15 @@ function makeInstallCommand() {
   const fs = makeFsMemoryFake();
   // SAFETY: a fixed literal test fixture path.
   fs.seedFile("/usr/bin/bun" as AbsPath, "");
-  const container = makeTestGateways({ proc, fs });
-  return new InstallCommand(container);
+  const ctx = makeAppContext({ proc, fs });
+  const [handler] = registerCommands([InstallCommand], ctx);
+  if (handler === undefined) throw new Error("expected one command handler");
+  return handler;
 }
 
 describe("InstallCommand", () => {
   test("--dry-run reports the dry-run banner without writing", async () => {
-    const result = await makeInstallCommand().run({ dryRun: true }, makeRunContext());
+    const result = await makeInstallHandler().invoke(["--dry-run"]);
     expect(result.exitCode).toBe(0);
     expect(result.lines[0]).toContain("dry run");
   });
@@ -37,8 +39,10 @@ describe("InstallCommand", () => {
 
 describe("UninstallCommand", () => {
   test("nothing installed reports nothing to do", async () => {
-    const command = new UninstallCommand(makeTestGateways({ proc: makeProcFake() }));
-    const result = await command.run({}, makeRunContext());
+    const ctx = makeAppContext({ proc: makeProcFake() });
+    const [handler] = registerCommands([UninstallCommand], ctx);
+    if (handler === undefined) throw new Error("expected one command handler");
+    const result = await handler.invoke([]);
     expect(result.exitCode).toBe(0);
     expect(result.lines[0]).toContain("nothing to uninstall");
   });

@@ -4,6 +4,7 @@ import { absPath } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { Collection, SearchIndexFake } from "@/gateways/index.ts";
 import { NoteProjection } from "@/modules/note/projection/note.projection.ts";
+import { makeAppContext } from "@/testing/fixtures/testGateways.fixture.ts";
 
 const workspace: Workspace = {
   id: "w",
@@ -17,7 +18,7 @@ const workspace: Workspace = {
 
 test("NoteProjection maps Notes into the Notes collection", async () => {
   const index = new SearchIndexFake();
-  const projection = new NoteProjection(index);
+  const projection = new NoteProjection(makeAppContext({}, index));
 
   index.setResetResult(true);
   expect(await projection.resetIfStale(workspace)).toBe(true);
