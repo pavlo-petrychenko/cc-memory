@@ -19,7 +19,11 @@ const CONFIG: Config = {
 
 // SAFETY: the decorator under test only stores the ctx and passes it through to
 // the use case constructor; it never dereferences a gateway member.
-const CTX: AppContext = { gateways: {} as AppContext["gateways"], config: CONFIG };
+const CTX: AppContext = {
+  gateways: {} as AppContext["gateways"],
+  searchIndex: {} as AppContext["searchIndex"],
+  config: CONFIG,
+};
 
 class GreetUseCase extends UseCase<{ name: string }, string> {
   async execute(options: { name: string }): Promise<string> {
