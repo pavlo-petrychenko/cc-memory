@@ -1,10 +1,26 @@
 import type { Command as CommandContract } from "@/core/entry/entry.typedefs.ts";
-import { Command } from "@/core/index.ts";
-import { CLI_SUCCESS, cliOutcome } from "@/core/index.ts";
-import type { ArgsError, CliOutcome, CommandResult, RunContext } from "@/core/index.ts";
-import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
-import type { Config } from "@/core/index.ts";
-import type { Result } from "@/core/index.ts";
+import {
+  CLI_SUCCESS,
+  cliOutcome,
+  Command,
+  FtsQueryBuilder,
+  HookResultSerializer,
+  HookRuntimeService,
+  PayloadParser,
+  Ranker,
+  TokenizerParser,
+} from "@/core/index.ts";
+import type {
+  AbsPath,
+  ArgsError,
+  CliOutcome,
+  CommandResult,
+  Config,
+  Result,
+  RunContext,
+  Workspace,
+} from "@/core/index.ts";
+import { HookName } from "@/core/transport/hook/hook.typedefs.ts";
 import { SearchIndexAdapter } from "@/gateways/index.ts";
 import type { Gateways, SearchIndex } from "@/gateways/index.ts";
 import {
@@ -27,10 +43,6 @@ import { SessionEndHook } from "@/modules/session/hooks/sessionEnd/sessionEnd.ho
 import { SessionStartHook } from "@/modules/session/hooks/sessionStart/sessionStart.hook.ts";
 import { WrapGateFormatter } from "@/modules/session/hooks/wrapGate/wrapGate.formatter.ts";
 import { WrapGateHook } from "@/modules/session/hooks/wrapGate/wrapGate.hook.ts";
-import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
-import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
-import { HookRuntimeService } from "@/modules/session/session.runner.ts";
-import { HookName } from "@/modules/session/session.typedefs.ts";
 import {
   ReprojectWorklogUseCase,
   SearchWorklogUseCase,
@@ -40,6 +52,7 @@ import {
   WorklogQuery,
   WorklogStoreService,
 } from "@/modules/worklog/index.ts";
+import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
 
 export type HookOptions = { readonly name: string };
 
@@ -111,6 +124,23 @@ export class HookDispatchCommand implements CommandContract<HookOptions> {
     }
   }
 
+  private async resolveWorkspaceForHook(cwd: AbsPath): Promise<Workspace | null> {
+    const home = this.container.env.home();
+    const { repository, resolverService } = makeWorkspaceContext(
+      this.container.fs,
+      this.container.git,
+      this.container.proc,
+    );
+    const registryResult = await repository.load(repository.defaultPath(home));
+    if (!registryResult.ok) {
+      this.container.logger.error(
+        `hook: registry load failed (${registryResult.error.kind}): ${registryResult.error.message}`,
+      );
+      return null;
+    }
+    return resolverService.resolveWorkspace(registryResult.value, cwd, home);
+  }
+
   private async execute(args: {
     readonly command: string;
     readonly name: string;
@@ -125,6 +155,7 @@ export class HookDispatchCommand implements CommandContract<HookOptions> {
       this.container,
       payloadParser,
       new HookResultSerializer(),
+      (cwd) => this.resolveWorkspaceForHook(cwd),
     );
     const index = makeSearchIndex(this.container);
     const note = makeNoteModule(this.container, index);

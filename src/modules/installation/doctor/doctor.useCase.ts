@@ -1,6 +1,7 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, joinAbs, logPath, parentDir } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
+import { HOOK_DESCRIPTORS } from "@/core/transport/hook/hook.constants.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { LOG_SIZE_WARNING_BYTES } from "@/modules/installation/doctor/doctor.constants.ts";
 import type {
@@ -16,7 +17,6 @@ import { SettingsService } from "@/modules/installation/steps/settings/settings.
 import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.repository.ts";
 import type { JsonObject } from "@/modules/installation/utils/jsonFile/jsonFile.typedefs.ts";
 import type { ReprojectNotesUseCase } from "@/modules/note/index.ts";
-import { HOOK_DESCRIPTORS } from "@/modules/session/session.constants.ts";
 import type { ReprojectWorklogUseCase } from "@/modules/worklog/index.ts";
 
 /** Checks the state a healthy install actually depends on: registry, vaults,

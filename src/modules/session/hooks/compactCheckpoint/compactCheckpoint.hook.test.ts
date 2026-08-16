@@ -3,17 +3,20 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
+import { PayloadParser } from "@/core/index.ts";
+import { HookResultSerializer } from "@/core/index.ts";
+import { HookRuntimeService } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { CompactCheckpointFormatter } from "@/modules/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";
 import { CompactCheckpointHook } from "@/modules/session/hooks/compactCheckpoint/compactCheckpoint.hook.ts";
-import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
-import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
-import { HookRuntimeService } from "@/modules/session/session.runner.ts";
 import { WorklogStoreService } from "@/modules/worklog/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
+import {
+  makeHookWorkspaceResolver,
+  makeWorkspaceRepository,
+} from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 /**
  * `PostCompact`: persist the compaction summary into today's dated journal —
@@ -61,6 +64,7 @@ async function runCompactCheckpoint(fixture: Fixture, stdin: string): Promise<vo
     fixture.container,
     payloadParser,
     new HookResultSerializer(),
+    makeHookWorkspaceResolver(fixture.container),
   );
   await hookRuntimeService.run(
     "compact-checkpoint",

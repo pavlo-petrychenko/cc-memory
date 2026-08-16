@@ -1,5 +1,5 @@
-import type { HookDescriptor } from "@/core/index.ts";
-import { HookEvent, HookName } from "@/modules/session/session.typedefs.ts";
+import type { HookDescriptor } from "@/core/entry/entry.typedefs.ts";
+import { HookEvent, HookName } from "@/core/transport/hook/hook.typedefs.ts";
 
 export const SESSION_START_HOOK: HookDescriptor = {
   name: HookName.SessionStart,

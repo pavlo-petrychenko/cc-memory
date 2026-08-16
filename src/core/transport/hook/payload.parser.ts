@@ -6,7 +6,7 @@ import type {
   SessionStartPayload,
   WorklogFloorPayload,
   WrapGatePayload,
-} from "@/modules/session/payload/payload.typedefs.ts";
+} from "@/core/transport/hook/payload.typedefs.ts";
 
 /** The hook stdin JSON protocol, parsed at the boundary: one typed shape per hook
  * event, tolerant field-by-field — a field of the wrong JSON type reads as absent

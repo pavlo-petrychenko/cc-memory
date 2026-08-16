@@ -1,14 +1,11 @@
 import { Hook } from "@/core/index.ts";
+import { COMPACT_CHECKPOINT_HOOK } from "@/core/transport/hook/hook.constants.ts";
+import type { HookHandler, HookInput } from "@/core/transport/hook/hook.typedefs.ts";
+import { HookResultKind } from "@/core/transport/hook/hook.typedefs.ts";
+import type { HookResult } from "@/core/transport/hook/hook.typedefs.ts";
+import type { CompactCheckpointPayload } from "@/core/transport/hook/payload.typedefs.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import type { CompactCheckpointFormatter } from "@/modules/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";
-import type { CompactCheckpointPayload } from "@/modules/session/payload/payload.typedefs.ts";
-import type {
-  HookHandler,
-  HookInput,
-} from "@/modules/session/runtime/runtime.typedefs.ts";
-import { COMPACT_CHECKPOINT_HOOK } from "@/modules/session/session.constants.ts";
-import { HookResultKind } from "@/modules/session/session.typedefs.ts";
-import type { HookResult } from "@/modules/session/session.typedefs.ts";
 import type { WorklogStoreService } from "@/modules/worklog/index.ts";
 import { worktreeSlug } from "@/modules/workspace/index.ts";
 

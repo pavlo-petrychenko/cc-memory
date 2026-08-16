@@ -89,6 +89,7 @@ const ALLOWED_SUFFIXES = [
   ".utils.ts",
   ".decorator.ts",
   ".runner.ts",
+  ".runtime.ts",
   ".useCase.ts",
   ".repository.ts",
   ".projection.ts",

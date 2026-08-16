@@ -54,3 +54,33 @@ export { TokenizerParser } from "@/core/search/tokenizer/tokenizer.parser.ts";
 export { FtsQueryBuilder } from "@/core/search/ftsQuery/ftsQuery.builder.ts";
 export { Ranker } from "@/core/search/ranking/rrf.ranker.ts";
 export type { FusedHit, FuseInput, Hit } from "@/core/search/search.typedefs.ts";
+export { HookRuntimeService } from "@/core/transport/hook/hook.runtime.ts";
+export { HookResultSerializer } from "@/core/transport/hook/hookResult.serializer.ts";
+export { PayloadParser } from "@/core/transport/hook/payload.parser.ts";
+export {
+  COMPACT_CHECKPOINT_HOOK,
+  HOOK_DESCRIPTORS,
+  MEMORY_INJECT_HOOK,
+  SESSION_START_HOOK,
+  WORKLOG_FLOOR_HOOK,
+  WRAP_GATE_HOOK,
+} from "@/core/transport/hook/hook.constants.ts";
+export {
+  HookEvent,
+  HookName,
+  HookResultKind,
+} from "@/core/transport/hook/hook.typedefs.ts";
+export type {
+  HookContext,
+  HookHandler,
+  HookInput,
+  HookResult,
+  WorkspaceResolver,
+} from "@/core/transport/hook/hook.typedefs.ts";
+export type {
+  CompactCheckpointPayload,
+  MemoryInjectPayload,
+  SessionStartPayload,
+  WorklogFloorPayload,
+  WrapGatePayload,
+} from "@/core/transport/hook/payload.typedefs.ts";

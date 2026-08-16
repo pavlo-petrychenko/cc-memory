@@ -2,6 +2,11 @@ import type { AbsPath, Config, Workspace } from "@/core/index.ts";
 import { absPath, joinAbs, parentDir } from "@/core/index.ts";
 import type { FusedHit, TokenizerParser } from "@/core/index.ts";
 import { Hook } from "@/core/index.ts";
+import { MEMORY_INJECT_HOOK } from "@/core/transport/hook/hook.constants.ts";
+import type { HookHandler, HookInput } from "@/core/transport/hook/hook.typedefs.ts";
+import { HookEvent, HookResultKind } from "@/core/transport/hook/hook.typedefs.ts";
+import type { HookResult } from "@/core/transport/hook/hook.typedefs.ts";
+import type { MemoryInjectPayload } from "@/core/transport/hook/payload.typedefs.ts";
 import type { Gateways, FileSystem } from "@/gateways/index.ts";
 import { SearchNotesUseCase } from "@/modules/note/index.ts";
 import {
@@ -21,14 +26,6 @@ import type {
   CandidateLogEntry,
   InjectedHit,
 } from "@/modules/session/hooks/memoryInject/memoryInject.typedefs.ts";
-import type { MemoryInjectPayload } from "@/modules/session/payload/payload.typedefs.ts";
-import type {
-  HookHandler,
-  HookInput,
-} from "@/modules/session/runtime/runtime.typedefs.ts";
-import { MEMORY_INJECT_HOOK } from "@/modules/session/session.constants.ts";
-import { HookEvent, HookResultKind } from "@/modules/session/session.typedefs.ts";
-import type { HookResult } from "@/modules/session/session.typedefs.ts";
 import { SearchWorklogUseCase } from "@/modules/worklog/index.ts";
 
 /** `UserPromptSubmit`: auto-retrieve relevant memory via a fused BM25 search,

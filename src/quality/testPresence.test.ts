@@ -38,7 +38,7 @@ const IMPLEMENTATION_SUFFIXES = [
  */
 const COVERED_THROUGH_CALLERS: ReadonlyMap<string, string> = new Map([
   [
-    "modules/session/payload/payload.parser.ts",
+    "core/transport/hook/payload.parser.ts",
     "every field it parses is asserted through the five hook contract tests, which feed real payloads",
   ],
   [
