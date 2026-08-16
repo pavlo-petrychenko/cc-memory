@@ -1,19 +1,36 @@
+import type { FusedHit } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { WorklogProjection } from "@/modules/worklog/projection/worklog.projection.ts";
 import type { WorklogDocument } from "@/modules/worklog/projection/worklog.projection.ts";
+import { WorklogQuery } from "@/modules/worklog/projection/worklog.query.ts";
 import { WorklogStoreService } from "@/modules/worklog/worklog.repository.ts";
+
+export type SearchWorklogOptions = {
+  readonly limit?: number;
+  readonly linkBoost: number;
+};
 
 const MTIME_EPSILON = 1e-6;
 
-/** One user-facing operation: (re)project the worklogs into the derived index,
- * incrementally by mtime. */
-export class ReprojectWorklogUseCase {
+/** Worklog-domain operations: ranked search and (re)projection of the worklog
+ * journals into the derived index. */
+export class WorklogService {
   constructor(
     private readonly store: WorklogStoreService,
     private readonly projection: WorklogProjection,
+    private readonly query: WorklogQuery,
   ) {}
 
-  async run(workspace: Workspace): Promise<void> {
+  search(
+    workspace: Workspace,
+    query: string,
+    options: SearchWorklogOptions,
+  ): Promise<readonly FusedHit[]> {
+    return this.query.searchFused(workspace, query, options);
+  }
+
+  /** Incremental by mtime. */
+  async reindex(workspace: Workspace): Promise<void> {
     await this.projection.resetIfStale(workspace);
     const existing = await this.projection.listExisting(workspace);
     const files = await this.store.scanWorklogFiles(workspace);

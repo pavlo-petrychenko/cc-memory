@@ -25,7 +25,6 @@ export { AddWorkspaceUseCase } from "@/modules/workspace/useCases/addWorkspace.u
 export { ListWorkspacesUseCase } from "@/modules/workspace/useCases/listWorkspaces.useCase.ts";
 export { RemoveWorkspaceUseCase } from "@/modules/workspace/useCases/removeWorkspace.useCase.ts";
 export { ResolveWorkspaceUseCase } from "@/modules/workspace/useCases/resolveWorkspace.useCase.ts";
-export { ResolveTargetWorkspacesUseCase } from "@/modules/workspace/useCases/resolveTargetWorkspaces.useCase.ts";
 export type {
   RegistryConflict,
   RegistryError,

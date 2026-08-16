@@ -5,7 +5,6 @@ import { ReindexFormatter } from "@/cli/commands/reindex/reindex.formatter.ts";
 import { absPath, expandPath } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
-import { ResolveTargetWorkspacesUseCase } from "@/modules/workspace/index.ts";
 import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { makeGitFake } from "@/testing/fakes/gitFake.fake.ts";
@@ -38,12 +37,9 @@ function makeCommand() {
   const worklog = makeWorklogModule(container, index);
   const workspace = makeWorkspaceContext(fs, makeGitFake(), makeProcFake());
   const command = new ReindexCommand(
-    new ResolveTargetWorkspacesUseCase(
-      workspace.repository,
-      workspace.targetResolutionService,
-    ),
-    note.reprojectNotes,
-    worklog.reprojectWorklog,
+    workspace.targetResolutionService,
+    note.noteService,
+    worklog.worklogService,
     new ReindexFormatter(),
   );
   return { command, fs, repository: workspace.repository };

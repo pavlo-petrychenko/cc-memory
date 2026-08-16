@@ -8,7 +8,7 @@ import { HookEvent, HookResultKind } from "@/core/transport/hook/hook.typedefs.t
 import type { HookResult } from "@/core/transport/hook/hook.typedefs.ts";
 import type { MemoryInjectPayload } from "@/core/transport/hook/payload.typedefs.ts";
 import type { Gateways, FileSystem } from "@/gateways/index.ts";
-import { SearchNotesUseCase } from "@/modules/note/index.ts";
+import { NoteService } from "@/modules/note/index.ts";
 import {
   INJECT_LOG_FILENAME,
   KEPT_LOG_GENERATIONS,
@@ -26,7 +26,7 @@ import type {
   CandidateLogEntry,
   InjectedHit,
 } from "@/modules/session/hooks/memoryInject/memoryInject.typedefs.ts";
-import { SearchWorklogUseCase } from "@/modules/worklog/index.ts";
+import { WorklogService } from "@/modules/worklog/index.ts";
 
 /** `UserPromptSubmit`: auto-retrieve relevant memory via a fused BM25 search,
  * gated by prompt length, salient-token count and a score floor. `inject.jsonl`
@@ -105,8 +105,8 @@ export class MemoryInjectHook implements HookHandler<MemoryInjectPayload> {
     private readonly container: Gateways,
     private readonly config: Config,
     private readonly formatter: MemoryInjectFormatter,
-    private readonly searchNotes: SearchNotesUseCase,
-    private readonly searchWorklog: SearchWorklogUseCase,
+    private readonly noteService: NoteService,
+    private readonly worklogService: WorklogService,
     private readonly tokenizerParser: TokenizerParser,
   ) {}
 
@@ -155,11 +155,11 @@ export class MemoryInjectHook implements HookHandler<MemoryInjectPayload> {
     let notePool: readonly FusedHit[];
     let worklogPool: readonly FusedHit[];
     try {
-      notePool = await this.searchNotes.run(workspace, prompt, {
+      notePool = await this.noteService.search(workspace, prompt, {
         limit: NOTES_POOL_SIZE,
         linkBoost: this.config.linkBoost,
       });
-      worklogPool = await this.searchWorklog.run(workspace, prompt, {
+      worklogPool = await this.worklogService.search(workspace, prompt, {
         limit: MAX_INJECTED_WORKLOGS,
         linkBoost: this.config.linkBoost,
       });

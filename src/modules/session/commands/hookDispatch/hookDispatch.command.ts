@@ -29,8 +29,7 @@ import {
   NoteProjection,
   NoteQuery,
   NoteRepository,
-  ReprojectNotesUseCase,
-  SearchNotesUseCase,
+  NoteService,
 } from "@/modules/note/index.ts";
 import { HOOK_DESCRIPTOR } from "@/modules/session/commands/hookDispatch/hookDispatch.constants.ts";
 import { CompactCheckpointFormatter } from "@/modules/session/hooks/compactCheckpoint/compactCheckpoint.formatter.ts";
@@ -42,12 +41,11 @@ import { SessionStartHook } from "@/modules/session/hooks/sessionStart/sessionSt
 import { WrapGateFormatter } from "@/modules/session/hooks/wrapGate/wrapGate.formatter.ts";
 import { WrapGateHook } from "@/modules/session/hooks/wrapGate/wrapGate.hook.ts";
 import {
-  ReprojectWorklogUseCase,
-  SearchWorklogUseCase,
   WorkingMemoryFormatter,
   WorklogFloorFormatter,
   WorklogProjection,
   WorklogQuery,
+  WorklogService,
   WorklogStoreService,
 } from "@/modules/worklog/index.ts";
 import { makeWorkspaceContext } from "@/modules/workspace/index.ts";
@@ -67,8 +65,7 @@ function makeNoteModule(container: Gateways, index: SearchIndex) {
   const projection = new NoteProjection(index);
   const query = new NoteQuery(index, new FtsQueryBuilder(tokenizer), new Ranker());
   return {
-    reprojectNotes: new ReprojectNotesUseCase(repository, projection),
-    searchNotes: new SearchNotesUseCase(query),
+    noteService: new NoteService(repository, projection, query),
     buildKbMap: new KbMapService(container.fs, new NoteParser()),
     kbMapFormatter: new KbMapFormatter(),
   };
@@ -81,8 +78,7 @@ function makeWorklogModule(container: Gateways, index: SearchIndex) {
   const query = new WorklogQuery(index, new FtsQueryBuilder(tokenizer), new Ranker());
   return {
     store,
-    reprojectWorklog: new ReprojectWorklogUseCase(store, projection),
-    searchWorklog: new SearchWorklogUseCase(query),
+    worklogService: new WorklogService(store, projection, query),
   };
 }
 
@@ -166,8 +162,8 @@ export class HookDispatchCommand implements CommandContract<HookOptions> {
           (record) => payloadParser.parseSessionStart(record),
           new SessionStartHook(
             this.container,
-            note.reprojectNotes,
-            worklog.reprojectWorklog,
+            note.noteService,
+            worklog.worklogService,
             note.buildKbMap,
             note.kbMapFormatter,
             worklog.store,
@@ -183,8 +179,8 @@ export class HookDispatchCommand implements CommandContract<HookOptions> {
             this.container,
             this.config,
             new MemoryInjectFormatter(),
-            note.searchNotes,
-            worklog.searchWorklog,
+            note.noteService,
+            worklog.worklogService,
             new TokenizerParser(),
           ),
         );

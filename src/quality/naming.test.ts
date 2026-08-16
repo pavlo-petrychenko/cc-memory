@@ -64,8 +64,10 @@ test("a basename prefix belongs to exactly one module", () => {
     prefixToModules.set(prefix, modules);
   }
 
-  // Guard against the rule silently covering nothing.
-  expect(prefixToModules.size).toBeGreaterThan(50);
+  // Guard against the rule silently covering nothing. The threshold tracks the
+  // number of unique basename prefixes, which shrinks as use cases fold into
+  // services (a smoke test, not a precise inventory).
+  expect(prefixToModules.size).toBeGreaterThan(40);
 
   const collisions = [...prefixToModules.entries()]
     .filter(([, modules]) => modules.size > 1)

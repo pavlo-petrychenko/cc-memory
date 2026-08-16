@@ -1,24 +1,47 @@
+import type { FusedHit } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { NoteRepository } from "@/modules/note/note.repository.ts";
 import type { BuildStats } from "@/modules/note/note.typedefs.ts";
 import { NoteProjection } from "@/modules/note/projection/note.projection.ts";
 import type { NoteDocument } from "@/modules/note/projection/note.projection.ts";
+import { NoteQuery } from "@/modules/note/projection/note.query.ts";
 
-export type ReprojectNotesOptions = { readonly incremental: boolean };
+export type SearchNotesOptions = {
+  readonly limit?: number;
+  readonly linkBoost: number;
+};
 
 const MTIME_EPSILON = 1e-6;
 
-/** One user-facing operation: (re)project the note vault into the derived index,
- * incrementally by mtime unless a schema bump or `--full` forces a full pass. */
-export class ReprojectNotesUseCase {
+/** Note-domain operations: ranked search and (re)projection of the note vault
+ * into the derived index. */
+export class NoteService {
   constructor(
     private readonly repository: NoteRepository,
     private readonly projection: NoteProjection,
+    private readonly query: NoteQuery,
   ) {}
 
-  async run(workspace: Workspace, options: ReprojectNotesOptions): Promise<BuildStats> {
+  search(
+    workspace: Workspace,
+    query: string,
+    options: SearchNotesOptions,
+  ): Promise<readonly FusedHit[]> {
+    return this.query.searchFused(workspace, query, options);
+  }
+
+  incrementalReindex(workspace: Workspace): Promise<BuildStats> {
+    return this.reindex(workspace, true);
+  }
+
+  fullReindex(workspace: Workspace): Promise<BuildStats> {
+    return this.reindex(workspace, false);
+  }
+
+  /** Incremental by mtime unless a schema bump or a full pass forces a full run. */
+  private async reindex(workspace: Workspace, incremental: boolean): Promise<BuildStats> {
     const forced = await this.projection.resetIfStale(workspace);
-    const incremental = options.incremental && !forced;
+    const effectiveIncremental = incremental && !forced;
     const existing = await this.projection.listExisting(workspace);
     const files = await this.repository.scanFiles(workspace);
     const seen = new Set<string>(files.map((file) => file.path));
@@ -27,7 +50,7 @@ export class ReprojectNotesUseCase {
       files.map(async (file) => {
         const existingMtime = existing.get(file.path);
         const unchanged =
-          incremental &&
+          effectiveIncremental &&
           existingMtime !== undefined &&
           Math.abs(existingMtime - file.mtimeMs) < MTIME_EPSILON;
         if (unchanged) return null;

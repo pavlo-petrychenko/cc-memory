@@ -16,16 +16,16 @@ import { ManifestService } from "@/modules/installation/steps/manifest/manifest.
 import { SettingsService } from "@/modules/installation/steps/settings/settings.repository.ts";
 import { JsonFileService } from "@/modules/installation/utils/jsonFile/jsonFile.repository.ts";
 import type { JsonObject } from "@/modules/installation/utils/jsonFile/jsonFile.typedefs.ts";
-import type { ReprojectNotesUseCase } from "@/modules/note/index.ts";
-import type { ReprojectWorklogUseCase } from "@/modules/worklog/index.ts";
+import type { NoteService } from "@/modules/note/index.ts";
+import type { WorklogService } from "@/modules/worklog/index.ts";
 
 /** Checks the state a healthy install actually depends on: registry, vaults,
  * indexes, hook registrations, the recorded `bun` binary, log sizes. */
 export class DoctorService {
   constructor(
     private readonly container: Gateways,
-    private readonly reprojectNotes: ReprojectNotesUseCase,
-    private readonly reprojectWorklog: ReprojectWorklogUseCase,
+    private readonly noteService: NoteService,
+    private readonly worklogService: WorklogService,
   ) {}
 
   private async fileSizeOrZero(path: AbsPath): Promise<number> {
@@ -60,8 +60,8 @@ export class DoctorService {
     );
 
     try {
-      const stats = await this.reprojectNotes.run(workspace, { incremental: true });
-      await this.reprojectWorklog.run(workspace);
+      const stats = await this.noteService.incrementalReindex(workspace);
+      await this.worklogService.reindex(workspace);
       const drifted = stats.added > 0 || stats.updated > 0 || stats.removed > 0;
       return {
         id: workspace.id,

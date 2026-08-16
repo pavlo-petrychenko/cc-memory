@@ -12,7 +12,7 @@ import {
   GIT_TIMEOUT_MS,
 } from "@/modules/worklog/commands/commit/commit.constants.ts";
 import { CommitFormatter } from "@/modules/worklog/commands/commit/commit.formatter.ts";
-import { ResolveTargetWorkspacesUseCase } from "@/modules/workspace/index.ts";
+import { TargetResolutionService } from "@/modules/workspace/index.ts";
 
 export type CommitOptions = {
   readonly workspace: string | null;
@@ -24,7 +24,7 @@ export class CommitCommand implements CommandContract<CommitOptions> {
   constructor(
     private readonly fs: FileSystem,
     private readonly proc: Proc,
-    private readonly resolveTargetWorkspaces: ResolveTargetWorkspacesUseCase,
+    private readonly targetResolution: TargetResolutionService,
     private readonly formatter: CommitFormatter,
   ) {}
 
@@ -42,7 +42,7 @@ export class CommitCommand implements CommandContract<CommitOptions> {
   }
 
   async run(options: CommitOptions, context: RunContext): Promise<CommandResult> {
-    const resolved = await this.resolveTargetWorkspaces.run(
+    const resolved = await this.targetResolution.resolveTarget(
       context.home,
       options.workspace,
     );

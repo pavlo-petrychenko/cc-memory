@@ -82,8 +82,8 @@ async function runSessionStart(
       const worklog = makeWorklogModule(container, index);
       return new SessionStartHook(
         container,
-        note.reprojectNotes,
-        worklog.reprojectWorklog,
+        note.noteService,
+        worklog.worklogService,
         note.buildKbMap,
         new KbMapFormatter(),
         worklog.store,

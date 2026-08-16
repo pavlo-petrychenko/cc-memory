@@ -24,8 +24,7 @@ import {
   NoteProjection,
   NoteQuery,
   NoteRepository,
-  ReprojectNotesUseCase,
-  SearchNotesUseCase,
+  NoteService,
   NotesCommand,
   NotesFormatter,
   SearchHitFormatter,
@@ -34,10 +33,9 @@ import { HookDispatchCommand } from "@/modules/session/index.ts";
 import {
   CommitCommand,
   CommitFormatter,
-  ReprojectWorklogUseCase,
-  SearchWorklogUseCase,
   WorklogProjection,
   WorklogQuery,
+  WorklogService,
   WorklogStoreService,
 } from "@/modules/worklog/index.ts";
 import {
@@ -47,7 +45,6 @@ import {
   RemoveWorkspaceUseCase,
   ResolveCommand,
   ResolveFormatter,
-  ResolveTargetWorkspacesUseCase,
   ResolveWorkspaceUseCase,
   WorkspaceAddCommand,
   WorkspaceAddFormatter,
@@ -69,8 +66,7 @@ function makeNoteModule(container: Gateways, index: SearchIndex) {
   const query = new NoteQuery(index, new FtsQueryBuilder(tokenizer), new Ranker());
   return {
     projection,
-    reprojectNotes: new ReprojectNotesUseCase(repository, projection),
-    searchNotes: new SearchNotesUseCase(query),
+    noteService: new NoteService(repository, projection, query),
     listNotes: new ListNotesUseCase(repository),
     buildKbMap: new KbMapService(container.fs, new NoteParser()),
   };
@@ -83,8 +79,7 @@ function makeWorklogModule(container: Gateways, index: SearchIndex) {
   const query = new WorklogQuery(index, new FtsQueryBuilder(tokenizer), new Ranker());
   return {
     store,
-    reprojectWorklog: new ReprojectWorklogUseCase(store, projection),
-    searchWorklog: new SearchWorklogUseCase(query),
+    worklogService: new WorklogService(store, projection, query),
   };
 }
 
@@ -93,7 +88,7 @@ function makeWorkspaceIndexBuilder(
 ): WorkspaceIndexBuilder {
   return {
     buildIndex: async (workspace) =>
-      (await note.reprojectNotes.run(workspace, { incremental: false })).total,
+      (await note.noteService.fullReindex(workspace)).total,
     noteCount: async (workspace) => (await note.projection.listExisting(workspace)).size,
   };
 }
@@ -128,10 +123,6 @@ export function wireCli(container: Gateways): Cli {
     workspace.repository,
     workspace.targetResolutionService,
   );
-  const resolveTargetWorkspaces = new ResolveTargetWorkspacesUseCase(
-    workspace.repository,
-    workspace.targetResolutionService,
-  );
 
   const commands: readonly RegisteredCommand[] = [
     registerCommand(new WorkspaceAddCommand(addWorkspace, new WorkspaceAddFormatter())),
@@ -146,17 +137,17 @@ export function wireCli(container: Gateways): Cli {
     ),
     registerCommand(
       new ReindexCommand(
-        resolveTargetWorkspaces,
-        note.reprojectNotes,
-        worklog.reprojectWorklog,
+        workspace.targetResolutionService,
+        note.noteService,
+        worklog.worklogService,
         new ReindexFormatter(),
       ),
     ),
     registerCommand(
       new SearchCommand(
         resolveWorkspace,
-        note.searchNotes,
-        worklog.searchWorklog,
+        note.noteService,
+        worklog.worklogService,
         new SearchHitFormatter(),
       ),
     ),
@@ -167,14 +158,14 @@ export function wireCli(container: Gateways): Cli {
       new CommitCommand(
         container.fs,
         container.proc,
-        resolveTargetWorkspaces,
+        workspace.targetResolutionService,
         new CommitFormatter(),
       ),
     ),
     registerCommand(
       new DoctorCommand(
         container,
-        new DoctorService(container, note.reprojectNotes, worklog.reprojectWorklog),
+        new DoctorService(container, note.noteService, worklog.worklogService),
         new DoctorFormatter(),
       ),
     ),
