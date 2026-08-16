@@ -1,17 +1,19 @@
 import { expect, test } from "bun:test";
 
 import type {
-  ArgsError,
   Command as CommandContract,
   CommandDescriptor,
-  CommandResult,
-  RunContext,
 } from "@/core/entry/entry.typedefs.ts";
-import { registerCommand } from "@/core/entry/entry.utils.ts";
 import { Command } from "@/core/index.ts";
 import { LogLevel } from "@/core/index.ts";
 import { absPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
+import type {
+  ArgsError,
+  CommandResult,
+  RunContext,
+} from "@/core/transport/cli/cli.typedefs.ts";
+import { registerCommand } from "@/core/transport/cli/cli.utils.ts";
 
 const CONTEXT: RunContext = {
   home: absPath("/home"),

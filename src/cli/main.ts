@@ -1,5 +1,5 @@
-import { runCli as dispatchCli } from "@/cli/cli.runner.ts";
 import { wireCli } from "@/cli/cli.wiring.ts";
+import { runCli as dispatchCli } from "@/core/index.ts";
 import type { Config } from "@/core/index.ts";
 import { ConfigParser } from "@/core/index.ts";
 import type { CliOutcome } from "@/core/index.ts";

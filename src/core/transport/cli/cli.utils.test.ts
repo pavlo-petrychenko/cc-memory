@@ -1,12 +1,18 @@
 import { expect, test } from "bun:test";
 
 import type {
-  ArgsError,
   Command as CommandContract,
   CommandDescriptor,
+} from "@/core/entry/entry.typedefs.ts";
+import { Command } from "@/core/index.ts";
+import { LogLevel } from "@/core/index.ts";
+import { absPath } from "@/core/index.ts";
+import type { Result } from "@/core/index.ts";
+import type {
+  ArgsError,
   CommandResult,
   RunContext,
-} from "@/core/entry/entry.typedefs.ts";
+} from "@/core/transport/cli/cli.typedefs.ts";
 import {
   cliFailure,
   cliOutcome,
@@ -16,11 +22,7 @@ import {
   registerCommand,
   requirePositional,
   variadicValues,
-} from "@/core/entry/entry.utils.ts";
-import { Command } from "@/core/index.ts";
-import { LogLevel } from "@/core/index.ts";
-import { absPath } from "@/core/index.ts";
-import type { Result } from "@/core/index.ts";
+} from "@/core/transport/cli/cli.utils.ts";
 
 test("cliFailure defaults to exit code 1 and cliOutcome is explicit", () => {
   expect(cliFailure("boom")).toEqual({ exitCode: 1, stderrMessage: "boom" });

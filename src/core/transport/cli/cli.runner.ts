@@ -1,5 +1,6 @@
-import { ARGS_PARSE_ERROR_EXIT_CODE } from "@/core/index.ts";
-import type { CommandResult, RegisteredCommand, RunContext } from "@/core/index.ts";
+import type { RegisteredCommand } from "@/core/entry/entry.typedefs.ts";
+import { ARGS_PARSE_ERROR_EXIT_CODE } from "@/core/transport/cli/cli.constants.ts";
+import type { CommandResult, RunContext } from "@/core/transport/cli/cli.typedefs.ts";
 
 function pathMatches(path: readonly string[], argv: readonly string[]): boolean {
   if (argv.length < path.length) return false;

@@ -27,7 +27,7 @@ export {
   ARGS_PARSE_ERROR_EXIT_CODE,
   CLI_SUCCESS,
   DEFAULT_FAILURE_EXIT_CODE,
-} from "@/core/entry/entry.constants.ts";
+} from "@/core/transport/cli/cli.constants.ts";
 export {
   cliFailure,
   cliOutcome,
@@ -37,17 +37,20 @@ export {
   registerCommand,
   requirePositional,
   variadicValues,
-} from "@/core/entry/entry.utils.ts";
+} from "@/core/transport/cli/cli.utils.ts";
 export type {
   ArgsError,
   CliOutcome,
-  CommandDescriptor,
   CommandResult,
   EnvVarDescriptor,
+  RunContext,
+} from "@/core/transport/cli/cli.typedefs.ts";
+export type {
+  CommandDescriptor,
   HookDescriptor,
   RegisteredCommand,
-  RunContext,
 } from "@/core/entry/entry.typedefs.ts";
+export { matchCommand, runCli } from "@/core/transport/cli/cli.runner.ts";
 export { Command } from "@/core/entry/command.decorator.ts";
 export { Hook } from "@/core/entry/hook.decorator.ts";
 export { TokenizerParser } from "@/core/search/tokenizer/tokenizer.parser.ts";
