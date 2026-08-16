@@ -35,12 +35,23 @@ class TestProjection extends Projection {
   }
 }
 
+class InnerService extends Service {
+  answer(): number {
+    return 42;
+  }
+}
+
 class TestService extends Service {
   private readonly repository = this.makeRepository(TestRepository);
   private readonly projection = this.makeProjection(TestProjection);
+  private readonly inner = this.makeService(InnerService);
 
   kinds(): string {
     return `${this.repository.kind()}+${this.projection.kind()}`;
+  }
+
+  innerAnswer(): number {
+    return this.inner.answer();
   }
 }
 
@@ -61,5 +72,10 @@ describe("core/base DI", () => {
   test("Service composes Repository and Projection via make*", () => {
     const service = new TestService(CTX);
     expect(service.kinds()).toBe("repository+projection");
+  });
+
+  test("Service composes another Service via makeService", () => {
+    const service = new TestService(CTX);
+    expect(service.innerAnswer()).toBe(42);
   });
 });

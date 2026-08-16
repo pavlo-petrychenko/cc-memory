@@ -1,6 +1,7 @@
 import type {
   ProjectionConstructor,
   RepositoryConstructor,
+  ServiceConstructor,
 } from "./constructor.typedefs.ts";
 import type { AppContext } from "./context.typedefs.ts";
 import type { Projection } from "./projection.base.ts";
@@ -13,6 +14,10 @@ export abstract class Service {
   constructor(ctx: AppContext) {
     this.gateways = ctx.gateways;
     this.config = ctx.config;
+  }
+
+  protected makeService<T extends Service>(Ctor: ServiceConstructor<T>): T {
+    return new Ctor({ gateways: this.gateways, config: this.config });
   }
 
   protected makeRepository<T extends Repository>(Ctor: RepositoryConstructor<T>): T {
