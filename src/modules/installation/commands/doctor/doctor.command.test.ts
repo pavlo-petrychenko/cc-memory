@@ -19,7 +19,7 @@ function makeCommand() {
   const worklog = makeWorklogModule(container, index);
   const command = new DoctorCommand(
     container,
-    new DoctorService(container, note.reprojectNotes, worklog.reprojectWorklog),
+    new DoctorService(container, note.noteService, worklog.worklogService),
     new DoctorFormatter(),
   );
   return command;

@@ -15,8 +15,8 @@ import {
 import type { ArgsError, CommandResult, RunContext } from "@/core/index.ts";
 import { expandPath, relativeTo } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
-import { SearchHitFormatter, SearchNotesUseCase } from "@/modules/note/index.ts";
-import { SearchWorklogUseCase } from "@/modules/worklog/index.ts";
+import { NoteService, SearchHitFormatter } from "@/modules/note/index.ts";
+import { WorklogService } from "@/modules/worklog/index.ts";
 import { ResolveWorkspaceUseCase } from "@/modules/workspace/index.ts";
 
 export type SearchOptions = {
@@ -31,8 +31,8 @@ export type SearchOptions = {
 export class SearchCommand implements CommandContract<SearchOptions> {
   constructor(
     private readonly resolveWorkspace: ResolveWorkspaceUseCase,
-    private readonly searchNotes: SearchNotesUseCase,
-    private readonly searchWorklog: SearchWorklogUseCase,
+    private readonly noteService: NoteService,
+    private readonly worklogService: WorklogService,
     private readonly formatter: SearchHitFormatter,
   ) {}
 
@@ -66,8 +66,8 @@ export class SearchCommand implements CommandContract<SearchOptions> {
 
     const searchOptions = { limit: options.limit, linkBoost: context.config.linkBoost };
     const hits = options.worklog
-      ? await this.searchWorklog.run(workspace, options.query, searchOptions)
-      : await this.searchNotes.run(workspace, options.query, searchOptions);
+      ? await this.worklogService.search(workspace, options.query, searchOptions)
+      : await this.noteService.search(workspace, options.query, searchOptions);
 
     if (hits.length === 0) return { lines: [NO_HITS_MESSAGE], ...CLI_SUCCESS };
 

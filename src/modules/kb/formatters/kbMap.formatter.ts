@@ -1,4 +1,4 @@
-import type { KbMapFeature, KbMapInput } from "@/modules/note/services/kbMap.typedefs.ts";
+import type { KbMapFeature, KbMapInput } from "@/modules/kb/kbMap.typedefs.ts";
 
 function renderFeatureLine(feature: KbMapFeature): string {
   let line = `- **${feature.name}**`;

@@ -1,17 +1,31 @@
 import type { AbsPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import type { RawWorkspace, Workspace } from "@/core/index.ts";
+import { WorkspaceRepository } from "@/modules/workspace/registry/workspace.repository.ts";
 import { WorkspaceResolverService } from "@/modules/workspace/resolution/workspace.resolver.service.ts";
 import { WorkspaceValidatorService } from "@/modules/workspace/resolution/workspace.validator.service.ts";
 import { NO_WORKSPACE_FOR_CWD_MESSAGE } from "@/modules/workspace/workspace.constants.ts";
 
-/** Pure target resolution: map a registry + id/cwd to the workspace(s) a command
- * should act on. No I/O — the registry is loaded by the caller's repository. */
+/** Target resolution over a loaded registry: map a registry + id/cwd to the
+ * workspace(s) a command should act on. */
 export class TargetResolutionService {
   constructor(
+    private readonly repository: WorkspaceRepository,
     private readonly validatorService: WorkspaceValidatorService,
     private readonly resolverService: WorkspaceResolverService,
   ) {}
+
+  /** Loads the registry and resolves one-by-id or every registered workspace. */
+  async resolveTarget(
+    home: AbsPath,
+    id: string | null,
+  ): Promise<Result<readonly Workspace[], string>> {
+    const registryResult = await this.repository.load(this.repository.defaultPath(home));
+    if (!registryResult.ok) {
+      return { ok: false, error: `registry error: ${registryResult.error.message}` };
+    }
+    return this.resolveTargetWorkspaces(registryResult.value, home, id);
+  }
 
   noSuchWorkspaceMessage(id: string): string {
     return this.validatorService.noSuchWorkspaceMessage(id);

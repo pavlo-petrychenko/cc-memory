@@ -7,8 +7,8 @@ import { WorkspaceIndexStatus } from "@/modules/installation/doctor/doctor.typed
 import { DoctorService } from "@/modules/installation/doctor/doctor.useCase.ts";
 import { ManifestService } from "@/modules/installation/steps/manifest/manifest.repository.ts";
 import { SettingsService } from "@/modules/installation/steps/settings/settings.repository.ts";
-import type { ReprojectNotesUseCase } from "@/modules/note/index.ts";
-import type { ReprojectWorklogUseCase } from "@/modules/worklog/index.ts";
+import type { NoteService } from "@/modules/note/index.ts";
+import type { WorklogService } from "@/modules/worklog/index.ts";
 import { RegistryErrorKind } from "@/modules/workspace/index.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import {
@@ -18,13 +18,11 @@ import {
 } from "@/testing/fixtures/retrievalModules.fixture.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
 
-function makeDoctorUseCases(
-  container: Gateways,
-): [ReprojectNotesUseCase, ReprojectWorklogUseCase] {
+function makeDoctorUseCases(container: Gateways): [NoteService, WorklogService] {
   const index = makeSearchIndex(container);
   const note = makeNoteModule(container, index);
   const worklog = makeWorklogModule(container, index);
-  return [note.reprojectNotes, worklog.reprojectWorklog];
+  return [note.noteService, worklog.worklogService];
 }
 
 /**

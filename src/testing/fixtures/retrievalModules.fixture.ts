@@ -1,22 +1,19 @@
 import { FtsQueryBuilder, Ranker, TokenizerParser } from "@/core/index.ts";
 import { SearchIndexAdapter } from "@/gateways/index.ts";
 import type { Gateways, SearchIndex } from "@/gateways/index.ts";
+import { KbMapService } from "@/modules/kb/index.ts";
 import {
-  BuildKbMapUseCase,
-  KbMapService,
   ListNotesUseCase,
   NoteParser,
   NoteProjection,
   NoteQuery,
   NoteRepository,
-  ReprojectNotesUseCase,
-  SearchNotesUseCase,
+  NoteService,
 } from "@/modules/note/index.ts";
 import {
-  ReprojectWorklogUseCase,
-  SearchWorklogUseCase,
   WorklogProjection,
   WorklogQuery,
+  WorklogService,
   WorklogStoreService,
 } from "@/modules/worklog/index.ts";
 
@@ -33,10 +30,9 @@ export function makeNoteModule(container: Gateways, index: SearchIndex) {
   const query = new NoteQuery(index, new FtsQueryBuilder(tokenizer), new Ranker());
   return {
     projection,
-    reprojectNotes: new ReprojectNotesUseCase(repository, projection),
-    searchNotes: new SearchNotesUseCase(query),
+    noteService: new NoteService(repository, projection, query),
     listNotes: new ListNotesUseCase(repository),
-    buildKbMap: new BuildKbMapUseCase(new KbMapService(container.fs, new NoteParser())),
+    buildKbMap: new KbMapService(container.fs, new NoteParser()),
   };
 }
 
@@ -47,7 +43,6 @@ export function makeWorklogModule(container: Gateways, index: SearchIndex) {
   const query = new WorklogQuery(index, new FtsQueryBuilder(tokenizer), new Ranker());
   return {
     store,
-    reprojectWorklog: new ReprojectWorklogUseCase(store, projection),
-    searchWorklog: new SearchWorklogUseCase(query),
+    worklogService: new WorklogService(store, projection, query),
   };
 }

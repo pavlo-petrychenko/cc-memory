@@ -99,8 +99,8 @@ async function seedIndexedWorkspace(fixture: Fixture): Promise<void> {
     "---\ntype: note\n---\n# Fast Vehicle\nThe red car is very fast.\n",
   );
   await makeWorkspaceRepository(fixture.fs).save(REGISTRY_PATH, [PRIMARY]);
-  await note.reprojectNotes.run(expandWorkspace(PRIMARY, HOME), { incremental: false });
-  await worklog.reprojectWorklog.run(expandWorkspace(PRIMARY, HOME));
+  await note.noteService.fullReindex(expandWorkspace(PRIMARY, HOME));
+  await worklog.worklogService.reindex(expandWorkspace(PRIMARY, HOME));
 }
 
 async function runMemoryInject(
@@ -127,8 +127,8 @@ async function runMemoryInject(
         fixture.container,
         config,
         new MemoryInjectFormatter(),
-        note.searchNotes,
-        worklog.searchWorklog,
+        note.noteService,
+        worklog.worklogService,
         new TokenizerParser(),
       );
     })(),
@@ -198,11 +198,10 @@ describe("UserPromptSubmit (memory-inject) hook", () => {
       "## 08:00 — cleanup\n**Changes:** archived old build artifacts and logs.\n",
     );
     const index = makeSearchIndex(fixture.container);
-    await makeNoteModule(fixture.container, index).reprojectNotes.run(
+    await makeNoteModule(fixture.container, index).noteService.fullReindex(
       expandWorkspace(PRIMARY, HOME),
-      { incremental: false },
     );
-    await makeWorklogModule(fixture.container, index).reprojectWorklog.run(
+    await makeWorklogModule(fixture.container, index).worklogService.reindex(
       expandWorkspace(PRIMARY, HOME),
     );
 

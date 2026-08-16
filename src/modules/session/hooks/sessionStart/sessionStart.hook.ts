@@ -5,14 +5,15 @@ import { HookEvent, HookResultKind } from "@/core/transport/hook/hook.typedefs.t
 import type { HookResult } from "@/core/transport/hook/hook.typedefs.ts";
 import type { SessionStartPayload } from "@/core/transport/hook/payload.typedefs.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import type { KbMapFormatter } from "@/modules/note/index.ts";
-import { BuildKbMapUseCase, ReprojectNotesUseCase } from "@/modules/note/index.ts";
+import type { KbMapFormatter } from "@/modules/kb/index.ts";
+import { KbMapService } from "@/modules/kb/index.ts";
+import { NoteService } from "@/modules/note/index.ts";
 import { CONTEXT_SEPARATOR } from "@/modules/session/hooks/sessionStart/sessionStart.constants.ts";
 import type {
   WorkingMemoryFormatter,
   WorklogStoreService,
 } from "@/modules/worklog/index.ts";
-import { ReprojectWorklogUseCase } from "@/modules/worklog/index.ts";
+import { WorklogService } from "@/modules/worklog/index.ts";
 import { worktreeSlug } from "@/modules/workspace/index.ts";
 
 /** `SessionStart`: run a fast incremental reindex, then inject the KB map + this
@@ -22,9 +23,9 @@ import { worktreeSlug } from "@/modules/workspace/index.ts";
 export class SessionStartHook implements HookHandler<SessionStartPayload> {
   constructor(
     private readonly container: Gateways,
-    private readonly reprojectNotes: ReprojectNotesUseCase,
-    private readonly reprojectWorklog: ReprojectWorklogUseCase,
-    private readonly buildKbMap: BuildKbMapUseCase,
+    private readonly noteService: NoteService,
+    private readonly worklogService: WorklogService,
+    private readonly buildKbMap: KbMapService,
     private readonly kbMapFormatter: KbMapFormatter,
     private readonly worklogStoreService: WorklogStoreService,
     private readonly workingMemoryFormatter: WorkingMemoryFormatter,
@@ -34,8 +35,8 @@ export class SessionStartHook implements HookHandler<SessionStartPayload> {
     const { workspace, cwd } = payload;
 
     try {
-      await this.reprojectNotes.run(workspace, { incremental: true });
-      await this.reprojectWorklog.run(workspace);
+      await this.noteService.incrementalReindex(workspace);
+      await this.worklogService.reindex(workspace);
     } catch {
       // reindex failures are swallowed: a stale index beats a broken SessionStart.
     }
@@ -45,7 +46,7 @@ export class SessionStartHook implements HookHandler<SessionStartPayload> {
       cwd,
       workspace,
     );
-    const kbMapInput = await this.buildKbMap.run(workspace, this.container.env.home());
+    const kbMapInput = await this.buildKbMap.build(workspace, this.container.env.home());
     const kbMapText = kbMapInput === null ? "" : this.kbMapFormatter.format(kbMapInput);
 
     const state = await this.worklogStoreService.readState(workspace, slug);

@@ -33,6 +33,7 @@ export function makeWorkspaceContext(
     resolverService,
   );
   const targetResolutionService = new TargetResolutionService(
+    repository,
     validatorService,
     resolverService,
   );

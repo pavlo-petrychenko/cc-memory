@@ -7,7 +7,7 @@ import { PayloadParser } from "@/core/index.ts";
 import { HookResultSerializer } from "@/core/index.ts";
 import { HookRuntimeService } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import { KbMapFormatter } from "@/modules/note/index.ts";
+import { KbMapFormatter } from "@/modules/kb/index.ts";
 import { SessionStartHook } from "@/modules/session/hooks/sessionStart/sessionStart.hook.ts";
 import { WorkingMemoryFormatter } from "@/modules/worklog/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
@@ -82,8 +82,8 @@ async function runSessionStart(
       const worklog = makeWorklogModule(container, index);
       return new SessionStartHook(
         container,
-        note.reprojectNotes,
-        worklog.reprojectWorklog,
+        note.noteService,
+        worklog.worklogService,
         note.buildKbMap,
         new KbMapFormatter(),
         worklog.store,
