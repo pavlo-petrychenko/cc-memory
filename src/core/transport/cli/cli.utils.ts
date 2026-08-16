@@ -1,17 +1,19 @@
 import type { Result } from "@/core/core.typedefs.ts";
+import type {
+  Command,
+  CommandDescriptor,
+  RegisteredCommand,
+} from "@/core/entry/entry.typedefs.ts";
 import {
   ARGS_PARSE_ERROR_EXIT_CODE,
   DEFAULT_FAILURE_EXIT_CODE,
-} from "@/core/entry/entry.constants.ts";
+} from "@/core/transport/cli/cli.constants.ts";
 import type {
   ArgsError,
   CliOutcome,
-  Command,
-  CommandDescriptor,
   CommandResult,
-  RegisteredCommand,
   RunContext,
-} from "@/core/entry/entry.typedefs.ts";
+} from "@/core/transport/cli/cli.typedefs.ts";
 
 /** A failure message printed to stderr, exiting 1 by default. */
 export function cliFailure(
