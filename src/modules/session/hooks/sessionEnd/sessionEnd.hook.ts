@@ -1,14 +1,11 @@
 import { Hook } from "@/core/index.ts";
+import { WORKLOG_FLOOR_HOOK } from "@/core/transport/hook/hook.constants.ts";
+import type { HookHandler, HookInput } from "@/core/transport/hook/hook.typedefs.ts";
+import { HookResultKind } from "@/core/transport/hook/hook.typedefs.ts";
+import type { HookResult } from "@/core/transport/hook/hook.typedefs.ts";
+import type { WorklogFloorPayload } from "@/core/transport/hook/payload.typedefs.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { RECENT_COMMIT_COUNT } from "@/modules/session/hooks/sessionEnd/sessionEnd.constants.ts";
-import type { WorklogFloorPayload } from "@/modules/session/payload/payload.typedefs.ts";
-import type {
-  HookHandler,
-  HookInput,
-} from "@/modules/session/runtime/runtime.typedefs.ts";
-import { WORKLOG_FLOOR_HOOK } from "@/modules/session/session.constants.ts";
-import { HookResultKind } from "@/modules/session/session.typedefs.ts";
-import type { HookResult } from "@/modules/session/session.typedefs.ts";
 import type {
   WorklogFloorFormatter,
   WorklogStoreService,

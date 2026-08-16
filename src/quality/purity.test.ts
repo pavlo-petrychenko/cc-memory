@@ -30,6 +30,7 @@ const IMPURE_SUFFIXES = [
   ".query.ts",
   ".useCase.ts",
   ".runner.ts",
+  ".runtime.ts",
   ".wiring.ts",
   ".container.ts",
   ".fake.ts",

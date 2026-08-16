@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
+import { HOOK_DESCRIPTORS } from "@/core/transport/hook/hook.constants.ts";
 import { dispatchableHookNames } from "@/modules/session/index.ts";
 import { HookName } from "@/modules/session/index.ts";
-import { HOOK_DESCRIPTORS } from "@/modules/session/session.constants.ts";
 
 /**
  * The installer writes `<abs-bun> <dist> hook <name>` into

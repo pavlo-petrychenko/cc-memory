@@ -1,6 +1,13 @@
 import type { AbsPath, Config } from "@/core/index.ts";
 import { joinAbs, parentDir } from "@/core/index.ts";
 import { Hook } from "@/core/index.ts";
+import type { PayloadParser } from "@/core/index.ts";
+import { WRAP_GATE_HOOK } from "@/core/transport/hook/hook.constants.ts";
+import type { HookHandler, HookInput } from "@/core/transport/hook/hook.typedefs.ts";
+import { HookEvent, HookResultKind } from "@/core/transport/hook/hook.typedefs.ts";
+import type { HookResult } from "@/core/transport/hook/hook.typedefs.ts";
+import type { JsonRecord, JsonValue } from "@/core/transport/hook/payload.typedefs.ts";
+import type { WrapGatePayload } from "@/core/transport/hook/payload.typedefs.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import {
   DEFAULT_SESSION_ID,
@@ -14,19 +21,6 @@ import type {
   WrapStateEntry,
   WrapStateMap,
 } from "@/modules/session/hooks/wrapGate/wrapGate.typedefs.ts";
-import type { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
-import type {
-  JsonRecord,
-  JsonValue,
-} from "@/modules/session/payload/payload.typedefs.ts";
-import type { WrapGatePayload } from "@/modules/session/payload/payload.typedefs.ts";
-import type {
-  HookHandler,
-  HookInput,
-} from "@/modules/session/runtime/runtime.typedefs.ts";
-import { WRAP_GATE_HOOK } from "@/modules/session/session.constants.ts";
-import { HookEvent, HookResultKind } from "@/modules/session/session.typedefs.ts";
-import type { HookResult } from "@/modules/session/session.typedefs.ts";
 import type { WorklogStoreService } from "@/modules/worklog/index.ts";
 import { worktreeSlug } from "@/modules/workspace/index.ts";
 

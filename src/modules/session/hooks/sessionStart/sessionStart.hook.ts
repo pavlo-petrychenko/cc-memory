@@ -1,16 +1,13 @@
 import { Hook } from "@/core/index.ts";
+import { SESSION_START_HOOK } from "@/core/transport/hook/hook.constants.ts";
+import type { HookHandler, HookInput } from "@/core/transport/hook/hook.typedefs.ts";
+import { HookEvent, HookResultKind } from "@/core/transport/hook/hook.typedefs.ts";
+import type { HookResult } from "@/core/transport/hook/hook.typedefs.ts";
+import type { SessionStartPayload } from "@/core/transport/hook/payload.typedefs.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import type { KbMapFormatter } from "@/modules/note/index.ts";
 import { BuildKbMapUseCase, ReprojectNotesUseCase } from "@/modules/note/index.ts";
 import { CONTEXT_SEPARATOR } from "@/modules/session/hooks/sessionStart/sessionStart.constants.ts";
-import type { SessionStartPayload } from "@/modules/session/payload/payload.typedefs.ts";
-import type {
-  HookHandler,
-  HookInput,
-} from "@/modules/session/runtime/runtime.typedefs.ts";
-import { SESSION_START_HOOK } from "@/modules/session/session.constants.ts";
-import { HookEvent, HookResultKind } from "@/modules/session/session.typedefs.ts";
-import type { HookResult } from "@/modules/session/session.typedefs.ts";
 import type {
   WorkingMemoryFormatter,
   WorklogStoreService,

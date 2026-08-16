@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
+import { HookName } from "@/core/transport/hook/hook.typedefs.ts";
 import { HookDispatchCommand } from "@/modules/session/commands/hookDispatch/hookDispatch.command.ts";
-import { HookName } from "@/modules/session/session.typedefs.ts";
 import { makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
 import { makeProcFake } from "@/testing/fakes/procFake.fake.ts";
 import { makeRunContext } from "@/testing/fixtures/runContext.fixture.ts";

@@ -2,6 +2,7 @@ import type { AbsPath } from "@/core/index.ts";
 import { absPath, joinAbs } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import { registryPath } from "@/core/index.ts";
+import { HOOK_DESCRIPTORS } from "@/core/transport/hook/hook.constants.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import {
   DIST_RELATIVE_PATH,
@@ -36,7 +37,6 @@ import {
   type JsonObject,
   type JsonValue,
 } from "@/modules/installation/utils/jsonFile/jsonFile.typedefs.ts";
-import { HOOK_DESCRIPTORS } from "@/modules/session/session.constants.ts";
 
 /** `install`/`uninstall`/`--dry-run` orchestration: sequences CLI shim, skills,
  * hooks, and registry seed, in that order. */

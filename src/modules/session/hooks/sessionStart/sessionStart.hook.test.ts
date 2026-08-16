@@ -3,12 +3,12 @@ import { describe, expect, test } from "bun:test";
 import type { AbsPath } from "@/core/index.ts";
 import { expandPath } from "@/core/index.ts";
 import type { RawWorkspace } from "@/core/index.ts";
+import { PayloadParser } from "@/core/index.ts";
+import { HookResultSerializer } from "@/core/index.ts";
+import { HookRuntimeService } from "@/core/index.ts";
 import type { Gateways } from "@/gateways/index.ts";
 import { KbMapFormatter } from "@/modules/note/index.ts";
 import { SessionStartHook } from "@/modules/session/hooks/sessionStart/sessionStart.hook.ts";
-import { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
-import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
-import { HookRuntimeService } from "@/modules/session/session.runner.ts";
 import { WorkingMemoryFormatter } from "@/modules/worklog/index.ts";
 import { makeFsMemoryFake } from "@/testing/fakes/fsMemory.fake.ts";
 import { type IoFake, makeIoFake } from "@/testing/fakes/ioFake.fake.ts";
@@ -18,7 +18,10 @@ import {
   makeWorklogModule,
 } from "@/testing/fixtures/retrievalModules.fixture.ts";
 import { makeTestGateways } from "@/testing/fixtures/testGateways.fixture.ts";
-import { makeWorkspaceRepository } from "@/testing/fixtures/workspaceContext.fixture.ts";
+import {
+  makeHookWorkspaceResolver,
+  makeWorkspaceRepository,
+} from "@/testing/fixtures/workspaceContext.fixture.ts";
 
 /**
  * `SessionStart`: happy path (exact stdout string), cwd outside any
@@ -68,6 +71,7 @@ async function runSessionStart(
     container,
     payloadParser,
     new HookResultSerializer(),
+    makeHookWorkspaceResolver(container),
   );
   await hookRuntimeService.run(
     "session-start",

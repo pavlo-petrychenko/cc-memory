@@ -11,11 +11,11 @@
  */
 import { beforeAll, describe, expect, test } from "bun:test";
 
-import { HookName } from "@/modules/session/session.typedefs.ts";
+import { HookName } from "@/core/transport/hook/hook.typedefs.ts";
 import { ensureDistBuilt } from "@/testing/utils/buildDist.utils.ts";
 import { createTempDir } from "@/testing/utils/tempDir.utils.ts";
 
-const REPO_ROOT = new URL("../../../", import.meta.url).pathname;
+const REPO_ROOT = new URL("../../../../", import.meta.url).pathname;
 const DIST_ENTRYPOINT = `${REPO_ROOT}dist/memory.js`;
 
 describe("fail-open: garbage stdin never crashes a hook", () => {

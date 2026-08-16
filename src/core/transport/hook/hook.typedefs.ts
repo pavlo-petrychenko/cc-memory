@@ -1,3 +1,6 @@
+import type { AbsPath } from "@/core/core.typedefs.ts";
+import type { Workspace } from "@/core/domain.typedefs.ts";
+
 /** Values are the exact `hookEventName` strings the protocol expects — copy
  * verbatim, never re-derive. */
 export enum HookEvent {
@@ -36,3 +39,27 @@ export enum HookName {
   WorklogFloor = "worklog-floor",
   CompactCheckpoint = "compact-checkpoint",
 }
+
+/** Distinct from `workspace.kb`: a handler that shells out to `git` needs the
+ * ACTUAL working directory, not the vault. */
+export type HookContext = {
+  readonly workspace: Workspace;
+  readonly cwd: AbsPath;
+};
+
+/** `Omit<TPayload, "cwd">` drops the raw, possibly-absent `cwd` string — it's
+ * already been consumed to resolve `HookContext.cwd`, and no handler reads the
+ * raw form. */
+export type HookInput<TPayload> = Omit<TPayload, "cwd"> & HookContext;
+
+/** `HookRuntimeService` calls `handle` exactly once a workspace has resolved for
+ * the payload's cwd — no resolved workspace means `handle` is never called. */
+export interface HookHandler<TPayload> {
+  handle(payload: HookInput<TPayload>): Promise<HookResult>;
+}
+
+/** Resolves exactly one workspace for a cwd, or null when none matches. The
+ * runtime depends on this port rather than on the workspace module — the
+ * composition root supplies the implementation, keeping core free of feature
+ * modules. */
+export type WorkspaceResolver = (cwd: AbsPath) => Promise<Workspace | null>;

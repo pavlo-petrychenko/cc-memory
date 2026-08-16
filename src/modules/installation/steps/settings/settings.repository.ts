@@ -1,6 +1,7 @@
 import type { AbsPath } from "@/core/index.ts";
 import { absPath, expandPath } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
+import { HOOK_DESCRIPTORS } from "@/core/transport/hook/hook.constants.ts";
 import type { FileSystem } from "@/gateways/index.ts";
 import { PRE_CCMEMORY_BACKUP_SUFFIX } from "@/modules/installation/steps/manifest/manifest.constants.ts";
 import { LEGACY_HOOK_SUBSTRINGS } from "@/modules/installation/steps/settings/settings.constants.ts";
@@ -17,7 +18,6 @@ import type {
   JsonObject,
   JsonValue,
 } from "@/modules/installation/utils/jsonFile/jsonFile.typedefs.ts";
-import { HOOK_DESCRIPTORS } from "@/modules/session/session.constants.ts";
 
 /** `~/.claude/settings.json` surgery: purge our own hook groups, re-register the 5
  * hooks at their current location, and preserve every foreign entry byte-for-byte. */

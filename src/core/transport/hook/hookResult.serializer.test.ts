@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
-import { HookEvent, HookResultKind } from "@/modules/session/session.typedefs.ts";
+import { HookEvent, HookResultKind } from "@/core/transport/hook/hook.typedefs.ts";
+import { HookResultSerializer } from "@/core/transport/hook/hookResult.serializer.ts";
 
 describe("HookResultSerializer.serialize", () => {
   const serializer = new HookResultSerializer();

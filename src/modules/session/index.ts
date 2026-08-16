@@ -11,12 +11,12 @@ export { SessionStartHook } from "@/modules/session/hooks/sessionStart/sessionSt
 export { SessionEndHook } from "@/modules/session/hooks/sessionEnd/sessionEnd.hook.ts";
 export { WrapGateFormatter } from "@/modules/session/hooks/wrapGate/wrapGate.formatter.ts";
 export { WrapGateHook } from "@/modules/session/hooks/wrapGate/wrapGate.hook.ts";
-export { PayloadParser } from "@/modules/session/payload/payload.parser.ts";
-export { HookResultSerializer } from "@/modules/session/runtime/hookResult.serializer.ts";
-export { HookRuntimeService } from "@/modules/session/session.runner.ts";
+export { PayloadParser } from "@/core/index.ts";
+export { HookResultSerializer } from "@/core/index.ts";
+export { HookRuntimeService } from "@/core/index.ts";
 export type {
   HookContext,
   HookHandler,
   HookInput,
-} from "@/modules/session/runtime/runtime.typedefs.ts";
-export { HookEvent, HookName } from "@/modules/session/session.typedefs.ts";
+} from "@/core/transport/hook/hook.typedefs.ts";
+export { HookEvent, HookName } from "@/core/transport/hook/hook.typedefs.ts";

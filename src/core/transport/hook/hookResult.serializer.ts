@@ -1,4 +1,5 @@
-import { type HookResult, HookResultKind } from "@/modules/session/session.typedefs.ts";
+import { HookResultKind } from "@/core/transport/hook/hook.typedefs.ts";
+import type { HookResult } from "@/core/transport/hook/hook.typedefs.ts";
 
 /** Renders a `HookResult` to the hook stdin/stdout JSON protocol. */
 export class HookResultSerializer {
