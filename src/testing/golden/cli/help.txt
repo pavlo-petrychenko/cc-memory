@@ -12,6 +12,7 @@ Usage:
   memory doctor [--cwd PATH] [--prompt TEXT]  — self-test hooks and diagnose the install
   memory install [--dry-run]  — wire into Claude Code
   memory uninstall  — wire out of Claude Code
+  memory serve [--port N] [--host HOST] [--open]  — start the local KB viewer (React + API)
   memory -h | --help  — show this help text
   memory -V | --version  — show the installed version
 

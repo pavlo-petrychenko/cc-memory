@@ -1,3 +1,4 @@
+import { ServeCommand } from "@/app/index.ts";
 import {
   DoctorCommand,
   InstallCommand,
@@ -36,6 +37,7 @@ export const commands = [
   DoctorCommand,
   InstallCommand,
   UninstallCommand,
+  ServeCommand,
   HelpCommand,
   VersionCommand,
 ];

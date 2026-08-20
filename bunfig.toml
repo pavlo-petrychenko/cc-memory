@@ -7,9 +7,10 @@
 # clock returns a time, or that a test fake does what the fake obviously does — which
 # costs maintenance and buys nothing.
 #
-# `gateways/`, `src/testing/` and `src/quality/` are excluded because they are exactly
+# `gateways/`, `src/testing/`, `src/quality/` and `src/app/` are excluded because they are exactly
 # that plumbing: thin adapters over Bun/node APIs, the fixtures and fakes the real
-# tests are built from, and the structural tests that assert on the repo's own shape.
+# tests are built from, the structural tests that assert on the repo's own shape,
+# and the HTTP transport that is exercised through `memory serve` rather than unit tests.
 #
 # The four adapters that encode a real decision (FTS5 availability, git's
 # non-zero exit, a missing binary, log rotation) are tested on purpose, not to satisfy
@@ -30,4 +31,4 @@
 coverageThreshold = { lines = 0.6, functions = 0 }
 coverageSkipTestFiles = true
 coverageReporter = ["text"]
-coveragePathIgnorePatterns = ["src/testing/**", "src/quality/**", "src/gateways/**"]
+coveragePathIgnorePatterns = ["src/testing/**", "src/quality/**", "src/gateways/**", "src/app/**"]

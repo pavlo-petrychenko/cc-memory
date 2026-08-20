@@ -43,5 +43,10 @@ export default defineConfig({
     "no-else-return": "error",
     "max-depth": ["error", 4],
   },
-  ignorePatterns: ["dist/**", "node_modules/**", "tools/oxlint/anti-slop/**"],
+  ignorePatterns: [
+    "dist/**",
+    "node_modules/**",
+    "tools/oxlint/anti-slop/**",
+    "app/web/**",
+  ],
 });
