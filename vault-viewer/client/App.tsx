@@ -48,12 +48,12 @@ function NoteView({ note, workspace, onWikilink }: { note: NoteDetail; workspace
       const clean = target.split("|")[0]!.trim();
       return `\n\n> **Embed: ${clean}**  \n> *embedded note preview — open [[${clean}]] to view* \n\n`;
     });
-    // wikilinks [[X|Alias]] -> [Alias](wikilink:X)
+    // wikilinks [[X|Alias]] -> [Alias](wikilink:encoded)
     t = t.replace(/\[\[([^\]]+)\]\]/g, (_m, inside)=>{
       const [target, alias] = inside.split("|").map((s:string)=>s.trim());
       const label = alias || target;
-      // typed relations already separate, but keep all as wikilink
-      return `[${label}](wikilink:${target})`;
+      const enc = encodeURIComponent(target);
+      return `[${label}](wikilink:${enc})`;
     });
     // inline tags #tag -> keep as text but style later
     // images: ![alt](path) -> rewrite src to api
@@ -74,18 +74,19 @@ function NoteView({ note, workspace, onWikilink }: { note: NoteDetail; workspace
 
   return <div className="body">
     <ReactMarkdown
+      urlTransform={(url)=> url.startsWith("wikilink:") ? url : url}
       remarkPlugins={[remarkGfm]}
       rehypePlugins={[rehypeHighlight]}
       components={{
         a: ({ href, children }: any)=>{
           if(href?.startsWith("wikilink:")){
-            const target = href.slice("wikilink:".length);
-            const isUnresolved = !note.rels?.some(r=> r.target===target) && target.length>0 ? false : false; // we could check global, but keep simple
+            const raw = href.slice("wikilink:".length);
+            const target = decodeURIComponent(raw);
             return <a href="#" onClick={(e)=>{
               e.preventDefault();
               const newTab = (e as any).metaKey || (e as any).ctrlKey;
               onWikilink(target, newTab);
-            }} style={isUnresolved?{borderBottomStyle:"dashed",opacity:.7}:undefined}>{children}</a>;
+            }}>{children}</a>;
           }
           return <a href={href} target="_blank" rel="noreferrer">{children}</a>;
         },
@@ -101,7 +102,8 @@ function NoteView({ note, workspace, onWikilink }: { note: NoteDetail; workspace
           return <span className="img"><span className="img-top">◧ {alt || rel} — vault</span><span className="img-body"><img src={url} alt={alt} onError={(e)=>{(e.target as HTMLImageElement).style.display="none"; (e.target as HTMLImageElement).parentElement!.textContent="image not found: "+rel;}} /></span></span>;
         },
         code: ({ inline, className, children }: any)=>{
-          const lang = (className || "").replace("language-","").trim();
+          const raw = String(className || "");
+          const lang = raw.includes("language-mermaid") ? "mermaid" : raw.replace("language-","").replace("hljs","").trim();
           const code = String(children).trim();
           if(!inline && lang==="mermaid"){
             return <pre className="mermaid" style={{background:"var(--card)",border:"1px solid var(--line)",borderRadius:8,padding:12}}>{code}</pre>;
@@ -110,8 +112,7 @@ function NoteView({ note, workspace, onWikilink }: { note: NoteDetail; workspace
           return <code>{children}</code>;
         },
         blockquote: ({ children }: any)=>{
-          // detect callout: first strong starts with [!NOTE]
-          return <blockquote>{children}</blockquote>;
+          return <blockquote className="callout-bq">{children}</blockquote>;
         }
       }}
     >{transformed}</ReactMarkdown>
