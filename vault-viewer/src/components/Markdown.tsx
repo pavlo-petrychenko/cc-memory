@@ -7,7 +7,6 @@ function preprocess(text: string, workspace: string, currentPath: string): strin
   // Convert wikilinks [[Target|Alias]] and [[Target]] to markdown links with custom scheme wikilink://
   let out = text.replace(/!\[\[([^\]]+)\]\]/g, (_m, targetRaw) => {
     const t = String(targetRaw).split("|")[0]!.trim();
-    // embeds will be handled as custom component via image-like? For now convert to blockquote embed
     return `\n> [!EMBED] ${t}\n`;
   });
   out = out.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, (_m, target, alias) => {
@@ -23,7 +22,7 @@ function preprocess(text: string, workspace: string, currentPath: string): strin
   return out;
 }
 
-export function Markdown({ body, workspace, currentPath, onWikilink }: { body: string; workspace: string; currentPath: string; onWikilink?: (target:string, newTab:boolean)=>void }) {
+export function Markdown({ body, workspace, currentPath, onWikilink, knownTargets }: { body: string; workspace: string; currentPath: string; onWikilink?: (target:string, newTab:boolean)=>void; knownTargets?: Set<string> }) {
   const processed = useMemo(()=> preprocess(body, workspace, currentPath), [body, workspace, currentPath]);
 
   return (
@@ -34,6 +33,7 @@ export function Markdown({ body, workspace, currentPath, onWikilink }: { body: s
           const href = String(props.href ?? "");
           if (href.startsWith("wikilink://")) {
             const target = decodeURIComponent(href.replace("wikilink://",""));
+            const isKnown = !knownTargets || knownTargets.has(target.toLowerCase()) || knownTargets.has(`${target.toLowerCase()}.md`);
             return (
               <a
                 href="#"
@@ -41,7 +41,13 @@ export function Markdown({ body, workspace, currentPath, onWikilink }: { body: s
                   e.preventDefault();
                   onWikilink?.(target, (e as React.MouseEvent).metaKey || (e as React.MouseEvent).ctrlKey);
                 }}
-                style={{ color:"var(--accent)", borderBottom:"1px dashed var(--accent)", textDecoration:"none" }}
+                style={{
+                  color: isKnown ? "var(--accent)" : "var(--red)",
+                  borderBottom: isKnown ? "1px solid var(--accent)" : "1px dashed var(--red)",
+                  textDecoration:"none",
+                  opacity: isKnown ? 1 : 0.85,
+                }}
+                title={isKnown ? target : `${target} — unresolved`}
               >
                 {props.children}
               </a>
@@ -63,11 +69,17 @@ export function Markdown({ body, workspace, currentPath, onWikilink }: { body: s
           return <img {...props} src={src} style={{ maxWidth:"100%", border:"1px solid var(--border)", borderRadius:6, boxShadow:"0 2px 8px rgba(0,0,0,.2)" }} />;
         },
         blockquote(props) {
-          // detect callouts > [!NOTE]
-          const text = String((props.children as any)?.[0]?.props?.children ?? "");
-          // Simple: if first child text starts with [!NOTE] we style
-          // ReactMarkdown splits, so check raw
-          return <blockquote {...props} style={{ borderLeft:"2px solid var(--accent)", background:"var(--panel)", margin:"12px 0", padding:"10px 12px", borderRadius:4 }}>{props.children}</blockquote>;
+          const raw = String((props.children as any)?.[0]?.props?.children ?? "").trim();
+          if (raw.startsWith("[!EMBED]")) {
+            const target = raw.replace("[!EMBED]","").trim();
+            return <div style={{ border:"1px solid var(--border)", borderLeft:"3px solid var(--accent2)", background:"var(--panel2)", margin:"12px 0", padding:"10px 12px", borderRadius:6, display:"flex", gap:8, alignItems:"center" }}><span style={{ fontSize:11, background:"var(--accent)", color:"#fff", padding:"2px 6px", borderRadius:4 }}>EMBED</span><span style={{ fontSize:12, color:"var(--muted)" }}>{target}</span><button onClick={()=> onWikilink?.(target, false)} style={{ marginLeft:"auto", background:"var(--panel)", border:"1px solid var(--border)", borderRadius:4, padding:"3px 8px", fontSize:11, cursor:"pointer" }}>Open</button></div>;
+          }
+          // callout detection: [!NOTE] / [!WARNING]
+          if (raw.startsWith("[!")) {
+            const isWarn = raw.includes("WARNING");
+            return <blockquote {...props} style={{ borderLeft:`3px solid ${isWarn ? "var(--amber)" : "var(--accent)"}`, background:"var(--panel)", margin:"12px 0", padding:"10px 12px", borderRadius:4 }}>{props.children}</blockquote>;
+          }
+          return <blockquote {...props} style={{ borderLeft:"2px solid var(--border)", background:"var(--panel)", margin:"12px 0", padding:"10px 12px", borderRadius:4 }}>{props.children}</blockquote>;
         },
         code(props) {
           const { children, className } = props as any;

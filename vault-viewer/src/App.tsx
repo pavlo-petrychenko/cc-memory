@@ -28,11 +28,17 @@ export default function App() {
   const [note, setNote] = useState<Note | null>(null);
   const [mode, setMode] = useState<"note"|"graph">("note");
   const [q, setQ] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
+  const [featureFilter, setFeatureFilter] = useState("");
   const [hits, setHits] = useState<any[]>([]);
   const [showPalette, setShowPalette] = useState(false);
   const [graph, setGraph] = useState<any>(null);
   const [fullGraph, setFullGraph] = useState(false);
   const [depth, setDepth] = useState(1);
+  const [graphTypeFilter, setGraphTypeFilter] = useState("");
+  const [graphTagFilter, setGraphTagFilter] = useState("");
+  const [graphFeatureFilter, setGraphFeatureFilter] = useState("");
   const [worklogFocus, setWorklogFocus] = useState<string>("_root");
   const [worklogData, setWorklogData] = useState<WorklogSlug|null>(null);
   const [toast, setToast] = useState<string>("");
@@ -67,15 +73,20 @@ export default function App() {
     if (activeWs) localStorage.setItem(`tabs:${activeWs}`, JSON.stringify(tabs));
   }, [tabs, activeWs]);
 
-  // search debounce
+  // search debounce (supports filters and empty query with filters)
   useEffect(()=>{
-    if (!q.trim()) { setHits([]); return; }
+    const hasFilters = !!(typeFilter || tagFilter || featureFilter);
+    if (!q.trim() && !hasFilters) { setHits([]); return; }
     const t = setTimeout(async()=>{
-      const r = await search(activeWs, q).catch(()=>({hits:[]}));
+      const f: Record<string,string> = {};
+      if (typeFilter) f.type = typeFilter;
+      if (tagFilter) f.tag = tagFilter;
+      if (featureFilter) f.feature = featureFilter;
+      const r = await search(activeWs, q, f).catch(()=>({hits:[]}));
       setHits(r.hits ?? []);
-    }, 180);
+    }, 150);
     return ()=> clearTimeout(t);
-  }, [q, activeWs]);
+  }, [q, activeWs, typeFilter, tagFilter, featureFilter]);
 
   // load note when activePath changes
   useEffect(()=>{
@@ -167,6 +178,16 @@ export default function App() {
     openPath(fallback, newTab);
   };
 
+  const knownTargets = useMemo(()=>{
+    const s = new Set<string>();
+    for (const n of notesMeta) {
+      s.add(n.relPath.toLowerCase());
+      s.add(n.relPath.replace(/\.md$/,"").toLowerCase());
+      s.add(n.title.toLowerCase());
+    }
+    return s;
+  }, [notesMeta]);
+
   // determine if activePath is worklog timeline
   const isWorklogTimeline = useMemo(()=>{
     if (!activePath) return false;
@@ -219,6 +240,13 @@ export default function App() {
               <span style={{ color:"var(--muted)" }}>⌕</span>
               <input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="Search notes…  type:spec tag:auth" style={{ flex:1, background:"transparent", border:0, outline:"none", color:"var(--text)", fontSize:13, fontFamily:"Fragment Mono" }} />
               <button onClick={()=>setShowPalette(false)} style={{ background:"var(--panel2)", border:"1px solid var(--border)", borderRadius:6, padding:"4px 8px", fontSize:11, color:"var(--muted)", cursor:"pointer" }}>ESC</button>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 14px", borderBottom:"1px solid var(--border)", background:"var(--panel2)", flexWrap:"wrap" }}>
+              <span style={{ fontSize:10, letterSpacing:".08em", textTransform:"uppercase", color:"var(--muted)" }}>Filters</span>
+              <input value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} placeholder="type:spec" style={{ background:"var(--bg)", border:"1px solid var(--border)", borderRadius:4, padding:"3px 6px", fontSize:11, color:"var(--text)", fontFamily:"Fragment Mono", width:90 }} />
+              <input value={tagFilter} onChange={e=>setTagFilter(e.target.value)} placeholder="tag:auth" style={{ background:"var(--bg)", border:"1px solid var(--border)", borderRadius:4, padding:"3px 6px", fontSize:11, color:"var(--text)", fontFamily:"Fragment Mono", width:90 }} />
+              <input value={featureFilter} onChange={e=>setFeatureFilter(e.target.value)} placeholder="feature:auth" style={{ background:"var(--bg)", border:"1px solid var(--border)", borderRadius:4, padding:"3px 6px", fontSize:11, color:"var(--text)", fontFamily:"Fragment Mono", width:110 }} />
+              {(typeFilter||tagFilter||featureFilter) && <button onClick={()=>{setTypeFilter("");setTagFilter("");setFeatureFilter("");}} style={{ marginLeft:"auto", background:"transparent", border:0, color:"var(--muted)", fontSize:11, cursor:"pointer", textDecoration:"underline" }}>Clear</button>}
             </div>
             <div style={{ maxHeight:360, overflow:"auto", padding:8 }}>
               <div style={{ fontSize:11, color:"var(--muted)", padding:"6px 8px", letterSpacing:".06em", textTransform:"uppercase" }}>Results · {hits.length}</div>
@@ -276,7 +304,7 @@ export default function App() {
 
           {/* Content */}
           {mode==="graph" ? (
-            <GraphView graph={graph} focus={activePath||null} onSelect={openPath} full={fullGraph} setFull={setFullGraph} depth={depth} setDepth={setDepth} />
+            <GraphView graph={graph} focus={activePath||null} onSelect={openPath} full={fullGraph} setFull={setFullGraph} depth={depth} setDepth={setDepth} typeFilter={graphTypeFilter} tagFilter={graphTagFilter} featureFilter={graphFeatureFilter} setTypeFilter={setGraphTypeFilter} setTagFilter={setGraphTagFilter} setFeatureFilter={setGraphFeatureFilter} />
           ) : isWorklogTimeline && worklogData ? (
             <div style={{ flex:1, overflow:"auto", padding:"16px 0", display:"flex", justifyContent:"center" }}>
               <div style={{ width:720, maxWidth:"92%" }}>
@@ -292,7 +320,7 @@ export default function App() {
                   <div style={{ background:"var(--panel)", border:"1px solid var(--border)", borderLeft:"3px solid var(--amber)", borderRadius:8, padding:"14px 16px", marginBottom:14, boxShadow:"0 2px 12px rgba(0,0,0,.15)" }}>
                     <div style={{ fontSize:11, letterSpacing:".08em", textTransform:"uppercase", color:"var(--amber)", marginBottom:8, display:"flex", alignItems:"center", gap:6 }}><span style={{ width:6, height:6, background:"var(--amber)", borderRadius:2, display:"inline-block" }} /> STATE.md — pinned</div>
                     <div style={{ fontSize:12, lineHeight:1.6, color:"var(--text)" }}>
-                      <Markdown body={worklogData.stateBody ?? ""} workspace={activeWs} currentPath={`${worklogFocus}/STATE.md`} onWikilink={handleWikilink} />
+                      <Markdown body={worklogData.stateBody ?? ""} workspace={activeWs} currentPath={`${worklogFocus}/STATE.md`} onWikilink={handleWikilink} knownTargets={knownTargets} />
                     </div>
                   </div>
                 )}
@@ -304,7 +332,7 @@ export default function App() {
                       <span style={{ fontSize:11, color:"var(--muted)" }}>{e.relPath}</span>
                     </div>
                     <div style={{ fontSize:12, lineHeight:1.6, color:"var(--text)" }}>
-                      <Markdown body={e.body} workspace={activeWs} currentPath={e.relPath} onWikilink={handleWikilink} />
+                      <Markdown body={e.body} workspace={activeWs} currentPath={e.relPath} onWikilink={handleWikilink} knownTargets={knownTargets} />
                     </div>
                   </div>
                 ))}
@@ -346,7 +374,7 @@ export default function App() {
                     {note.body.split("\n").slice(0,40).map((_,i)=> <div key={i}>{i+1}</div>)}
                   </div>
                   <div style={{ flex:1, padding:"14px 18px", fontSize:12.5, lineHeight:1.7, color:"var(--text)", overflow:"auto" }}>
-                    <Markdown body={note.body} workspace={activeWs} currentPath={note.relPath} onWikilink={handleWikilink} />
+                    <Markdown body={note.body} workspace={activeWs} currentPath={note.relPath} onWikilink={handleWikilink} knownTargets={knownTargets} />
                   </div>
                 </div>
               </div>
@@ -360,8 +388,36 @@ export default function App() {
           )}
         </div>
 
-        {/* Right dock */}
+        {/* Right dock — contextual: Note / Graph / Worklog */}
         <div style={{ background:"var(--panel)", borderLeft:"1px solid var(--border)", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        {mode==="graph" ? (
+          <>
+          <div style={{ height:32, display:"flex", alignItems:"center", padding:"0 12px", borderBottom:"1px solid var(--border)", fontSize:11, letterSpacing:".08em", textTransform:"uppercase", color:"var(--muted)" }}>Filters</div>
+          <div style={{ flex:1, overflow:"auto", padding:12, display:"flex", flexDirection:"column", gap:12 }}>
+            <div style={{ fontSize:10, letterSpacing:".1em", textTransform:"uppercase", color:"var(--muted)" }}>Graph filters</div>
+            <div style={{ fontSize:11, color:"var(--muted)", lineHeight:1.6 }}>Use top bar: Depth 1/2, Full vault, and type/tag/feature filters. Click node → tab.</div>
+            <div style={{ background:"var(--bg)", border:"1px solid var(--border)", borderRadius:6, padding:10, fontSize:11, color:"var(--muted)" }}>
+              Focus: {activePath || "—"}<br/>{graph ? `${(graph.nodes??[]).length} nodes · ${(graph.edges??[]).length} edges` : "loading"}
+            </div>
+          </div>
+          </>
+        ) : isWorklogTimeline && worklogData ? (
+          <>
+          <div style={{ height:32, display:"flex", alignItems:"center", padding:"0 12px", borderBottom:"1px solid var(--border)", fontSize:11, letterSpacing:".08em", textTransform:"uppercase", color:"var(--muted)" }}>Worklog · {worklogFocus}</div>
+          <div style={{ flex:1, overflow:"auto", padding:12, display:"flex", flexDirection:"column", gap:10 }}>
+            <div style={{ fontSize:10, letterSpacing:".1em", textTransform:"uppercase", color:"var(--muted)" }}>Date jump</div>
+            {worklogData.entries.map(e=>(
+              <div key={e.relPath} onClick={()=>{ const el=document.getElementById(e.date); el?.scrollIntoView({behavior:"smooth"}); }} style={{ padding:"7px 9px", background:"var(--bg)", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ width:6, height:6, background:"var(--amber)", borderRadius:2, display:"inline-block" }} />
+                <span style={{ fontSize:12, color:"var(--text)", fontFamily:"Fragment Mono" }}>{e.date}</span>
+                <span style={{ marginLeft:"auto", fontSize:10, color:"var(--muted)" }}>{e.relPath.split("/").pop()}</span>
+              </div>
+            ))}
+            {worklogData.stateExists && <div style={{ fontSize:11, color:"var(--muted)", background:"var(--bg)", border:"1px dashed var(--border)", borderRadius:6, padding:8, textAlign:"center" }}>▲ STATE.md pinned top</div>}
+          </div>
+          </>
+        ) : (
+          <>
           <div style={{ height:32, display:"flex", borderBottom:"1px solid var(--border)", overflowX:"auto" }}>
             {[
               {k:"backlinks", l:`Backlinks · ${note?.backlinks.length ?? 0}`},
@@ -413,6 +469,8 @@ export default function App() {
               </div>
             </div>
           </div>
+          </>
+        )}
         </div>
       </div>
 

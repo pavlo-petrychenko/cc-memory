@@ -1,14 +1,26 @@
 import React, { useMemo } from "react";
 import type { Graph } from "../types";
 
-export function GraphView({ graph, focus, onSelect, full, setFull, depth, setDepth }: {
+export function GraphView({ graph, focus, onSelect, full, setFull, depth, setDepth, typeFilter, tagFilter, featureFilter, setTypeFilter, setTagFilter, setFeatureFilter }: {
   graph: Graph | null;
   focus: string | null;
   onSelect:(id:string)=>void;
   full:boolean; setFull:(v:boolean)=>void;
   depth:number; setDepth:(n:number)=>void;
+  typeFilter?: string; tagFilter?: string; featureFilter?: string;
+  setTypeFilter?: (v:string)=>void; setTagFilter?: (v:string)=>void; setFeatureFilter?: (v:string)=>void;
 }) {
-  const { nodes, edges } = graph ?? { nodes:[], edges:[] };
+  const raw = graph ?? { nodes:[], edges:[] };
+  const nodesFiltered = raw.nodes.filter((n:any)=>{
+    if (typeFilter && n.type !== typeFilter) return false;
+    if (tagFilter && !(n.tags ?? "").split(/\s+/).includes(tagFilter)) return false;
+    if (featureFilter && (n.id.split("/")[0] ?? "") !== featureFilter) return false;
+    return true;
+  });
+  const visibleIds = new Set(nodesFiltered.map((n:any)=>n.id));
+  const edgesFiltered = raw.edges.filter((e:any)=> visibleIds.has(e.source) && visibleIds.has(e.target));
+  const nodes = nodesFiltered;
+  const edges = edgesFiltered;
 
   // simple circular layout
   const layout = useMemo(()=>{
@@ -27,7 +39,7 @@ export function GraphView({ graph, focus, onSelect, full, setFull, depth, setDep
 
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0 }}>
-      <div style={{ height:36, display:"flex", alignItems:"center", gap:10, padding:"0 12px", borderBottom:"1px solid var(--border)", background:"var(--panel)" }}>
+      <div style={{ minHeight:36, display:"flex", alignItems:"center", gap:8, padding:"6px 12px", borderBottom:"1px solid var(--border)", background:"var(--panel)", flexWrap:"wrap" }}>
         <span style={{ fontSize:11, color:"var(--muted)", letterSpacing:".08em", textTransform:"uppercase" }}>Graph</span>
         <span style={{ fontSize:11, background:"var(--panel2)", border:"1px solid var(--border)", padding:"2px 6px", borderRadius:4 }}>{nodes.length} nodes · {edges.length} edges</span>
         <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:"var(--muted)" }}>
@@ -37,6 +49,9 @@ export function GraphView({ graph, focus, onSelect, full, setFull, depth, setDep
             <option value={2}>2 hops</option>
           </select>
         </label>
+        {setTypeFilter && <input value={typeFilter ?? ""} onChange={e=>setTypeFilter(e.target.value)} placeholder="type:spec" style={{ background:"var(--bg)", border:"1px solid var(--border)", borderRadius:4, padding:"3px 6px", fontSize:11, width:90, color:"var(--text)" }} />}
+        {setTagFilter && <input value={tagFilter ?? ""} onChange={e=>setTagFilter(e.target.value)} placeholder="tag:auth" style={{ background:"var(--bg)", border:"1px solid var(--border)", borderRadius:4, padding:"3px 6px", fontSize:11, width:90, color:"var(--text)" }} />}
+        {setFeatureFilter && <input value={featureFilter ?? ""} onChange={e=>setFeatureFilter(e.target.value)} placeholder="feature:auth" style={{ background:"var(--bg)", border:"1px solid var(--border)", borderRadius:4, padding:"3px 6px", fontSize:11, width:100, color:"var(--text)" }} />}
         <button
           onClick={()=>setFull(!full)}
           style={{ marginLeft:"auto", background: full? "var(--accent)" : "var(--panel2)", color: full? "#fff":"var(--text)", border:"1px solid var(--border)", borderRadius:6, padding:"5px 10px", fontSize:11, cursor:"pointer" }}
