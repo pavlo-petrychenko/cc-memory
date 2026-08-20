@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Archive Cards — cc-memory</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Berkeley+Mono&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--drawer:#F4F0E8;--card:#FFFCF5;--ink:#1A1A18;--muted:#8A8784;--line:#E8E0D0;--brass:#B89B5C;--brass2:#9A834E;--teal:#2A6B5E}
+body{font-family:Inter,system-ui,sans-serif;background:var(--drawer);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+.label{position:absolute;top:10px;right:10px;background:var(--ink);color:var(--brass);font:10px 'JetBrains Mono',monospace;letter-spacing:.12em;padding:6px 10px;border-radius:6px;z-index:20;border:1px solid var(--brass)}
+.top{height:48px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 16px;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+.vault{font:11px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;background:var(--ink);color:var(--card);padding:6px 10px;border-radius:4px;display:flex;align-items:center;gap:8px}
+.vault i{width:18px;height:14px;background:var(--brass);border-radius:2px;display:grid;place-items:center;color:var(--ink);font-size:9px}
+.search{flex:1;max-width:420px;background:var(--drawer);border:1px solid var(--line);border-radius:20px;padding:7px 14px;font:13px Inter,sans-serif;color:var(--muted);display:flex;align-items:center;gap:8px}
+.shell{flex:1;display:grid;grid-template-columns:300px 1fr 300px;gap:16px;padding:16px;align-items:start}
+.left{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.06);overflow:hidden}
+.left-head{height:44px;background:linear-gradient(to bottom,var(--card),var(--drawer));border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 14px;gap:8px;font:11px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.brass{width:32px;height:14px;background:linear-gradient(to bottom,var(--brass),var(--brass2));border-radius:2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 2px rgba(0,0,0,.15)}
+.drawer{padding:14px}
+.folder{margin-bottom:14px}
+.folder-head{font:11px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.folder-head b{color:var(--ink)}
+.folder-head .line{flex:1;height:1px;background:var(--line)}
+.card{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:8px 10px;font-size:13px;display:flex;align-items:center;gap:8px;margin-bottom:6px;box-shadow:0 2px 6px rgba(0,0,0,.05);position:relative}
+.card.active{border-color:var(--brass);background:var(--ink);color:var(--card);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.card.active .muted{color:rgba(255,255,255,.6)}
+.card .num{font:10px 'JetBrains Mono',monospace;color:var(--brass);background:rgba(184,155,92,.15);padding:2px 5px;border-radius:3px}
+.card.indent{margin-left:18px}
+.card .tag{margin-left:auto;font:10px 'JetBrains Mono',monospace;background:var(--drawer);padding:2px 6px;border-radius:10px;color:var(--muted);border:1px solid var(--line)}
+.main{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.08);overflow:hidden}
+.tabs{height:42px;background:var(--drawer);border-bottom:1px solid var(--line);display:flex;align-items:flex-end;padding:0 10px;gap:6px}
+.tab{height:32px;padding:0 14px;background:var(--card);border:1px solid var(--line);border-bottom:0;border-radius:8px 8px 0 0;font-size:13px;display:flex;align-items:center;gap:8px;color:var(--muted);position:relative;top:1px}
+.tab.active{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 -2px 8px rgba(0,0,0,.04)}
+.tab.active:after{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--brass);border-radius:8px 8px 0 0}
+.paper{padding:24px 28px}
+.breadcrumb{font:11px 'JetBrains Mono',monospace;letter-spacing:.06em;color:var(--muted);margin-bottom:12px}
+h1{font-family:'Newsreader',serif;font-size:28px;font-weight:600;letter-spacing:-.02em;margin-bottom:10px}
+.meta{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.meta span{font:10px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;background:var(--drawer);border:1px solid var(--line);padding:4px 8px;border-radius:4px;color:var(--muted)}
+.meta span.imp{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.callout{border:1px solid var(--line);border-left:4px solid var(--brass);background:var(--drawer);border-radius:6px;padding:14px 16px;margin:16px 0;display:flex;gap:12px}
+.callout .pin{width:24px;height:24px;background:var(--brass);border-radius:50%;display:grid;place-items:center;color:var(--card);font-size:12px;flex-shrink:0;box-shadow:0 2px 6px rgba(184,155,92,.4)}
+.callout strong{font-size:13px}
+.callout p{font-size:13px;color:var(--muted);line-height:1.5;margin-top:3px}
+.body{font-size:14px;line-height:1.7;color:#2A2A28}
+.body a{color:var(--teal);text-decoration:none;border-bottom:1px solid var(--teal)}
+.code{margin:14px 0;background:var(--ink);color:#F4F0E8;border-radius:8px;padding:14px 16px;font:12.5px 'JetBrains Mono',monospace;line-height:1.6}
+.img{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:14px 0;background:var(--drawer)}
+.img-top{height:30px;background:var(--drawer);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 12px;font:11px 'JetBrains Mono',monospace;color:var(--muted)}
+.img-body{height:126px;display:grid;place-items:center;background:repeating-linear-gradient(90deg,var(--card),var(--card) 14px,var(--line) 14px,var(--line) 15px);color:var(--muted);font:12px 'JetBrains Mono',monospace}
+.right{display:flex;flex-direction:column;gap:14px}
+.block{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.05);padding:14px}
+.block h3{font:11px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.block h3 i{width:16px;height:3px;background:var(--brass);border-radius:2px}
+.link{font-size:13px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--drawer);margin-bottom:8px}
+.tag{display:inline-block;font:11px 'JetBrains Mono',monospace;background:var(--ink);color:var(--card);padding:3px 8px;border-radius:10px;margin-right:6px}
+.status{height:24px;background:var(--ink);color:var(--card);display:flex;align-items:center;gap:12px;padding:0 12px;font:11px 'JetBrains Mono',monospace}
+.status b{color:var(--brass)}
+</style>
+</head>
+<body>
+<div class="label">ARCHIVE CARDS</div>
+<div class="top"><div class="vault"><i>◈</i> mate</div><div class="search">⌕ Search 342 cards…</div><div style="margin-left:auto;font:11px 'JetBrains Mono',monospace;color:var(--muted)">index fresh 2m • ◐ Light</div></div>
+<div class="shell">
+  <aside class="left">
+    <div class="left-head"><div class="brass"></div> Card Catalog</div>
+    <div class="drawer">
+      <div class="folder"><div class="folder-head"><b>KB</b> <span class="line"></span> 342</div>
+        <div class="card"><span style="font-size:12px">▾</span> auth <span class="tag">3</span></div>
+        <div class="card indent"><span class="num">01</span> auth.md <span style="font-size:11px;color:var(--muted)">index</span></div>
+        <div class="card indent active"><span class="num" style="background:var(--brass);color:var(--ink)">02</span> jwt.md</div>
+        <div class="card indent"><span class="num">03</span> oauth.md</div>
+        <div class="card"><span>▸</span> search</div>
+      </div>
+      <div class="folder"><div class="folder-head"><b>Worklogs</b> <span class="line"></span></div>
+        <div class="card"><span>▾</span> _root</div>
+        <div class="card indent" style="border-style:dashed">◆ STATE.md</div>
+        <div class="card indent">2026-08-20.md</div>
+      </div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="tabs"><div class="tab active">jwt.md</div><div class="tab">STATE.md</div><div class="tab" style="opacity:.6">Graph</div></div>
+    <div class="paper">
+      <div class="breadcrumb">KB / auth / <b style="color:var(--ink)">JWT Handling</b> — Card 02</div>
+      <h1>JWT Handling</h1>
+      <div class="meta"><span>type spec</span><span class="imp">imp 8</span><span>#auth #jwt #api</span><span>epic auth-system</span></div>
+      <div class="callout"><div class="pin">!</div><div><strong>Note — Token rotation</strong><p>Refresh tokens rotate on every use. Keep old token 10s for races. See <a style="color:var(--teal);text-decoration:none;border-bottom:1px solid var(--teal)">OAuth flow</a>.</p></div></div>
+      <div class="body">
+        <p>Validates <code style="background:var(--drawer);border:1px solid var(--line);padding:1px 4px;border-radius:3px">Authorization: Bearer &lt;token&gt;</code> and checks <code>exp</code> ±5s skew. On expiry trigger OAuth flow.</p>
+        <div class="code"><span style="color:#B89B5C">const</span> payload = verify(token, SECRET);<br><span style="color:#B89B5C">if</span> (payload.exp &lt; now) <span style="color:#E6A03F">throw</span> "expired";</div>
+        <div class="img"><div class="img-top">◧ diagram.png — vault/auth/assets</div><div class="img-body">vault image card — shadowed</div></div>
+      </div>
+    </div>
+  </main>
+  <aside class="right">
+    <div class="block"><h3><i></i> Outgoing · 7</h3><div class="link"><b>OAuth Flow</b><small>depends_on • auth/oauth.md</small></div><div class="link"><b>Auth Index</b><small>links_to</small></div></div>
+    <div class="block"><h3><i></i> Backlinks · 12</h3><div class="link"><b>API Middleware</b><small>mentions JWT Handling</small></div></div>
+    <div class="block"><h3><i></i> Tags</h3><span class="tag">#auth</span><span class="tag">#jwt</span></div>
+  </aside>
+</div>
+<div class="status"><span>342 cards</span><span>index fresh 2m</span><span style="margin-left:auto">vault: ~/Documents/Mate Vault — <b>Archive</b></span></div>
+</body>
+</html>

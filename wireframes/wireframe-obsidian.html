@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Obsidian Native — cc-memory</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#1E1E1E;--sidebar:#161616;--hover:#262626;--card:#262626;--border:#2E2E2E;--line:#333;--text:#DCDDDE;--muted:#888;--faint:#6E6E6E;--accent:#7C3AED;--accent2:#8B5CF6}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+.label{position:absolute;top:10px;right:10px;background:var(--accent);color:#fff;font:10px 'JetBrains Mono',monospace;letter-spacing:.12em;padding:6px 10px;border-radius:6px;z-index:20}
+.ribbon{width:44px;background:#0E0E0E;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:14px}
+.ribbon i{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;font-size:15px;color:var(--muted)}
+.ribbon i.active{background:var(--hover);color:var(--text)}
+.shell{flex:1;display:flex;min-height:0}
+.left{width:280px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;overflow:hidden}
+.left-inner{flex:1;display:flex;flex-direction:column}
+.left-head{height:40px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)}
+.left-head b{color:var(--text);font-weight:600}
+.vault{margin-left:auto;background:var(--card);border:1px solid var(--border);padding:4px 8px;border-radius:6px;font:11px 'JetBrains Mono',monospace;color:var(--text);display:flex;align-items:center;gap:6px}
+.tree{padding:8px 6px;flex:1;overflow:auto}
+.group-title{font:11px Inter,sans-serif;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:10px 8px 6px;display:flex;align-items:center;gap:6px}
+.row{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:4px;font-size:13px;color:var(--text)}
+.row:hover{background:var(--hover)}
+.row.active{background:var(--hover);border-left:2px solid var(--accent);color:var(--text)}
+.row .ch{font-size:10px;color:var(--faint);width:10px;text-align:center}
+.row .ic{width:16px;height:16px;display:grid;place-items:center;font-size:12px;opacity:.7}
+.row.indent{margin-left:14px}
+.row .cnt{margin-left:auto;font:11px 'JetBrains Mono',monospace;color:var(--muted)}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+.tabs{height:37px;background:var(--sidebar);border-bottom:1px solid var(--border);display:flex;align-items:stretch;padding:0 4px;gap:2px}
+.tab{display:flex;align-items:center;gap:8px;padding:0 12px;font-size:13px;color:var(--muted);border-top:2px solid transparent;background:transparent;min-width:0}
+.tab.active{background:var(--bg);color:var(--text);border-top-color:var(--accent)}
+.tab .ti{opacity:.6}
+.content{padding:20px 0;overflow:auto;display:flex;justify-content:center}
+.paper{width:700px;max-width:90%}
+.breadcrumb{font:12px 'Inter',monospace;color:var(--muted);margin-bottom:14px}
+.breadcrumb b{color:var(--muted);font-weight:400}
+.props{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:16px}
+.props-head{font:11px Inter,sans-serif;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.props-head:after{content:"";flex:1;height:1px;background:var(--border)}
+.props-grid{display:grid;grid-template-columns:90px 1fr;gap:6px 12px;font-size:13px}
+.props-grid dt{color:var(--muted);display:flex;align-items:center;gap:6px}
+.props-grid dt i{width:14px;height:14px;background:var(--border);border-radius:3px;display:grid;place-items:center;font-size:9px}
+.props-grid dd{color:var(--text)}
+.pill{display:inline-block;background:#333;color:var(--text);padding:1px 6px;border-radius:10px;font-size:12px;margin-right:4px}
+h1{font-size:26px;letter-spacing:-.02em;margin-bottom:16px}
+.callout{border:1px solid #2A4A6A;border-radius:6px;overflow:hidden;margin:16px 0;background:#1F2A3A}
+.callout-head{background:#23405E;color:#7EB8FF;padding:8px 12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.callout-body{padding:10px 12px;font-size:13.5px;line-height:1.6;color:var(--text)}
+.callout-body a{color:var(--accent2);text-decoration:none}
+.body{font-size:14.5px;line-height:1.65;color:var(--text)}
+.body a{color:var(--accent2);text-decoration:none}
+.body a:hover{text-decoration:underline}
+.code{background:#0E0E0E;border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin:14px 0;font:13px 'JetBrains Mono',monospace;line-height:1.6;color:#D4D4D4}
+.img{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--card)}
+.img-body{height:130px;display:grid;place-items:center;background:#1A1A1A;color:var(--muted);font:12px 'JetBrains Mono',monospace}
+.right{width:300px;background:var(--sidebar);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.right-tabs{height:36px;display:flex;border-bottom:1px solid var(--border)}
+.right-tabs span{flex:1;display:grid;place-items:center;font:12px Inter,sans-serif;font-weight:500;color:var(--muted);border-bottom:2px solid transparent}
+.right-tabs span.active{color:var(--text);border-bottom-color:var(--accent)}
+.right-body{padding:14px;flex:1;overflow:auto;display:flex;flex-direction:column;gap:18px}
+.block h3{font:11px Inter,sans-serif;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.link{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:9px 10px}
+.link b{font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px}
+.link b i{width:14px;height:14px;background:var(--accent);border-radius:3px;display:grid;place-items:center;font-size:9px;color:#fff}
+.link small{font:12px Inter,sans-serif;color:var(--muted);display:block;margin-top:3px;line-height:1.4}
+.link small em{color:var(--accent2);font-style:normal;background:rgba(124,58,237,.15);padding:0 3px;border-radius:3px}
+.outline{font-size:13px;line-height:1.7;color:var(--muted)}
+.outline b{color:var(--text)}
+.status{height:22px;background:var(--accent);color:#fff;display:flex;align-items:center;gap:12px;padding:0 10px;font:11px Inter,sans-serif}
+.status span{opacity:.9}
+</style>
+</head>
+<body>
+<div class="label">OBSIDIAN NATIVE</div>
+<div class="shell">
+  <div class="ribbon">
+    <i class="active">◧</i><i>⌕</i><i>◈</i><i>⬡</i><i style="margin-top:auto">⚙</i>
+  </div>
+  <aside class="left">
+    <div class="left-inner">
+      <div class="left-head"><b>Files</b> <span style="margin-left:auto;font:11px Inter">⋯</span><span class="vault">◈ mate ▾</span></div>
+      <div class="tree">
+        <div class="group-title">KB <span style="margin-left:auto;color:var(--faint);font-weight:400;text-transform:none">342 files</span></div>
+        <div class="row"><span class="ch">▾</span><span class="ic">📁</span> auth</div>
+        <div class="row indent" style="font-weight:600"><span class="ch"> </span><span class="ic">★</span> auth.md</div>
+        <div class="row indent active"><span class="ch"> </span><span class="ic">≡</span> jwt.md <span class="cnt">●</span></div>
+        <div class="row indent"><span class="ch"> </span><span class="ic">≡</span> oauth.md</div>
+        <div class="row"><span class="ch">▸</span><span class="ic">📁</span> search</div>
+        <div class="row"><span class="ch"> </span><span class="ic">≡</span> loose-note.md</div>
+        <div class="group-title" style="margin-top:12px">WORKLOGS</div>
+        <div class="row"><span class="ch">▾</span><span class="ic">📁</span> _root</div>
+        <div class="row indent"><span class="ch"> </span><span class="ic">◆</span> STATE.md</div>
+        <div class="row indent"><span class="ch"> </span><span class="ic">≡</span> 2026-08-20.md</div>
+        <div class="row"><span class="ch">▸</span><span class="ic">📁</span> feat-x</div>
+      </div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="tabs">
+      <div class="tab active"><span class="ti">≡</span> JWT Handling <span style="margin-left:8px;opacity:.5">×</span></div>
+      <div class="tab"><span class="ti">◆</span> STATE.md <span style="opacity:.5">×</span></div>
+      <div class="tab" style="opacity:.4"><span class="ti">⬡</span> Graph</div>
+      <div class="tab" style="margin-left:auto;opacity:.5">+</div>
+    </div>
+    <div class="content">
+      <div class="paper">
+        <div class="breadcrumb">Mate Vault / auth / <span style="color:var(--text)">JWT Handling</span></div>
+        <div class="props">
+          <div class="props-head">Properties</div>
+          <dl class="props-grid">
+            <dt><i>T</i> type</dt><dd>spec</dd>
+            <dt><i>!</i> importance</dt><dd>8</dd>
+            <dt><i>#</i> tags</dt><dd><span class="pill">#auth</span><span class="pill">#jwt</span><span class="pill">#api</span></dd>
+            <dt><i>◆</i> epic</dt><dd>auth-system</dd>
+          </dl>
+        </div>
+        <h1>JWT Handling</h1>
+        <div class="callout"><div class="callout-head">ℹ Note — Token rotation</div><div class="callout-body">Refresh tokens rotate on every use. Keep the old token for 10s to handle races. See <a>OAuth flow</a> for sequence.</div></div>
+        <div class="body">
+          <p>Validates <code style="background:var(--card);padding:1px 5px;border-radius:4px;border:1px solid var(--border)">Authorization: Bearer &lt;token&gt;</code> and checks <code style="background:var(--card);padding:1px 5px;border-radius:4px;border:1px solid var(--border)">exp</code> against clock skew ±5s. On expiry, trigger <a>OAuth flow</a> silently.</p>
+          <div class="code"><span style="color:#569CD6">const</span> payload = <span style="color:#DCDCAA">verify</span>(token, SECRET);<br><span style="color:#569CD6">if</span> (payload.exp &lt; now) <span style="color:#569CD6">throw</span> <span style="color:#CE9178">"expired"</span>;</div>
+          <div class="img"><div style="height:26px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 10px;gap:6px;font:11px 'JetBrains Mono',monospace;color:var(--muted)"><span>● ● ●</span> diagram.png</div><div class="img-body">vault image — 1280×640 — rendered</div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <aside class="right">
+    <div class="right-tabs"><span class="active">Backlinks</span><span>Outgoing</span><span>Outline</span></div>
+    <div class="right-body">
+      <div class="block"><h3>Linked mentions · 12</h3>
+        <div class="link"><b><i>≡</i> API Middleware</b><small>...mentions <em>JWT Handling</em> in auth flow validation...</small></div>
+        <div class="link" style="margin-top:8px"><b><i>≡</i> Search Ranker</b><small>uses <em>JWT Handling</em> for auth check before query</small></div>
+      </div>
+      <div class="block"><h3>Outgoing links · 7</h3>
+        <div class="link"><b style="color:var(--accent2)">↗ OAuth Flow</b><small>depends_on • auth/oauth.md</small></div>
+      </div>
+      <div class="block"><h3>Outline</h3><div class="outline"><b>JWT Handling</b><br>› Validation<br>› Rotation<br>› Errors</div></div>
+    </div>
+  </aside>
+</div>
+<div class="status"><span>342 notes</span><span>12 backlinks</span><span style="margin-left:auto">Mate Vault • index fresh 2m • Reindex</span></div>
+</body>
+</html>
