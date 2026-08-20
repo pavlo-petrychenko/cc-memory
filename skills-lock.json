@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "skills": {
+    "ai-ui-patterns": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/ai-ui-patterns/SKILL.md",
+      "computedHash": "cad85e899332ee65fb243edd53aca63bc44c806bedadb8e355ace172ee9db37a"
+    },
+    "client-side-rendering": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/client-side-rendering/SKILL.md",
+      "computedHash": "a98c0080999cb0530c38ccb7a0d90c21661aa01ccaced08ec7a9353da22010eb"
+    },
+    "compound-pattern": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/compound-pattern/SKILL.md",
+      "computedHash": "2246d61a920ea810956aab34a70818367c210bf1219346730172ae6bb8534a13"
+    },
+    "hoc-pattern": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/hoc-pattern/SKILL.md",
+      "computedHash": "8dfb5a41553ec20c6a66e4e86f7199dfdbcd8f512d861ef04d78fd045df4b555"
+    },
+    "hooks-pattern": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/hooks-pattern/SKILL.md",
+      "computedHash": "4e5c7539e93ce14810f0b9ee8d0b5945245c787c8b7430f47a36ae393890301d"
+    },
+    "react-2026": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/react-2026/SKILL.md",
+      "computedHash": "c069a9325b67a82ebcf3bb5271cfbd858894387ceec69558ecb1ab0a656341d1"
+    },
+    "react-composition-2026": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/react-composition-2026/SKILL.md",
+      "computedHash": "e89ba214136fd59f8cd627f6488782c5f13b13bc6b6f9d1a5f7643d8a1874404"
+    },
+    "react-data-fetching": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/react-data-fetching/SKILL.md",
+      "computedHash": "15b5b98496249315ea3bf0f1785a3df7c9a53ac573c1cfb02c6c70769a415d67"
+    },
+    "react-render-optimization": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/react-render-optimization/SKILL.md",
+      "computedHash": "7e7ffc7be56531d9571a5c489a4a3d7a406ce63f9ad739d2e7f8b8de875a6cd8"
+    },
+    "react-selective-hydration": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/react-selective-hydration/SKILL.md",
+      "computedHash": "c7a1c6234e451cb2632413d478263c3ebcf80eac0b0eb45702b051d18211f456"
+    },
+    "react-server-components": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/react-server-components/SKILL.md",
+      "computedHash": "07f2b7eb04e1f9e62ec65af9ade59ae1d9ee2b147c6374474d564d3752976de5"
+    },
+    "render-props-pattern": {
+      "source": "PatternsDev/skills",
+      "sourceType": "github",
+      "skillPath": "react/render-props-pattern/SKILL.md",
+      "computedHash": "752afa0d8feca7416aa7ea098e0f888764e95f2e57361ea6b802faf1d5d2e261"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "1608ea77fbb6fc30d13a97d12cfa8ebf31358d40f0dd97beed24829d6b3f45dd"
+    },
+    "node-js-backend-expert": {
+      "source": "mcpmarket/node-js-backend-expert",
+      "sourceType": "github",
+      "skillPath": "aura-frog/skills/nodejs-expert/SKILL.md",
+      "computedHash": "18f0393445dceebff182f64c5940a0d027ec7513a96fdb7be9f72414c36af3d0"
+    }
+  }
+}
