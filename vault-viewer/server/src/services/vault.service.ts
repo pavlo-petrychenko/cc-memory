@@ -89,7 +89,11 @@ export function getNoteDetail(ws: ResolvedWorkspace, relPath: string) {
   // sandbox check
   if (!abs.startsWith(resolve(ws.kbAbs))) return null;
   if (!existsSync(abs)) return null;
-  const text = readFileSync(abs, "utf-8");
+  let stat: ReturnType<typeof statSync>;
+  try { stat = statSync(abs); } catch { return null; }
+  if (stat.isDirectory()) return null;
+  let text: string;
+  try { text = readFileSync(abs, "utf-8"); } catch { return null; }
   const fallback = basename(relPath, ".md");
   const parsed = parseNote(text, fallback);
   return { ...parsed, rawText: text, absPath: abs, relPath };
@@ -123,5 +127,8 @@ export function getWorklogFile(ws: ResolvedWorkspace, rel: string): string | nul
   const abs = resolve(join(ws.worklogsAbs, rel));
   if (!abs.startsWith(resolve(ws.worklogsAbs))) return null;
   if (!existsSync(abs)) return null;
-  return readFileSync(abs, "utf-8");
+  let stat: ReturnType<typeof statSync>;
+  try { stat = statSync(abs); } catch { return null; }
+  if (stat.isDirectory()) return null;
+  try { return readFileSync(abs, "utf-8"); } catch { return null; }
 }

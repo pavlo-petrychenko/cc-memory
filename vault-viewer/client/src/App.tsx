@@ -96,6 +96,7 @@ export default function App(){
   const [worklog, setWorklog] = useState<{ stateBody:string|null; entries:{date:string; body:string; path:string}[] } | null>(null);
   const [typeFilter, setTypeFilter] = useState("");
   const [tagFilter, setTagFilter] = useState("");
+  const [rightTab, setRightTab] = useState<"backlinks"|"outgoing"|"outline">("backlinks");
 
   const tabsCtl = useLocalTabs(wsId || "seed");
   const activePath = tabsCtl.active ?? currentPath;
@@ -263,7 +264,7 @@ export default function App(){
             return nxt ? nxt.id : id;
           })}>◈ {workspaces.find((w)=> w.id===wsId)?.id ?? "seed"} ▾</div>
         </div>
-        <input className="search-input" placeholder="Search 342 notes… ⌘K" value={q} onChange={(e)=> setQ(e.target.value)} onFocus={()=> setShowPalette(true)} />
+        <input className="search-input" placeholder="Search 342 notes… ⌘K" value={q} onChange={(e)=> setQ(e.target.value)} />
         {q && hits.length>0 && <div style={{ padding:"0 8px", display:"flex", flexDirection:"column", gap:6, maxHeight:200, overflow:"auto" }}>
           {hits.slice(0,6).map((h)=><div key={h.path} className="link" onClick={()=> openPath(h.path, h.title)}><b>{h.title}</b><small>{h.path} • {h.type} — {h.snippet.slice(0,80)}</small></div>)}
         </div>}
@@ -390,25 +391,30 @@ export default function App(){
 
       <div className="right">
         <div className="right-tabs">
-          <button className="active">Backlinks</button>
-          <button>Outgoing</button>
-          <button>Outline</button>
+          <button className={rightTab==="backlinks"?"active":""} onClick={()=> setRightTab("backlinks")}>Backlinks</button>
+          <button className={rightTab==="outgoing"?"active":""} onClick={()=> setRightTab("outgoing")}>Outgoing</button>
+          <button className={rightTab==="outline"?"active":""} onClick={()=> setRightTab("outline")}>Outline</button>
         </div>
         <div className="right-body">
-          {note ? <>
-            <div className="block">
+          {mode==="graph" ? <>
+            <div className="block"><h3>Graph filters</h3><div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>{["","spec","note","index"].map((t)=><button key={t} onClick={()=> setTypeFilter(t)} style={{ font:"11px JetBrains Mono,monospace", padding:"4px 8px", borderRadius:10, border:"1px solid var(--border)", background:typeFilter===t?"var(--accent)":"var(--card)", color:typeFilter===t?"#fff":"var(--muted)", cursor:"pointer" }}>{t||"all"}</button>)}</div><div style={{ marginTop:8 }}><button onClick={()=> setTagFilter(tagFilter?"":"auth")} style={{ font:"11px JetBrains Mono,monospace", padding:"4px 8px", borderRadius:10, border:"1px solid var(--border)", background:tagFilter?"var(--accent)":"var(--card)", color:tagFilter?"#fff":"var(--muted)", cursor:"pointer" }}>#auth</button></div></div>
+            <div className="block"><h3>Depth</h3><div style={{ display:"flex", gap:6 }}><button onClick={()=> setGraphDepth(1)} style={{ padding:"6px 12px", borderRadius:6, border:"1px solid var(--border)", background:graphDepth===1?"var(--accent)":"var(--card)", color:graphDepth===1?"#fff":"var(--muted)", cursor:"pointer" }}>1-hop</button><button onClick={()=> setGraphDepth(2)} style={{ padding:"6px 12px", borderRadius:6, border:"1px solid var(--border)", background:graphDepth===2?"var(--accent)":"var(--card)", color:graphDepth===2?"#fff":"var(--muted)", cursor:"pointer" }}>2-hop</button></div></div>
+            {graph && <div className="block"><h3>Stats</h3><div style={{ font:"12px JetBrains Mono,monospace", color:"var(--muted)" }}>{graph.nodes.length} nodes · {graph.edges.length} edges</div></div>}
+          </> : note ? <>
+            {rightTab==="backlinks" && <div className="block">
               <h3>Linked mentions · {note.backlinks.length}</h3>
               {note.backlinks.length ? note.backlinks.slice(0,4).map((b)=><div key={b.path} className="link" onClick={()=> openPath(b.path, b.title)}><b>≡ {b.title}</b><small>…<em>{note.title}</em>… {b.snippet.slice(0,90)}</small></div>) : <div style={{ color:"var(--muted)", fontSize:13 }}>No backlinks</div>}
-            </div>
-            <div className="block">
+            </div>}
+            {rightTab==="outgoing" && <div className="block">
               <h3>Outgoing links · {note.outgoing.length}</h3>
               {note.outgoing.slice(0,6).map((o,i)=><div key={i} className="link" onClick={()=> openPath(o.target)}><b style={{ color:"var(--accent2)" }}>↗ {o.target}</b><small>{o.relationType} • {(o.target.includes("/")?o.target: o.target+".md")}</small></div>)}
               {!note.outgoing.length && <div style={{ color:"var(--muted)", fontSize:13 }}>No outgoing links</div>}
-            </div>
-            <div className="block">
+            </div>}
+            {rightTab==="outline" && <div className="block">
               <h3>Outline</h3>
               <Outline body={note.body} />
-            </div>
+            </div>}
+            {rightTab==="backlinks" && <div className="block"><h3>Outline</h3><Outline body={note.body} /></div>}
           </> : worklog ? <>
             <div className="block"><h3>Date jump</h3>{worklog.entries.map((e)=><div key={e.path} className="link" onClick={()=> document.getElementById(e.date)?.scrollIntoView({ behavior:"smooth" })}><b>{e.date}</b><small>{e.path}</small></div>)}</div>
           </> : <div style={{ color:"var(--muted)", fontSize:13 }}>Select a note</div>}
