@@ -12,6 +12,7 @@ const CLIENT_DIST = CLIENT_DIST_CANDIDATES.find((p) => existsSync(p)) ?? resolve
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.get("/health", (_req, res) => res.json({ ok: true }));
 app.use("/api", api);
 
 // serve client dist if built
@@ -19,8 +20,6 @@ if (existsSync(CLIENT_DIST)) {
   app.use(express.static(CLIENT_DIST));
   app.get("*", (_req, res) => res.sendFile(join(CLIENT_DIST, "index.html")));
 }
-
-app.get("/health", (_req, res) => res.json({ ok: true }));
 
 app.listen(PORT, () => {
   console.log(`[vault-viewer api] listening on http://localhost:${PORT}`);
