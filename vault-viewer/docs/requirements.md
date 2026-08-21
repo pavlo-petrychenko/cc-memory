@@ -43,7 +43,7 @@
 ## 1. What must work — functional requirements
 
 ### FR-1 Workspaces
-- `GET /api/workspaces` reads `~/.agent/memory/registry.toml` (or `CCMEM_REGISTRY`) or falls back to `seed-vault`. Returns `{workspaces:[{id, kb, tildifiedKb, worklogs, exclude, noteCount, indexFresh, source}], source}`. `tildify` preserves `~` on write.
+- `GET /api/workspaces` reads `~/.claude/memory/registry.toml` (or `CCMEM_REGISTRY`) or falls back to `seed-vault`. Returns `{workspaces:[{id, kb, tildifiedKb, worklogs, exclude, noteCount, indexFresh, source}], source}`. `tildify` preserves `~` on write.
 - UI: `<select>` in top bar shows `◈ {id} — {tildifiedKb}`, note count badge, `indexFresh` (e.g. `12m ago`, `seed`). Switching workspace reloads tree+worklogs+notes+graph.
 - Validation: workspace ID must be known; unknown ID → `404 {code:"NOT_FOUND"}` — not silent fallback to first workspace (fixes H-2).
 
@@ -95,7 +95,7 @@
 
 - Viewer-only — no editing. Files are source of truth. Fail-open with logging (not silent `catch{}`).
 - Design preserved: `console` variant (dense mono, `#0A0A0B / #111113`, violet accent). No edit breaks visual identity (verified via Playwright screenshots per phase).
-- Ports: UI `3415`, API `3416` (do not clash Lab 3413 / Obsidian 3414).
+- Ports: UI `3415`, API `3416` (the wireframe-variant ports Lab 3413 / Obsidian 3414 are gone — those variants were never shipped).
 
 ---
 
@@ -159,7 +159,7 @@ All routes are `GET` except `POST /api/reindex`. All query `workspace` is `z.str
     "check": "bun run fmt:check && bun run lint && bun run typecheck && vitest run --coverage"
   }
   ```
-- Ensure `seed-vault/` is the Vitest fixture (no real `~/.agent/memory` in CI).
+- Ensure `seed-vault/` is the Vitest fixture (no real `~/.claude/memory` in CI).
 
 **Test:**
 - `bun run typecheck` passes for both targets (proves no cross-runtime leak: `server` cannot import `react`, `client` cannot import `node:fs`).

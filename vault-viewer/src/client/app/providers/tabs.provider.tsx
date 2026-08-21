@@ -7,7 +7,9 @@ import {
   type ReactNode,
 } from "react";
 
-import type { Tab } from "../../../../src/types.js";
+/** One open IDE-style tab over a vault note. Lives here because this provider
+ * owns the tab state; `App` and the tab strip render from it. */
+export type Tab = { relPath: string; title: string };
 
 type TabsContextValue = {
   tabs: Tab[];

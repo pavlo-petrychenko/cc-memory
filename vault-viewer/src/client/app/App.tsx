@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { Tab } from "../../../src/types.js";
 import { Explorer } from "../modules/explorer/components/Explorer.js";
 import { useExplorerState } from "../modules/explorer/hooks/useExplorerState.js";
 import { useVaultTree } from "../modules/explorer/hooks/useVaultTree.js";
@@ -16,6 +15,7 @@ import { useSearch } from "../modules/search/hooks/useSearch.js";
 import { useSearchFilters } from "../modules/search/hooks/useSearchFilters.js";
 import { useWorklog } from "../modules/worklog/hooks/useWorklog.js";
 import { reindex as reindexApi } from "../services/api/workspaces.api.js";
+import type { Tab } from "./providers/tabs.provider.js";
 import { useTheme } from "./providers/theme.provider.js";
 import { useWorkspace } from "./providers/workspace.provider.js";
 
