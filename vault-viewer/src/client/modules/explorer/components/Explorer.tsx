@@ -145,10 +145,7 @@ type ExplorerWorklogProps = {
 export function ExplorerWorklog({ slug, active, onOpen, onWorklogSlug }: ExplorerWorklogProps) {
   const { expanded, toggle } = useExplorerContext();
   const key = `wl:${slug.slug}`;
-  const isExpanded = expanded.has(key);
-  // Default expanded: worklog groups are expanded unless explicitly collapsed.
-  // If key not in set and set is initial (only root), treat as expanded.
-  const isWorklogExpanded = expanded.has(key) || !expanded.has(`${key}:toggled`);
+  const isWorklogExpanded = expanded.has(key);
 
   return (
     <div>
@@ -174,8 +171,6 @@ export function ExplorerWorklog({ slug, active, onOpen, onWorklogSlug }: Explore
           onClick={(e) => {
             e.stopPropagation();
             toggle(key);
-            // mark as toggled so we know user interacted
-            toggle(`${key}:toggled`);
           }}
         >
           📁
