@@ -6,6 +6,6 @@
     "moduleResolution": "bundler",
     "jsx": "react-jsx"
   },
-  "include": ["src/client/**/*", "src/shared/**/*", "src/**/*", "index.html"],
+  "include": ["src/client/**/*", "src/shared/**/*", "src/**/*"],
   "exclude": ["node_modules", "dist", "server", "src/server"]
 }

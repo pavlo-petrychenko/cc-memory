@@ -26,7 +26,11 @@ export const graphNodeSchema = z.object({
   title: z.string().min(1),
   type: z.string().min(1),
   importance: z.number().int().nullable(),
-  tags: z.array(z.string()).default([]),
+  tags: z
+    .union([z.array(z.string()), z.string()])
+    .transform((v) => (Array.isArray(v) ? v : v.split(/\s+/).filter(Boolean)))
+    .pipe(z.array(z.string()))
+    .default([]),
 });
 
 export type GraphNodeDto = z.infer<typeof graphNodeSchema>;

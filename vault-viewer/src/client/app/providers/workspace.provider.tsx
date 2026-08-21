@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listWorkspaces } from "../../services/api/workspaces.api.js";
 import { qk } from "../../services/query/queryKeys.js";
@@ -17,7 +17,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     queryFn: ({ signal }) => listWorkspaces(signal),
   });
   const workspaces = data?.workspaces ?? [];
-  const [activeWs, setActiveWs] = useState<string>(workspaces[0]?.id ?? "");
+  const [activeWs, setActiveWs] = useState<string>("");
+
+  useEffect(() => {
+    if (!activeWs && workspaces[0]?.id) setActiveWs(workspaces[0].id);
+  }, [activeWs, workspaces]);
 
   return (
     <WorkspaceContext.Provider value={{ workspaces, activeWs, setActiveWs, isLoading }}>

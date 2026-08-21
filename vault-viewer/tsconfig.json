@@ -13,13 +13,12 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/client/*"],
-      "@shared/*": ["src/shared/*"],
-      "@server/*": ["src/server/*"],
-      "src/*": ["src/*"],
-      "server/*": ["server/*"]
+      "@/*": ["./src/client/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@server/*": ["./src/server/*"],
+      "src/*": ["./src/*"],
+      "server/*": ["./server/*"]
     }
   },
   "exclude": ["node_modules", "dist"]
