@@ -1,5 +1,6 @@
-import { useEffect } from "react";
 import type { SearchHitDto } from "@shared/contracts/search.contract.js";
+import { useEffect } from "react";
+
 import { SearchHitRow } from "./SearchHitRow.js";
 
 type Filters = {
@@ -22,7 +23,15 @@ type Props = {
   onOpen: (relPath: string) => void;
 };
 
-export function CommandPalette({ isOpen, onClose, q, setQ, filters, hits, onOpen }: Props) {
+export function CommandPalette({
+  isOpen,
+  onClose,
+  q,
+  setQ,
+  filters,
+  hits,
+  onOpen,
+}: Props) {
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent): void => {
@@ -34,7 +43,9 @@ export function CommandPalette({ isOpen, onClose, q, setQ, filters, hits, onOpen
 
   if (!isOpen) return null;
 
-  const hasFilters = Boolean(filters.typeFilter || filters.tagFilter || filters.featureFilter);
+  const hasFilters = Boolean(
+    filters.typeFilter || filters.tagFilter || filters.featureFilter,
+  );
 
   return (
     <div
@@ -204,16 +215,39 @@ export function CommandPalette({ isOpen, onClose, q, setQ, filters, hits, onOpen
             <SearchHitRow key={h.relPath} hit={h} onClick={onOpen} />
           ))}
           {hits.length === 0 && q.trim().length > 0 && (
-            <div style={{ padding: "20px 14px", color: "var(--muted)", textAlign: "center", fontSize: 12 }}>
+            <div
+              style={{
+                padding: "20px 14px",
+                color: "var(--muted)",
+                textAlign: "center",
+                fontSize: 12,
+              }}
+            >
               No hits — try different terms or filters
             </div>
           )}
           {!q.trim() && (
             <div style={{ padding: "12px 14px", color: "var(--muted)", fontSize: 11 }}>
               Tips:{" "}
-              <code style={{ background: "var(--panel2)", padding: "1px 4px", borderRadius: 3 }}>tag:jwt</code>{" "}
-              <code style={{ background: "var(--panel2)", padding: "1px 4px", borderRadius: 3 }}>type:spec</code> · Press
-              Enter to open top hit
+              <code
+                style={{
+                  background: "var(--panel2)",
+                  padding: "1px 4px",
+                  borderRadius: 3,
+                }}
+              >
+                tag:jwt
+              </code>{" "}
+              <code
+                style={{
+                  background: "var(--panel2)",
+                  padding: "1px 4px",
+                  borderRadius: 3,
+                }}
+              >
+                type:spec
+              </code>{" "}
+              · Press Enter to open top hit
             </div>
           )}
         </div>

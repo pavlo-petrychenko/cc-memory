@@ -18,10 +18,14 @@ export type UseSearchFiltersReturn = {
   filters: Record<string, string>;
 };
 
-export function useSearchFilters(initial?: Partial<SearchFiltersState>): UseSearchFiltersReturn {
+export function useSearchFilters(
+  initial?: Partial<SearchFiltersState>,
+): UseSearchFiltersReturn {
   const [typeFilter, setTypeFilter] = useState<string>(initial?.typeFilter ?? "");
   const [tagFilter, setTagFilter] = useState<string>(initial?.tagFilter ?? "");
-  const [featureFilter, setFeatureFilter] = useState<string>(initial?.featureFilter ?? "");
+  const [featureFilter, setFeatureFilter] = useState<string>(
+    initial?.featureFilter ?? "",
+  );
 
   const clear = useCallback(() => {
     setTypeFilter("");

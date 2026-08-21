@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import type { NoteMetaDto } from "@shared/contracts/tree.contract.js";
+import { useMemo } from "react";
 
 export function useKnownTargets(notesMeta: readonly NoteMetaDto[]): ReadonlySet<string> {
   return useMemo(() => {

@@ -29,7 +29,11 @@ export async function fetchJson<T>(
 
   const parsed = (anySchema as z.ZodSchema<T>).safeParse(json);
   if (!parsed.success) {
-    throw new ApiError(`invalid response shape: ${parsed.error.message}`, res.status, "INVALID_RESPONSE");
+    throw new ApiError(
+      `invalid response shape: ${parsed.error.message}`,
+      res.status,
+      "INVALID_RESPONSE",
+    );
   }
   return parsed.data as T;
 }

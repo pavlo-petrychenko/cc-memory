@@ -8,7 +8,9 @@ type CalloutProps = {
 export function Callout({ type, children }: CalloutProps) {
   const isWarning = type === "WARNING";
   return (
-    <blockquote className={isWarning ? "callout callout-warning" : "callout callout-note"}>
+    <blockquote
+      className={isWarning ? "callout callout-warning" : "callout callout-note"}
+    >
       {children}
     </blockquote>
   );

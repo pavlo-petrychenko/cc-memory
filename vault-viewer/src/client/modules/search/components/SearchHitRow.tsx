@@ -1,5 +1,5 @@
-import { memo } from "react";
 import type { SearchHitDto } from "@shared/contracts/search.contract.js";
+import { memo } from "react";
 
 type Props = {
   hit: SearchHitDto;
@@ -47,7 +47,9 @@ export const SearchHitRow = memo(function SearchHitRow({ hit, onClick }: Props) 
         ≡
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 500 }}>{hit.title}</div>
+        <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 500 }}>
+          {hit.title}
+        </div>
         <div
           style={{
             fontSize: 11,

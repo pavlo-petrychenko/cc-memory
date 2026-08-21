@@ -1,5 +1,5 @@
-import { useCallback } from "react";
 import type { NoteMetaDto } from "@shared/contracts/tree.contract.js";
+import { useCallback } from "react";
 
 export type ResolveWikilink = (target: string, newTab: boolean) => void;
 
@@ -18,8 +18,12 @@ export function useWikilink(
 ): ResolveWikilink {
   return useCallback(
     (target: string, newTab: boolean): void => {
-      const byTitle = notesMeta.find((n) => n.title.toLowerCase() === target.toLowerCase());
-      const direct = notesMeta.find((n) => n.relPath.toLowerCase() === `${target.toLowerCase()}.md`);
+      const byTitle = notesMeta.find(
+        (n) => n.title.toLowerCase() === target.toLowerCase(),
+      );
+      const direct = notesMeta.find(
+        (n) => n.relPath.toLowerCase() === `${target.toLowerCase()}.md`,
+      );
       if (direct) {
         openPath(direct.relPath, newTab);
         return;
