@@ -225,7 +225,7 @@ describe("CLI e2e against the built dist/memory.js", () => {
       } = JSON.parse(result.stdout);
       expect(parsed.hookSpecificOutput.hookEventName).toBe("SessionStart");
       expect(parsed.hookSpecificOutput.additionalContext).toContain(
-        "# Obsidian KB index (auto-injected at session start)",
+        "# KB index (auto-injected at session start)",
       );
     } finally {
       tempDir.remove();

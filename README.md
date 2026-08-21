@@ -8,9 +8,9 @@ Local-first: no vector DB, no cloud, no remote, no background process.
 
 Claude Code starts every session cold. cc-memory gives it:
 
-- **Knowledge base (long-term).** Durable, feature-level facts in an
-  Obsidian-compatible markdown vault. Auto-indexed; the top-level map is injected at
-  session start and relevant notes are auto-injected per prompt.
+- **Knowledge base (long-term).** Durable, feature-level facts in a plain
+  markdown vault. Auto-indexed; the top-level map is injected at session start and
+  relevant notes are auto-injected per prompt.
 - **Working memory (short-term).** Per-worktree worklogs (`STATE.md` + a dated
   journal) so a session resumes with "what I was doing / what's open".
 - **Isolation.** Everything is scoped to a **workspace**, resolved from cwd. A
@@ -21,7 +21,7 @@ Claude Code starts every session cold. cc-memory gives it:
 
 ```
 WORKSPACE  (resolved from cwd via ~/.claude/memory/registry.toml, longest prefix)
-├── Knowledge base   <kb> (an Obsidian vault)        long-term, shared
+├── Knowledge base   <kb> (plain markdown vault)     long-term, shared
 │     index: ~/.claude/memory/<id>/index.db (SQLite FTS5, OUTSIDE the vault)
 └── Working memory   <kb>/_Worklogs/<worktree>/      short-term, per worktree
       STATE.md (living)  +  YYYY-MM-DD.md (journal)
@@ -29,8 +29,8 @@ WORKSPACE  (resolved from cwd via ~/.claude/memory/registry.toml, longest prefix
 
 Two properties do most of the work:
 
-- **Markdown files are the source of truth** — git-versionable, Obsidian-editable,
-  readable without this tool.
+- **Markdown files are the source of truth** — git-versionable, editable in any
+  editor, readable without this tool.
 - **The index is derived and disposable.** BM25 full-text plus the wikilink graph;
   rebuild it any time with `memory reindex`. No embeddings: queries here hinge on
   exact tokens — function names, flags, error strings — which BM25 matches and
@@ -91,6 +91,21 @@ memory install [--dry-run] | uninstall
 ```
 
 `memory hook <name>` is how Claude Code invokes the hooks; you never call it by hand.
+
+## Browsing the KB
+
+[`vault-viewer/`](vault-viewer) ships a local, **viewer-only** web app over any
+registered workspace's KB: explorer, rendered notes with backlinks/outline, ⌘K
+search, worklog timeline and a force-directed link graph. It has no write
+endpoints — files stay the source of truth.
+
+```sh
+cd vault-viewer && bun install && bun run dev   # UI :3415 · API :3416
+```
+
+Dev-tooling today: it reads the same `~/.claude/memory/registry.toml` (or
+`CCMEM_REGISTRY`) as the hooks and falls back to a seed vault when absent;
+`memory install` does not set it up.
 
 ## Conventions
 

@@ -12,8 +12,8 @@ description: >-
 # manage-workspace
 
 cc-memory scopes all memory by **workspace**, resolved from the session's cwd via
-`~/.claude/memory/registry.toml`. Each workspace has its own Obsidian-vault KB,
-its own per-worktree worklogs, and its own search index — so a workspace-A session
+`~/.claude/memory/registry.toml`. Each workspace has its own plain-markdown vault
+KB, its own per-worktree worklogs, and its own search index — so a workspace-A session
 never sees workspace-B's knowledge. This skill manages that registry.
 
 ## Commands (use the `memory` CLI)
@@ -24,7 +24,7 @@ never sees workspace-B's knowledge. This skill manages that registry.
     `~/homeserver`). Sessions whose cwd is under a prefix resolve here.
   - `--kb` (optional): KB vault path. Default `~/Documents/<Id> Vault/`.
   - It validates (unique id, non-overlapping match, non-nested kb), scaffolds the
-    vault (`git init`, `.gitignore`, `.obsidian/`, a root index note) + `_Worklogs/`
+    vault (`git init`, `.gitignore`, a root index note) + `_Worklogs/`
     + the index dir, appends the registry block, and builds the initial index.
 - **List:** `memory workspace ls` — all workspaces, their KB paths, note counts.
 - **Remove:** `memory workspace rm <id> [--purge]` — unregisters; `--purge` also

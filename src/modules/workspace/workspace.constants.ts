@@ -8,9 +8,9 @@ export const NO_WORKSPACE_FOR_CWD_MESSAGE = "no workspace for cwd; pass --worksp
 
 export const NO_WORKSPACES_MESSAGE = "(no workspaces)";
 
-export const DEFAULT_EXCLUDE = ["_Worklogs", "Archive", ".obsidian"];
+export const DEFAULT_EXCLUDE = ["_Worklogs", "Archive"];
 
-export const GITIGNORE_CONTENT = ".obsidian/workspace*\n.obsidian/cache\n.DS_Store\n";
+export const GITIGNORE_CONTENT = ".DS_Store\n";
 
 export const GIT_INIT_TIMEOUT_MS = 10_000;
 

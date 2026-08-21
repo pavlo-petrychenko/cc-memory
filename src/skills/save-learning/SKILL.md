@@ -3,7 +3,7 @@ name: save-learning
 description: >-
   Capture durable, reusable engineering knowledge into the current workspace's
   knowledge-base vault. Use whenever the user says "save this", "remember this",
-  "add to the KB / vault / Obsidian", "document this", "update the knowledge base",
+  "add to the KB / vault", "document this", "update the knowledge base",
   OR proactively at the end of a substantive task (research, debugging, a shipped
   feature) that produced reusable, feature-level knowledge. It defines WHERE
   knowledge goes (the resolved workspace KB, one folder per feature, atomic notes),
@@ -22,9 +22,9 @@ the reusable fact about the feature, not "what I did in PF-12345".
 ## Locate the KB (workspace-aware)
 
 Run `memory resolve` to get the workspace `id` and its `kb` path. All notes go
-under that `kb`. (If the vault is wired to an `obsidian` MCP, you may use it for
-reads/writes; otherwise use plain Read/Write/Edit on files under `kb`.) After
-writing, run `memory reindex` so the note is immediately searchable.
+under that `kb`. Notes are plain markdown — use plain Read/Write/Edit on files
+under `kb`. After writing, run `memory reindex` so the note is immediately
+searchable.
 
 ## Workflow (in order)
 
@@ -39,8 +39,7 @@ A `#promote`-tagged worklog line is a candidate someone already judged durable
 once; still apply this test before proposing a write.
 
 ### 2. Find the right home (search before creating)
-Use `memory search "<terms>"` (and the `obsidian` MCP's `list_directory`/`read_note`
-if the vault is wired to one) to find the feature folder and any note that already
+Use `memory search "<terms>"` to find the feature folder and any note that already
 covers this. **Update an existing
 note** rather than create a near-duplicate. If no feature folder fits, or it's
 cross-cutting with no clear home, **ask the user where it should go**.

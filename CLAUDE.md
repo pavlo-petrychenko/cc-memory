@@ -98,6 +98,12 @@ src/
   quality/     tests that assert on the repo's own shape, not on any one file
 ```
 
+`vault-viewer/` is a sibling sub-project, not a module of `src/`: a local,
+**viewer-only** React+Express app for browsing a workspace's KB (UI :3415 /
+API :3416). It keeps its own tsconfigs, eslint and vitest setup — run
+`bun run check` inside that directory for it. It never writes: files are the
+source of truth there too.
+
 ## Discipline
 
 - **Agent-visible text is a contract.** Injected context, hook nudges and CLI output are

@@ -3,9 +3,9 @@ name: memory-search
 description: >-
   Search the current workspace's knowledge base (and worklogs) fast, via the local
   BM25 index. Use this as the FIRST way to find durable knowledge — what do we know
-  about X, where is Y documented, has this been solved before — instead of the
-  obsidian MCP's weaker search or broad file greps. Returns ranked note paths +
-  snippets scoped to THIS workspace only; then open the top hits for full content.
+  about X, where is Y documented, has this been solved before — instead of broad
+  file greps. Returns ranked note paths + snippets scoped to THIS workspace only;
+  then open the top hits for full content.
 ---
 
 # memory-search
@@ -28,8 +28,8 @@ Output is `• <title> (relative/path.md)` + a snippet per hit.
 ## Workflow
 1. Run `memory search "<salient terms>"` — prefer exact identifiers/nouns over
    prose (e.g. `salesQa overall_score prompt_version`, not "how scoring works").
-2. Open the top 1–3 hits (Read the file, or the `obsidian` MCP `read_note`) to get
-   full content, then follow their `[[wikilinks]]`.
+2. Open the top 1–3 hits (they are plain markdown — use Read) to get full
+   content, then follow their `[[wikilinks]]`.
 3. If nothing relevant returns, the KB likely doesn't cover it — say so rather than
    guessing; consider capturing it later via `save-learning`.
 
