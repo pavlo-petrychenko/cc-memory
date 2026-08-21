@@ -1,3 +1,4 @@
+import type { TabDto } from "@shared/contracts/tabs.contract.js";
 import {
   createContext,
   useCallback,
@@ -7,12 +8,8 @@ import {
   type ReactNode,
 } from "react";
 
-/** One open IDE-style tab over a vault note. Lives here because this provider
- * owns the tab state; `App` and the tab strip render from it. */
-export type Tab = { relPath: string; title: string };
-
 type TabsContextValue = {
-  tabs: Tab[];
+  tabs: TabDto[];
   activePath: string;
   openPath: (p: string) => void;
   closeTab: (p: string) => void;
@@ -21,6 +18,25 @@ type TabsContextValue = {
 
 const TabsContext = createContext<TabsContextValue | null>(null);
 
+const tabKey = (workspaceId: string): string => `tabs:${workspaceId}`;
+
+function loadTabs(workspaceId: string): TabDto[] {
+  try {
+    const raw = localStorage.getItem(tabKey(workspaceId));
+    if (!raw) return [];
+    // SAFETY: persisted state written by this provider is a JSON array of tabs;
+    // malformed user-edited entries degrade to an empty tab strip, not a crash.
+    const parsed = JSON.parse(raw) as TabDto[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Owns the per-workspace open-tab strip. Remount via `key={workspaceId}` when
+ * the workspace changes — state intentionally re-initializes from that
+ * workspace's persisted tabs instead of leaking one workspace's strip into
+ * another's storage key. */
 export function TabsProvider({
   workspaceId,
   children,
@@ -28,17 +44,11 @@ export function TabsProvider({
   workspaceId: string;
   children: ReactNode;
 }) {
-  const [tabs, setTabs] = useState<Tab[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem(`tabs:${workspaceId}`) ?? "[]");
-    } catch {
-      return [];
-    }
-  });
+  const [tabs, setTabs] = useState<TabDto[]>(() => loadTabs(workspaceId));
   const [activePath, setActivePath] = useState<string>("");
 
   useEffect(() => {
-    if (workspaceId) localStorage.setItem(`tabs:${workspaceId}`, JSON.stringify(tabs));
+    if (workspaceId) localStorage.setItem(tabKey(workspaceId), JSON.stringify(tabs));
   }, [tabs, workspaceId]);
 
   const openPath = useCallback((p: string) => {
