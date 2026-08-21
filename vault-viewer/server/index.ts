@@ -12,6 +12,11 @@ app.use(express.json());
 
 const PORT = Number(process.env.API_PORT ?? 3416);
 
+// helpful root — prevents "Cannot GET /" confusion when user hits API port directly
+app.get("/", (_req, res) => {
+  res.json({ message: "cc-memory API — UI is at http://localhost:3415", api: "/api/workspaces", worktrees: "../cc-memory-*" });
+});
+
 let workspacesCache: Awaited<ReturnType<typeof loadWorkspaces>> | null = null;
 async function getWorkspaces() {
   if (!workspacesCache) workspacesCache = await loadWorkspaces();
