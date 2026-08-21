@@ -4,7 +4,13 @@ export const treeNodeSchema: z.ZodType<{
   name: string;
   path: string;
   type: "dir" | "file";
-  children?: { name: string; path: string; type: "dir" | "file"; children?: unknown; isIndex?: boolean }[];
+  children?: {
+    name: string;
+    path: string;
+    type: "dir" | "file";
+    children?: unknown;
+    isIndex?: boolean;
+  }[];
   isIndex?: boolean;
 }> = z.object({
   name: z.string(),
@@ -31,26 +37,29 @@ export const noteMetaSchema = z.object({
 
 export type NoteMetaDto = z.infer<typeof noteMetaSchema>;
 
+export const worklogSlugSchema = z.object({
+  slug: z.string().min(1),
+  stateExists: z.boolean(),
+  stateBody: z.string().optional(),
+  entries: z.array(
+    z.object({
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      body: z.string(),
+      relPath: z.string().min(1),
+    }),
+  ),
+});
+
+/** One scanned worklog tree as returned inside `/api/tree`. */
+export type WorklogSlugDto = z.infer<typeof worklogSlugSchema>;
+
 export const treeQuerySchema = z.object({
   workspace: z.string().min(1).optional(),
 });
 
 export const treeResponseSchema = z.object({
   kbTree: treeNodeSchema,
-  worklogs: z.array(
-    z.object({
-      slug: z.string().min(1),
-      stateExists: z.boolean(),
-      stateBody: z.string().optional(),
-      entries: z.array(
-        z.object({
-          date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-          body: z.string(),
-          relPath: z.string().min(1),
-        }),
-      ),
-    }),
-  ),
+  worklogs: z.array(worklogSlugSchema),
   notes: z.array(noteMetaSchema),
 });
 

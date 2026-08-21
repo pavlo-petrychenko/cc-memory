@@ -1,7 +1,9 @@
 import { join, basename } from "node:path";
+
 import { parseNote } from "../../../server/parser.js";
-import type { FileSystem } from "../gateways/fs.gateway.js";
 import type { NoteFile, WorklogSlug, WorklogEntry } from "../../../server/vault.js";
+import type { FileSystem } from "../gateways/fs.gateway.js";
+import type { WorkspaceEntry } from "./workspaceScope.service.js";
 
 export class VaultService {
   constructor(private readonly fs: FileSystem) {}
@@ -23,8 +25,16 @@ export class VaultService {
         const dirents = await this.fs.readdir(dir, { withFileTypes: true });
         // dirents is Dirent[] when withFileTypes true, else string[]
         // handle both
-        if (dirents.length > 0 && typeof dirents[0] === "object" && "name" in (dirents[0] as unknown as Record<string, unknown>)) {
-          const d = dirents as unknown as { name: string; isDirectory(): boolean; isFile(): boolean }[];
+        if (
+          dirents.length > 0 &&
+          typeof dirents[0] === "object" &&
+          "name" in (dirents[0] as unknown as Record<string, unknown>)
+        ) {
+          const d = dirents as unknown as {
+            name: string;
+            isDirectory(): boolean;
+            isFile(): boolean;
+          }[];
           entries = d.map((x) => x.name);
           // sort case-insensitive
           entries.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
@@ -37,7 +47,9 @@ export class VaultService {
               const relForExclude = childRel;
               const excluded = exclude.some((e) => {
                 const trimmed = e.replace(/^\/+|\/+$/g, "");
-                return relForExclude === trimmed || relForExclude.startsWith(trimmed + "/");
+                return (
+                  relForExclude === trimmed || relForExclude.startsWith(trimmed + "/")
+                );
               });
               if (excluded) continue;
               await walk(join(dir, name), childRel);
@@ -209,4 +221,80 @@ export class VaultService {
     entries.sort((a, b) => b.date.localeCompare(a.date));
     return { slug, stateExists, stateBody, entries };
   }
+
+  /** Per-workspace listing payload: note count from the cached walk plus the
+   * index-freshness age derived from `index.db`'s mtime. */
+  async enrichWorkspace(
+    ws: WorkspaceEntry,
+    source: string,
+    notes: readonly NoteFile[],
+  ): Promise<EnrichedWorkspace> {
+    let indexFresh = "seed";
+    if (source !== "seed-fallback" && ws.indexDb !== "") {
+      try {
+        const st = await this.fs.stat(ws.indexDb);
+        const ageMin = Math.round((Date.now() - st.mtimeMs) / 60000);
+        indexFresh = ageMin < 60 ? `${ageMin}m ago` : `${Math.round(ageMin / 60)}h ago`;
+      } catch {
+        // keep seed
+      }
+    }
+    return {
+      id: ws.id,
+      kb: ws.kb,
+      worklogs: ws.worklogs,
+      tildifiedKb: ws.tildifiedKb,
+      exclude: ws.exclude,
+      noteCount: notes.length,
+      indexFresh,
+      source,
+    };
+  }
+
+  /** Resolves a relPath against a workspace's kb then worklogs roots. Returns
+   * the absolute path plus which root served it, or null when neither has it.
+   * The caller still owns the sandbox assertion (assertInside). */
+  async resolveVaultFile(
+    ws: WorkspaceEntry,
+    relPath: string,
+  ): Promise<{ absPath: string; isWorklog: boolean } | null> {
+    const candidates = [
+      { abs: join(ws.kb, relPath), isWorklog: false },
+      { abs: join(ws.worklogs, relPath), isWorklog: true },
+    ];
+    for (const candidate of candidates) {
+      try {
+        await this.fs.stat(candidate.abs);
+        return { absPath: candidate.abs, isWorklog: candidate.isWorklog };
+      } catch {
+        // try next candidate
+      }
+    }
+    return null;
+  }
+
+  async readFileText(absPath: string): Promise<string> {
+    try {
+      return await this.fs.readFile(absPath, "utf8");
+    } catch {
+      return "";
+    }
+  }
+
+  /** Size + mtime for ETag generation; throws when the file is gone. */
+  async statMtime(absPath: string): Promise<{ size: number; mtimeMs: number }> {
+    const st = await this.fs.stat(absPath);
+    return { size: st.size, mtimeMs: st.mtimeMs };
+  }
 }
+
+export type EnrichedWorkspace = {
+  id: string;
+  kb: string;
+  worklogs: string;
+  tildifiedKb: string;
+  exclude: string[];
+  noteCount: number;
+  indexFresh: string;
+  source: string;
+};
