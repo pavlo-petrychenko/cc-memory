@@ -17,7 +17,10 @@ export const relationTypeSchema = z.enum([
 export type RelationType = z.infer<typeof relationTypeSchema>;
 
 // fallback: keep string for custom types but validate known ones separately
-export const relationTypeStringSchema = z.string().min(1).regex(/^[a-z_]+$/);
+export const relationTypeStringSchema = z
+  .string()
+  .min(1)
+  .regex(/^[a-z_]+$/);
 
 export const relSchema = z.object({
   relationType: z.string().min(1),

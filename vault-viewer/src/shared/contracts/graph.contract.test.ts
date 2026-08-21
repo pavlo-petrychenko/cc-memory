@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { graphQuerySchema } from "./graph.contract.js";
 
 describe("graph.contract", () => {

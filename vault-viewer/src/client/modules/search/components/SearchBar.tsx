@@ -7,7 +7,12 @@ type Props = {
   placeholder?: string;
 };
 
-export function SearchBar({ q, setQ, onFocus, placeholder = "Search  titles, tags, body…  (⌘K)" }: Props) {
+export function SearchBar({
+  q,
+  setQ,
+  onFocus,
+  placeholder = "Search  titles, tags, body…  (⌘K)",
+}: Props) {
   const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     setQ(e.target.value);
   };

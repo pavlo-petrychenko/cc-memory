@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { isSafeRelPath, assertInside } from "../utils/path.js";
 import { relPathSchema } from "./common.schema.js";
 import { graphQuerySchema } from "./graph.schema.js";

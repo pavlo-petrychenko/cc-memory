@@ -1,4 +1,5 @@
 import { searchResponseSchema } from "@shared/contracts/search.contract.js";
+
 import { fetchJson } from "./client.js";
 
 export async function search(

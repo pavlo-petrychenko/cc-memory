@@ -1,6 +1,9 @@
 import type { HTMLAttributes } from "react";
 
-export function Card({ children, ...props }: HTMLAttributes<HTMLDivElement>): JSX.Element {
+export function Card({
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>): JSX.Element {
   return (
     <div
       {...props}

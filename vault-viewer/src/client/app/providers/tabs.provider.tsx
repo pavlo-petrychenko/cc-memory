@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+
 import type { Tab } from "../../../../src/types.js";
 
 type TabsContextValue = {
@@ -11,7 +19,13 @@ type TabsContextValue = {
 
 const TabsContext = createContext<TabsContextValue | null>(null);
 
-export function TabsProvider({ workspaceId, children }: { workspaceId: string; children: ReactNode }) {
+export function TabsProvider({
+  workspaceId,
+  children,
+}: {
+  workspaceId: string;
+  children: ReactNode;
+}) {
   const [tabs, setTabs] = useState<Tab[]>(() => {
     try {
       return JSON.parse(localStorage.getItem(`tabs:${workspaceId}`) ?? "[]");
@@ -50,7 +64,11 @@ export function TabsProvider({ workspaceId, children }: { workspaceId: string; c
     [activePath],
   );
 
-  return <TabsContext.Provider value={{ tabs, activePath, openPath, closeTab, setActivePath }}>{children}</TabsContext.Provider>;
+  return (
+    <TabsContext.Provider value={{ tabs, activePath, openPath, closeTab, setActivePath }}>
+      {children}
+    </TabsContext.Provider>
+  );
 }
 
 export function useTabs(): TabsContextValue {

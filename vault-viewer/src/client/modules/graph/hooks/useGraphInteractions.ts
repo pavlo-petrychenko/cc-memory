@@ -1,7 +1,8 @@
+import * as d3 from "d3";
 import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import type { MutableRefObject } from "react";
-import * as d3 from "d3";
+
 import type { GraphNode, GraphEdge } from "../components/GraphCanvas.js";
 
 export function useZoom(
@@ -24,13 +25,25 @@ export function useZoom(
         g.attr("transform", event.transform.toString());
       });
 
-    svg.call(zoom as unknown as (selection: d3.Selection<SVGSVGElement, unknown, null, undefined>) => void);
+    svg.call(
+      zoom as unknown as (
+        selection: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+      ) => void,
+    );
     svg.on("dblclick.zoom", null);
     svg.on("dblclick", () => {
       svg
         .transition()
         .duration(400)
-        .call((zoom as unknown as (selection: d3.Selection<SVGSVGElement, unknown, null, undefined>, transform: d3.ZoomTransform) => void).bind(null) as never, d3.zoomIdentity as never);
+        .call(
+          (
+            zoom as unknown as (
+              selection: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+              transform: d3.ZoomTransform,
+            ) => void
+          ).bind(null) as never,
+          d3.zoomIdentity as never,
+        );
       // Fallback: direct if above type dance fails
       svg.call(zoom.transform as unknown as never, d3.zoomIdentity as never);
     });
@@ -60,20 +73,30 @@ export function useDrag(
 
     const drag = d3
       .drag<SVGGElement, GraphNode>()
-      .on("start", (event: d3.D3DragEvent<SVGGElement, GraphNode, GraphNode>, d: GraphNode) => {
-        if (!event.active) sim.alphaTarget(0.3).restart();
-        d.fx = d.x ?? null;
-        d.fy = d.y ?? null;
-      })
-      .on("drag", (event: d3.D3DragEvent<SVGGElement, GraphNode, GraphNode>, d: GraphNode) => {
-        d.fx = event.x;
-        d.fy = event.y;
-      })
+      .on(
+        "start",
+        (event: d3.D3DragEvent<SVGGElement, GraphNode, GraphNode>, d: GraphNode) => {
+          if (!event.active) sim.alphaTarget(0.3).restart();
+          d.fx = d.x ?? null;
+          d.fy = d.y ?? null;
+        },
+      )
+      .on(
+        "drag",
+        (event: d3.D3DragEvent<SVGGElement, GraphNode, GraphNode>, d: GraphNode) => {
+          d.fx = event.x;
+          d.fy = event.y;
+        },
+      )
       .on("end", (event: d3.D3DragEvent<SVGGElement, GraphNode, GraphNode>) => {
         if (!event.active) sim.alphaTarget(0);
       });
 
-    sel.call(drag as unknown as (selection: d3.Selection<SVGGElement, GraphNode, SVGGElement, unknown>) => void);
+    sel.call(
+      drag as unknown as (
+        selection: d3.Selection<SVGGElement, GraphNode, SVGGElement, unknown>,
+      ) => void,
+    );
 
     sel.on("dblclick", (_event: unknown, d: GraphNode) => {
       d.fx = null;

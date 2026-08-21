@@ -1,6 +1,7 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
+
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 const apiPort = Number(process.env.API_PORT ?? 3416);
 const apiTarget = `http://localhost:${apiPort}`;
@@ -12,7 +13,7 @@ export default defineConfig({
       "@": resolve(__dirname, "src/client"),
       "@shared": resolve(__dirname, "src/shared"),
       "@server": resolve(__dirname, "src/server"),
-      "src": resolve(__dirname, "src"),
+      src: resolve(__dirname, "src"),
     },
   },
   server: {

@@ -25,7 +25,10 @@ function parseFrontmatter(block: string): Map<string, string> {
     const idx = line.indexOf(":");
     if (idx === -1) continue;
     const k = line.slice(0, idx).trim();
-    const v = line.slice(idx + 1).trim().replace(/^['"]|['"]$/g, "");
+    const v = line
+      .slice(idx + 1)
+      .trim()
+      .replace(/^['"]|['"]$/g, "");
     m.set(k, v);
   }
   return m;

@@ -1,6 +1,6 @@
+import type { NoteFile } from "../../../server/vault.js";
 import type { FileSystem } from "../gateways/fs.gateway.js";
 import type { VaultService } from "./vault.service.js";
-import type { NoteFile } from "../../../server/vault.js";
 
 type CacheEntry = {
   mtimeMs: number;

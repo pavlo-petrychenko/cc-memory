@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { relPathSchema } from "./common.schema.js";
 
 export const noteQuerySchema = z.object({

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildKbTree, searchNotes } from "./vault.pure.js";
+
 import type { NoteFile } from "../../../server/vault.js";
+import { buildKbTree, searchNotes } from "./vault.pure.js";
 
 function makeNote(relPath: string, title: string, tags = "", type = "note"): NoteFile {
   return {
@@ -19,7 +20,11 @@ function makeNote(relPath: string, title: string, tags = "", type = "note"): Not
 
 describe("buildKbTree", () => {
   it("builds dirs first then files sorted", () => {
-    const notes = [makeNote("b/b.md", "B"), makeNote("a/a.md", "A"), makeNote("a/c.md", "C")];
+    const notes = [
+      makeNote("b/b.md", "B"),
+      makeNote("a/a.md", "A"),
+      makeNote("a/c.md", "C"),
+    ];
     const tree = buildKbTree(notes);
     expect(tree.children?.[0]?.name).toBe("a");
     expect(tree.children?.[1]?.name).toBe("b");
@@ -35,7 +40,10 @@ describe("buildKbTree", () => {
 
 describe("searchNotes", () => {
   it("scores title higher than body", () => {
-    const notes = [makeNote("a/jwt.md", "JWT token", "auth"), makeNote("b/other.md", "Other", "", "note")];
+    const notes = [
+      makeNote("a/jwt.md", "JWT token", "auth"),
+      makeNote("b/other.md", "Other", "", "note"),
+    ];
     // body contains jwt in second note
     notes[1]!.body = "contains jwt";
     const hits = searchNotes(notes, "jwt", {});
@@ -43,7 +51,10 @@ describe("searchNotes", () => {
   });
 
   it("filters by tag", () => {
-    const notes = [makeNote("a/one.md", "One", "jwt"), makeNote("a/two.md", "Two", "auth")];
+    const notes = [
+      makeNote("a/one.md", "One", "jwt"),
+      makeNote("a/two.md", "Two", "auth"),
+    ];
     const hits = searchNotes(notes, "", { tag: "jwt" });
     expect(hits).toHaveLength(1);
     expect(hits[0]?.note.relPath).toBe("a/one.md");
@@ -55,7 +66,9 @@ describe("searchNotes", () => {
   });
 
   it("caps at 50", () => {
-    const notes = Array.from({ length: 60 }, (_, i) => makeNote(`a/${i}.md`, `Note ${i}`));
+    const notes = Array.from({ length: 60 }, (_, i) =>
+      makeNote(`a/${i}.md`, `Note ${i}`),
+    );
     const hits = searchNotes(notes, "Note", {});
     expect(hits.length).toBe(50);
   });

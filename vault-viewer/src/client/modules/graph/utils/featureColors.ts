@@ -1,8 +1,9 @@
 import { FEATURE_PALETTE, LOOSE_COLOR } from "@shared/contracts/constants.js";
 
-export function getFeatureColorMap(
-  ids: string[],
-): { map: Map<string, string>; list: string[] } {
+export function getFeatureColorMap(ids: string[]): {
+  map: Map<string, string>;
+  list: string[];
+} {
   const feats = Array.from(
     new Set(ids.map((id) => (id.split("/")[0] ?? "").trim()).filter(Boolean)),
   ).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));

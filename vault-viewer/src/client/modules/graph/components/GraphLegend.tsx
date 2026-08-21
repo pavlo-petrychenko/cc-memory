@@ -36,12 +36,23 @@ export function GraphLegend({ featureList, featureColor }: Props): JSX.Element {
           gap: 6,
         }}
       >
-        <span style={{ width: 10, height: 2, background: "var(--accent)", display: "inline-block", borderRadius: 2 }} />
+        <span
+          style={{
+            width: 10,
+            height: 2,
+            background: "var(--accent)",
+            display: "inline-block",
+            borderRadius: 2,
+          }}
+        />
         Feature colors
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 10px" }}>
         {featureList.slice(0, 10).map((f) => (
-          <span key={f} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11 }}>
+          <span
+            key={f}
+            style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11 }}
+          >
             <span
               style={{
                 width: 9,
@@ -55,7 +66,9 @@ export function GraphLegend({ featureList, featureColor }: Props): JSX.Element {
             {f}
           </span>
         ))}
-        {featureList.length === 0 ? <span style={{ color: "var(--muted)" }}>loose notes</span> : null}
+        {featureList.length === 0 ? (
+          <span style={{ color: "var(--muted)" }}>loose notes</span>
+        ) : null}
       </div>
       <div
         style={{
@@ -68,16 +81,39 @@ export function GraphLegend({ featureList, featureColor }: Props): JSX.Element {
         }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 10, height: 10, borderRadius: 999, background: "var(--accent)", display: "inline-block" }} />
+          <span
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 999,
+              background: "var(--accent)",
+              display: "inline-block",
+            }}
+          />
           focus
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 10, height: 10, borderRadius: 999, background: "var(--accent2)", display: "inline-block" }} />
+          <span
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 999,
+              background: "var(--accent2)",
+              display: "inline-block",
+            }}
+          />
           imp≥8
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <span
-            style={{ width: 10, height: 10, borderRadius: 999, background: "var(--panel2)", border: "1px solid var(--accent)", display: "inline-block" }}
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 999,
+              background: "var(--panel2)",
+              border: "1px solid var(--accent)",
+              display: "inline-block",
+            }}
           />
           note
         </span>

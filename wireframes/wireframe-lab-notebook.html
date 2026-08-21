@@ -1,138 +1,681 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Lab Notebook — cc-memory</title>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#FFFFFF;--grid:#E8F0F7;--ink:#0B1A2E;--muted:#6B7A90;--line:#D6E2F0;--card:#F8FAFC;--teal:#2A9D8F;--red:#FF4D4D;--amber:#E6A03F;--brass:#B89B5C}
-body{font-family:'Geist',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;
-  background-image:linear-gradient(var(--grid) 1px, transparent 1px),linear-gradient(90deg,var(--grid) 1px, transparent 1px);
-  background-size:24px 24px}
-.top{height:44px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;padding:0 16px;background:rgba(255,255,255,.88);backdrop-filter:blur(8px);position:sticky;top:0;z-index:10}
-.badge{font:10px 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;background:var(--ink);color:#fff;padding:5px 9px;border-radius:4px}
-.search{flex:1;max-width:420px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font:13px 'JetBrains Mono',monospace;color:var(--muted);display:flex;align-items:center;gap:8px}
-.search kbd{margin-left:auto;background:var(--ink);color:#fff;font:10px 'JetBrains Mono',monospace;padding:2px 5px;border-radius:3px}
-.top-right{margin-left:auto;display:flex;align-items:center;gap:10px;font:12px 'JetBrains Mono',monospace;color:var(--muted)}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal)}
-.shell{flex:1;display:grid;grid-template-columns:272px 1fr 288px;min-height:0}
-.left{border-right:1px solid var(--line);background:rgba(248,250,252,.92);display:flex;flex-direction:column;overflow:hidden}
-.left-head{padding:14px 14px 8px;font:11px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
-.left-head span{color:var(--brass)}
-.tree{padding:10px 8px;flex:1;overflow:auto}
-.group{margin-bottom:18px}
-.group-title{font:10px 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:4px 8px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
-.group-title i{width:10px;height:1px;background:var(--line);flex:1}
-.row{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;font-size:13px;line-height:1;cursor:default}
-.row.active{background:var(--ink);color:#fff}
-.row.active .muted{color:rgba(255,255,255,.6)}
-.row .icon{width:14px;height:14px;border:1px solid currentColor;border-radius:2px;display:grid;place-items:center;font:9px 'JetBrains Mono',monospace;opacity:.7}
-.row.indent{margin-left:16px}
-.muted{color:var(--muted);font-size:12px}
-.count{margin-left:auto;font:11px 'JetBrains Mono',monospace;background:var(--card);border:1px solid var(--line);padding:1px 5px;border-radius:10px;color:var(--muted)}
-.row.active .count{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.2);color:#fff}
-.main{border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0;background:var(--bg)}
-.tabs{height:38px;border-bottom:1px solid var(--line);display:flex;align-items:stretch;padding:0 8px;gap:4px;background:rgba(255,255,255,.7)}
-.tab{display:flex;align-items:center;gap:8px;padding:0 12px;font-size:13px;border-bottom:2px solid transparent;color:var(--muted)}
-.tab.active{color:var(--ink);border-bottom-color:var(--teal);background:var(--card);font-weight:500}
-.tab .x{width:14px;height:14px;display:grid;place-items:center;border-radius:3px;font-size:10px}
-.pill{font:10px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;background:#fff;border:1px solid var(--line);padding:2px 6px;border-radius:4px;color:var(--muted)}
-.content{padding:22px 28px;overflow:auto}
-.breadcrumb{font:11px 'JetBrains Mono',monospace;letter-spacing:.06em;color:var(--muted);margin-bottom:10px}
-.breadcrumb b{color:var(--ink);font-weight:500}
-h1{font-size:22px;letter-spacing:-.02em;line-height:1.1;margin-bottom:12px}
-.stamps{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
-.stamp{font:10px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);padding:4px 7px;border-radius:4px;background:var(--card);display:flex;align-items:center;gap:6px}
-.stamp b{color:var(--brass);font-weight:500}
-.stamp.imp{border-color:var(--red);color:var(--red);background:#FFF2F2}
-.callout{border:1px solid var(--line);border-left:3px solid #3B82F6;background:var(--card);border-radius:6px;padding:12px 14px;margin:16px 0;display:flex;gap:10px}
-.callout .ico{width:20px;height:20px;border-radius:50%;background:#3B82F6;color:#fff;display:grid;place-items:center;font:11px 'JetBrains Mono',monospace;flex-shrink:0}
-.callout strong{font-size:13px}
-.callout p{font-size:13px;color:var(--muted);line-height:1.5;margin-top:2px;font-family:'JetBrains Mono',monospace}
-.body{font:13.5px 'JetBrains Mono',monospace;line-height:1.7;color:#1A2A44}
-.body a{color:var(--teal);text-decoration:none;border-bottom:1px dashed var(--teal)}
-.body a:hover{border-bottom-style:solid}
-.code{margin:14px 0;background:#0B1A2E;color:#E8F0F7;border-radius:8px;padding:14px 16px;font:12.5px 'JetBrains Mono',monospace;line-height:1.6;overflow:auto}
-.code .kw{color:#7DD3C8}.code .str{color:#E6A03F}
-.img{margin:14px 0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--card)}
-.img-top{height:28px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 10px;font:11px 'JetBrains Mono',monospace;color:var(--muted)}
-.dot3{width:8px;height:8px;border-radius:50%;background:var(--line);display:inline-block}
-.img-body{height:128px;display:grid;place-items:center;background:repeating-linear-gradient(45deg,var(--card),var(--card) 10px,var(--grid) 10px,var(--grid) 11px);color:var(--muted);font:12px 'JetBrains Mono',monospace}
-.right{padding:16px;display:flex;flex-direction:column;gap:18px;background:rgba(248,250,252,.75)}
-.block h3{font:11px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.block h3:after{content:"";flex:1;height:1px;background:var(--line)}
-.links{display:flex;flex-direction:column;gap:8px}
-.link{font-size:13px;padding:8px 10px;background:#fff;border:1px solid var(--line);border-radius:6px}
-.link small{font:11px 'JetBrains Mono',monospace;color:var(--muted);display:block;margin-top:2px}
-.tag{display:inline-block;font:11px 'JetBrains Mono',monospace;background:var(--ink);color:#fff;padding:3px 7px;border-radius:4px;margin-right:6px}
-.outline{font-size:12.5px;line-height:1.6;color:var(--muted);font-family:'JetBrains Mono',monospace}
-.outline b{color:var(--ink)}
-.status{height:22px;border-top:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 12px;font:11px 'JetBrains Mono',monospace;color:var(--muted);background:rgba(255,255,255,.9)}
-.label{position:absolute;top:10px;right:10px;background:var(--ink);color:#fff;font:10px 'JetBrains Mono',monospace;letter-spacing:.12em;padding:6px 10px;border-radius:6px;z-index:20}
-</style>
-</head>
-<body>
-<div class="label">LAB NOTEBOOK</div>
-<div class="top">
-  <span class="badge">◈ mate</span>
-  <div class="search">⌕ Search 342 notes… <kbd>⌘K</kbd></div>
-  <div class="top-right"><span class="dot"></span> index fresh 2m <span style="opacity:.3">|</span> ◐ Dark</div>
-</div>
-<div class="shell">
-  <aside class="left">
-    <div class="left-head"><span>◆</span> Explorer</div>
-    <div class="tree">
-      <div class="group">
-        <div class="group-title">KB <i></i></div>
-        <div class="row"><span class="icon">▾</span> auth <span class="count">3</span></div>
-        <div class="row indent" style="font-weight:600">▸ auth.md <span class="muted">index</span></div>
-        <div class="row indent active"><span class="icon">≡</span> jwt.md <span class="count">●</span></div>
-        <div class="row indent"><span class="icon">≡</span> oauth.md</div>
-        <div class="row"><span class="icon">▸</span> search <span class="count">4</span></div>
-        <div class="row"><span class="icon">≡</span> loose-note.md <span class="muted">note</span></div>
-      </div>
-      <div class="group">
-        <div class="group-title">Worklogs <i></i></div>
-        <div class="row"><span class="icon">▾</span> _root <span class="count">2</span></div>
-        <div class="row indent"><span class="icon">◆</span> STATE.md</div>
-        <div class="row indent"><span class="icon">≡</span> 2026-08-20.md</div>
-        <div class="row"><span class="icon">▸</span> feat-x <span class="count">1</span></div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Lab Notebook — cc-memory</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #ffffff;
+        --grid: #e8f0f7;
+        --ink: #0b1a2e;
+        --muted: #6b7a90;
+        --line: #d6e2f0;
+        --card: #f8fafc;
+        --teal: #2a9d8f;
+        --red: #ff4d4d;
+        --amber: #e6a03f;
+        --brass: #b89b5c;
+      }
+      body {
+        font-family: "Geist", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background-image:
+          linear-gradient(var(--grid) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+        background-size: 24px 24px;
+      }
+      .top {
+        height: 44px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0 16px;
+        background: rgba(255, 255, 255, 0.88);
+        backdrop-filter: blur(8px);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .badge {
+        font:
+          10px "JetBrains Mono",
+          monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        background: var(--ink);
+        color: #fff;
+        padding: 5px 9px;
+        border-radius: 4px;
+      }
+      .search {
+        flex: 1;
+        max-width: 420px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 7px 12px;
+        font:
+          13px "JetBrains Mono",
+          monospace;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .search kbd {
+        margin-left: auto;
+        background: var(--ink);
+        color: #fff;
+        font:
+          10px "JetBrains Mono",
+          monospace;
+        padding: 2px 5px;
+        border-radius: 3px;
+      }
+      .top-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font:
+          12px "JetBrains Mono",
+          monospace;
+        color: var(--muted);
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--teal);
+        box-shadow: 0 0 8px var(--teal);
+      }
+      .shell {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 272px 1fr 288px;
+        min-height: 0;
+      }
+      .left {
+        border-right: 1px solid var(--line);
+        background: rgba(248, 250, 252, 0.92);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .left-head {
+        padding: 14px 14px 8px;
+        font:
+          11px "JetBrains Mono",
+          monospace;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid var(--line);
+      }
+      .left-head span {
+        color: var(--brass);
+      }
+      .tree {
+        padding: 10px 8px;
+        flex: 1;
+        overflow: auto;
+      }
+      .group {
+        margin-bottom: 18px;
+      }
+      .group-title {
+        font:
+          10px "JetBrains Mono",
+          monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        padding: 4px 8px;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .group-title i {
+        width: 10px;
+        height: 1px;
+        background: var(--line);
+        flex: 1;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 8px;
+        border-radius: 6px;
+        font-size: 13px;
+        line-height: 1;
+        cursor: default;
+      }
+      .row.active {
+        background: var(--ink);
+        color: #fff;
+      }
+      .row.active .muted {
+        color: rgba(255, 255, 255, 0.6);
+      }
+      .row .icon {
+        width: 14px;
+        height: 14px;
+        border: 1px solid currentColor;
+        border-radius: 2px;
+        display: grid;
+        place-items: center;
+        font:
+          9px "JetBrains Mono",
+          monospace;
+        opacity: 0.7;
+      }
+      .row.indent {
+        margin-left: 16px;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .count {
+        margin-left: auto;
+        font:
+          11px "JetBrains Mono",
+          monospace;
+        background: var(--card);
+        border: 1px solid var(--line);
+        padding: 1px 5px;
+        border-radius: 10px;
+        color: var(--muted);
+      }
+      .row.active .count {
+        background: rgba(255, 255, 255, 0.14);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #fff;
+      }
+      .main {
+        border-right: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        background: var(--bg);
+      }
+      .tabs {
+        height: 38px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: stretch;
+        padding: 0 8px;
+        gap: 4px;
+        background: rgba(255, 255, 255, 0.7);
+      }
+      .tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 12px;
+        font-size: 13px;
+        border-bottom: 2px solid transparent;
+        color: var(--muted);
+      }
+      .tab.active {
+        color: var(--ink);
+        border-bottom-color: var(--teal);
+        background: var(--card);
+        font-weight: 500;
+      }
+      .tab .x {
+        width: 14px;
+        height: 14px;
+        display: grid;
+        place-items: center;
+        border-radius: 3px;
+        font-size: 10px;
+      }
+      .pill {
+        font:
+          10px "JetBrains Mono",
+          monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: #fff;
+        border: 1px solid var(--line);
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: var(--muted);
+      }
+      .content {
+        padding: 22px 28px;
+        overflow: auto;
+      }
+      .breadcrumb {
+        font:
+          11px "JetBrains Mono",
+          monospace;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin-bottom: 10px;
+      }
+      .breadcrumb b {
+        color: var(--ink);
+        font-weight: 500;
+      }
+      h1 {
+        font-size: 22px;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        margin-bottom: 12px;
+      }
+      .stamps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      .stamp {
+        font:
+          10px "JetBrains Mono",
+          monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border: 1px solid var(--line);
+        padding: 4px 7px;
+        border-radius: 4px;
+        background: var(--card);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .stamp b {
+        color: var(--brass);
+        font-weight: 500;
+      }
+      .stamp.imp {
+        border-color: var(--red);
+        color: var(--red);
+        background: #fff2f2;
+      }
+      .callout {
+        border: 1px solid var(--line);
+        border-left: 3px solid #3b82f6;
+        background: var(--card);
+        border-radius: 6px;
+        padding: 12px 14px;
+        margin: 16px 0;
+        display: flex;
+        gap: 10px;
+      }
+      .callout .ico {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #3b82f6;
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font:
+          11px "JetBrains Mono",
+          monospace;
+        flex-shrink: 0;
+      }
+      .callout strong {
+        font-size: 13px;
+      }
+      .callout p {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+        margin-top: 2px;
+        font-family: "JetBrains Mono", monospace;
+      }
+      .body {
+        font:
+          13.5px "JetBrains Mono",
+          monospace;
+        line-height: 1.7;
+        color: #1a2a44;
+      }
+      .body a {
+        color: var(--teal);
+        text-decoration: none;
+        border-bottom: 1px dashed var(--teal);
+      }
+      .body a:hover {
+        border-bottom-style: solid;
+      }
+      .code {
+        margin: 14px 0;
+        background: #0b1a2e;
+        color: #e8f0f7;
+        border-radius: 8px;
+        padding: 14px 16px;
+        font:
+          12.5px "JetBrains Mono",
+          monospace;
+        line-height: 1.6;
+        overflow: auto;
+      }
+      .code .kw {
+        color: #7dd3c8;
+      }
+      .code .str {
+        color: #e6a03f;
+      }
+      .img {
+        margin: 14px 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--card);
+      }
+      .img-top {
+        height: 28px;
+        background: var(--card);
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 10px;
+        font:
+          11px "JetBrains Mono",
+          monospace;
+        color: var(--muted);
+      }
+      .dot3 {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--line);
+        display: inline-block;
+      }
+      .img-body {
+        height: 128px;
+        display: grid;
+        place-items: center;
+        background: repeating-linear-gradient(
+          45deg,
+          var(--card),
+          var(--card) 10px,
+          var(--grid) 10px,
+          var(--grid) 11px
+        );
+        color: var(--muted);
+        font:
+          12px "JetBrains Mono",
+          monospace;
+      }
+      .right {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        background: rgba(248, 250, 252, 0.75);
+      }
+      .block h3 {
+        font:
+          11px "JetBrains Mono",
+          monospace;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .block h3:after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--line);
+      }
+      .links {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .link {
+        font-size: 13px;
+        padding: 8px 10px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+      .link small {
+        font:
+          11px "JetBrains Mono",
+          monospace;
+        color: var(--muted);
+        display: block;
+        margin-top: 2px;
+      }
+      .tag {
+        display: inline-block;
+        font:
+          11px "JetBrains Mono",
+          monospace;
+        background: var(--ink);
+        color: #fff;
+        padding: 3px 7px;
+        border-radius: 4px;
+        margin-right: 6px;
+      }
+      .outline {
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: var(--muted);
+        font-family: "JetBrains Mono", monospace;
+      }
+      .outline b {
+        color: var(--ink);
+      }
+      .status {
+        height: 22px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 12px;
+        font:
+          11px "JetBrains Mono",
+          monospace;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.9);
+      }
+      .label {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: var(--ink);
+        color: #fff;
+        font:
+          10px "JetBrains Mono",
+          monospace;
+        letter-spacing: 0.12em;
+        padding: 6px 10px;
+        border-radius: 6px;
+        z-index: 20;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="label">LAB NOTEBOOK</div>
+    <div class="top">
+      <span class="badge">◈ mate</span>
+      <div class="search">⌕ Search 342 notes… <kbd>⌘K</kbd></div>
+      <div class="top-right">
+        <span class="dot"></span> index fresh 2m <span style="opacity: 0.3">|</span> ◐
+        Dark
       </div>
     </div>
-  </aside>
-  <main class="main">
-    <div class="tabs">
-      <div class="tab active">≡ JWT Handling <span class="x">×</span></div>
-      <div class="tab">◆ STATE.md <span class="x">×</span></div>
-      <div class="tab" style="opacity:.5">○ Graph</div>
+    <div class="shell">
+      <aside class="left">
+        <div class="left-head"><span>◆</span> Explorer</div>
+        <div class="tree">
+          <div class="group">
+            <div class="group-title">KB <i></i></div>
+            <div class="row">
+              <span class="icon">▾</span> auth <span class="count">3</span>
+            </div>
+            <div class="row indent" style="font-weight: 600">
+              ▸ auth.md <span class="muted">index</span>
+            </div>
+            <div class="row indent active">
+              <span class="icon">≡</span> jwt.md <span class="count">●</span>
+            </div>
+            <div class="row indent"><span class="icon">≡</span> oauth.md</div>
+            <div class="row">
+              <span class="icon">▸</span> search <span class="count">4</span>
+            </div>
+            <div class="row">
+              <span class="icon">≡</span> loose-note.md <span class="muted">note</span>
+            </div>
+          </div>
+          <div class="group">
+            <div class="group-title">Worklogs <i></i></div>
+            <div class="row">
+              <span class="icon">▾</span> _root <span class="count">2</span>
+            </div>
+            <div class="row indent"><span class="icon">◆</span> STATE.md</div>
+            <div class="row indent"><span class="icon">≡</span> 2026-08-20.md</div>
+            <div class="row">
+              <span class="icon">▸</span> feat-x <span class="count">1</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+      <main class="main">
+        <div class="tabs">
+          <div class="tab active">≡ JWT Handling <span class="x">×</span></div>
+          <div class="tab">◆ STATE.md <span class="x">×</span></div>
+          <div class="tab" style="opacity: 0.5">○ Graph</div>
+        </div>
+        <div class="content">
+          <div class="breadcrumb">
+            auth <span style="opacity: 0.4">/</span> <b>JWT Handling</b>
+          </div>
+          <h1>JWT Handling</h1>
+          <div class="stamps">
+            <span class="stamp"><b>type</b> spec</span>
+            <span class="stamp imp"><b>imp</b> 8</span>
+            <span class="stamp"><b>tags</b> #auth #jwt #api</span>
+            <span class="stamp"><b>epic</b> auth-system</span>
+          </div>
+          <div class="callout">
+            <div class="ico">!</div>
+            <div>
+              <strong>Note — Token rotation</strong>
+              <p>
+                Refresh tokens rotate on every use. Keep the old token for 10s to handle
+                races. See [[oauth|OAuth flow]] for sequence.
+              </p>
+            </div>
+          </div>
+          <div class="body">
+            <p>
+              Validates <code>Authorization: Bearer &lt;token&gt;</code> and checks
+              <code>exp</code> against clock skew ±5s. On expiry, trigger
+              <a>OAuth flow</a> silently.
+            </p>
+            <div class="code">
+              <span class="kw">const</span> payload =
+              <span class="kw">verify</span>(token, SECRET);<br /><span class="kw"
+                >if</span
+              >
+              (payload.exp &lt; now) <span class="kw">throw</span>
+              <span class="str">"expired"</span>;
+            </div>
+            <div class="img">
+              <div class="img-top">
+                <span class="dot3"></span><span class="dot3"></span
+                ><span class="dot3"></span> diagram.png — vault/auth/assets
+              </div>
+              <div class="img-body">▭ vault image preview — 1280×640 — rendered</div>
+            </div>
+            <p style="margin-top: 10px; color: var(--muted)">
+              Related: <a>auth.md</a> index • <a>oauth.md</a> •
+              <code
+                style="
+                  background: var(--card);
+                  border: 1px solid var(--line);
+                  padding: 1px 4px;
+                  border-radius: 3px;
+                "
+                >#jwt</code
+              >
+            </p>
+          </div>
+        </div>
+      </main>
+      <aside class="right">
+        <div class="block">
+          <h3>Outgoing · 7</h3>
+          <div class="links">
+            <div class="link">OAuth Flow <small>depends_on • auth/oauth.md</small></div>
+            <div class="link">Auth Index <small>links_to • auth/auth.md</small></div>
+          </div>
+        </div>
+        <div class="block">
+          <h3>Backlinks · 12</h3>
+          <div class="links">
+            <div class="link">
+              API Middleware <small>mentions JWT Handling in auth flow</small>
+            </div>
+            <div class="link">Search Ranker <small>uses token for auth check</small></div>
+          </div>
+        </div>
+        <div class="block">
+          <h3>Tags</h3>
+          <span class="tag">#auth</span><span class="tag">#jwt</span
+          ><span
+            class="tag"
+            style="
+              background: var(--card);
+              color: var(--ink);
+              border: 1px solid var(--line);
+            "
+            >#api</span
+          >
+        </div>
+        <div class="block">
+          <h3>Outline</h3>
+          <div class="outline">
+            <b># JWT Handling</b><br />·· Validation<br />·· Rotation<br />·· Errors
+          </div>
+        </div>
+      </aside>
     </div>
-    <div class="content">
-      <div class="breadcrumb">auth <span style="opacity:.4">/</span> <b>JWT Handling</b></div>
-      <h1>JWT Handling</h1>
-      <div class="stamps">
-        <span class="stamp"><b>type</b> spec</span>
-        <span class="stamp imp"><b>imp</b> 8</span>
-        <span class="stamp"><b>tags</b> #auth #jwt #api</span>
-        <span class="stamp"><b>epic</b> auth-system</span>
-      </div>
-      <div class="callout"><div class="ico">!</div><div><strong>Note — Token rotation</strong><p>Refresh tokens rotate on every use. Keep the old token for 10s to handle races. See [[oauth|OAuth flow]] for sequence.</p></div></div>
-      <div class="body">
-        <p>Validates <code>Authorization: Bearer &lt;token&gt;</code> and checks <code>exp</code> against clock skew ±5s. On expiry, trigger <a>OAuth flow</a> silently.</p>
-        <div class="code"><span class="kw">const</span> payload = <span class="kw">verify</span>(token, SECRET);<br><span class="kw">if</span> (payload.exp &lt; now) <span class="kw">throw</span> <span class="str">"expired"</span>;</div>
-        <div class="img"><div class="img-top"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span> diagram.png — vault/auth/assets</div><div class="img-body">▭  vault image preview  —  1280×640  —  rendered</div></div>
-        <p style="margin-top:10px;color:var(--muted)">Related: <a>auth.md</a> index • <a>oauth.md</a> • <code style="background:var(--card);border:1px solid var(--line);padding:1px 4px;border-radius:3px">#jwt</code></p>
-      </div>
+    <div class="status">
+      <span>342 notes</span><span>index fresh 2m</span
+      ><span style="margin-left: auto">vault: ~/Documents/Mate Vault</span
+      ><span
+        style="
+          border: 1px solid var(--line);
+          padding: 1px 6px;
+          border-radius: 4px;
+          background: var(--card);
+        "
+        >Reindex</span
+      >
     </div>
-  </main>
-  <aside class="right">
-    <div class="block"><h3>Outgoing · 7</h3><div class="links"><div class="link">OAuth Flow <small>depends_on • auth/oauth.md</small></div><div class="link">Auth Index <small>links_to • auth/auth.md</small></div></div></div>
-    <div class="block"><h3>Backlinks · 12</h3><div class="links"><div class="link">API Middleware <small>mentions JWT Handling in auth flow</small></div><div class="link">Search Ranker <small>uses token for auth check</small></div></div></div>
-    <div class="block"><h3>Tags</h3><span class="tag">#auth</span><span class="tag">#jwt</span><span class="tag" style="background:var(--card);color:var(--ink);border:1px solid var(--line)">#api</span></div>
-    <div class="block"><h3>Outline</h3><div class="outline"><b># JWT Handling</b><br>·· Validation<br>·· Rotation<br>·· Errors</div></div>
-  </aside>
-</div>
-<div class="status"><span>342 notes</span><span>index fresh 2m</span><span style="margin-left:auto">vault: ~/Documents/Mate Vault</span><span style="border:1px solid var(--line);padding:1px 6px;border-radius:4px;background:var(--card)">Reindex</span></div>
-</body>
+  </body>
 </html>

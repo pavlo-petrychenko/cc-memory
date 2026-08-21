@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
 import { GRAPH_DEFAULT_CONFIG } from "@shared/contracts/constants.js";
+import { useCallback, useEffect, useState } from "react";
 
 export type GraphConfig = {
   linkDistance: number;

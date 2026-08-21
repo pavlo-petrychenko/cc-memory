@@ -4,7 +4,13 @@ export const treeNodeSchema: z.ZodType<{
   name: string;
   path: string;
   type: "dir" | "file";
-  children?: { name: string; path: string; type: "dir" | "file"; children?: unknown; isIndex?: boolean }[];
+  children?: {
+    name: string;
+    path: string;
+    type: "dir" | "file";
+    children?: unknown;
+    isIndex?: boolean;
+  }[];
   isIndex?: boolean;
 }> = z.object({
   name: z.string(),

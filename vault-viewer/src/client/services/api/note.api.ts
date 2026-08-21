@@ -1,4 +1,5 @@
 import { noteSchema } from "@shared/contracts/note.contract.js";
+
 import { fetchJson } from "./client.js";
 
 export async function getNote(

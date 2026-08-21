@@ -1,5 +1,5 @@
-import { memo } from "react";
 import type { TreeNodeDto } from "@shared/contracts/tree.contract.js";
+import { memo } from "react";
 type TreeNode = TreeNodeDto;
 
 type ExplorerRowProps = {
@@ -12,7 +12,14 @@ type ExplorerRowProps = {
   onToggle: (path: string) => void;
 };
 
-function ExplorerRowComponent({ node, depth, isExpanded, isActive, onOpen, onToggle }: ExplorerRowProps) {
+function ExplorerRowComponent({
+  node,
+  depth,
+  isExpanded,
+  isActive,
+  onOpen,
+  onToggle,
+}: ExplorerRowProps) {
   const isDir = node.type === "dir";
 
   return (
@@ -35,8 +42,12 @@ function ExplorerRowComponent({ node, depth, isExpanded, isActive, onOpen, onTog
         borderLeft: isActive ? "2px solid var(--accent)" : "2px solid transparent",
       }}
     >
-      <span style={{ fontSize: 10, width: 10 }}>{isDir ? (isExpanded ? "▾" : "▸") : "≡"}</span>
-      <span style={{ opacity: 0.7, fontSize: 11 }}>{isDir ? "📁" : node.isIndex ? "★" : "≡"}</span>
+      <span style={{ fontSize: 10, width: 10 }}>
+        {isDir ? (isExpanded ? "▾" : "▸") : "≡"}
+      </span>
+      <span style={{ opacity: 0.7, fontSize: 11 }}>
+        {isDir ? "📁" : node.isIndex ? "★" : "≡"}
+      </span>
       <span
         style={{
           fontWeight: node.isIndex ? 600 : 400,

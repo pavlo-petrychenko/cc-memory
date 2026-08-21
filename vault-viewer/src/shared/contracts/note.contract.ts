@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { relSchema } from "./rel.contract.js";
 
 export const backlinkSchema = z.object({

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { noteSchema } from "./note.contract.js";
 
 describe("note.contract", () => {

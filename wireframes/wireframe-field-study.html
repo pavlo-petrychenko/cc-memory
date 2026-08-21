@@ -1,109 +1,601 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Field Study — cc-memory</title>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--stone:#F7F5F1;--ink:#242625;--muted:#6B6F6E;--line:#E6E2DC;--card:#FFFFFF;--amber:#E6A03F;--amber2:#C47F1A;--basalt:#242625;--slate:#6B6F6E}
-body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--stone);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
-.label{position:absolute;top:10px;right:10px;background:var(--basalt);color:var(--amber);font:10px 'IBM Plex Mono',monospace;letter-spacing:.12em;padding:6px 10px;border-radius:6px;z-index:20;border:1px solid var(--amber)}
-.top{height:48px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;padding:0 18px;box-shadow:0 1px 0 rgba(0,0,0,.04)}
-.vault{font:11px 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
-.vault b{background:var(--basalt);color:var(--stone);padding:4px 8px;border-radius:4px;font-weight:500;letter-spacing:.06em}
-.search{flex:1;max-width:420px;background:var(--stone);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font:13px 'IBM Plex Sans',sans-serif;color:var(--muted);display:flex;align-items:center;gap:8px}
-.shell{flex:1;display:grid;grid-template-columns:272px 1fr 300px;min-height:0}
-.left{border-right:1px solid var(--line);background:rgba(255,255,255,.7);backdrop-filter:blur(4px);display:flex;flex-direction:column}
-.left-head{height:44px;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 14px;gap:10px;font:11px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.left-head i{width:20px;height:20px;background:var(--basalt);color:var(--amber);display:grid;place-items:center;border-radius:4px;font-size:10px}
-.tree{padding:12px 8px;flex:1;overflow:auto}
-.folder{margin-bottom:16px}
-.folder-title{font:10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);padding:4px 8px;display:flex;align-items:center;gap:8px}
-.folder-title:after{content:"";flex:1;height:1px;background:var(--line)}
-.row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;font-size:13px}
-.row.active{background:var(--basalt);color:var(--stone);box-shadow:0 2px 10px rgba(36,38,37,.2)}
-.row.active .muted{color:rgba(255,255,255,.6)}
-.row .icon{width:14px;height:14px;border-radius:3px;display:grid;place-items:center;font-size:10px;opacity:.6;border:1px solid currentColor}
-.indent{margin-left:16px}
-.main{border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0;background:var(--card)}
-.tabs{height:40px;border-bottom:1px solid var(--line);display:flex;align-items:stretch;padding:0 8px;gap:6px;background:var(--stone)}
-.tab{display:flex;align-items:center;gap:8px;padding:0 14px;font-size:13px;color:var(--muted);border-bottom:2px solid transparent}
-.tab.active{color:var(--ink);border-bottom-color:var(--amber);background:var(--card);font-weight:500;box-shadow:0 -1px 0 var(--amber) inset}
-.content{padding:28px 32px;overflow:auto}
-.breadcrumb{font:11px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:6px}
-.breadcrumb span{width:18px;height:1px;background:var(--amber);display:inline-block}
-h1{font-family:'Sora',sans-serif;font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1;text-transform:uppercase;margin-bottom:10px}
-.h-rule{height:3px;background:var(--basalt);margin-bottom:14px;position:relative}
-.h-rule:after{content:"";position:absolute;right:0;top:0;width:60px;height:3px;background:var(--amber)}
-.stamps{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.stamp{font:10px 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;background:var(--stone);border:1px solid var(--line);padding:5px 8px;border-radius:4px;display:flex;align-items:center;gap:6px}
-.stamp b{color:var(--amber2)}
-.stamp.imp{background:var(--basalt);color:var(--amber);border-color:var(--basalt)}
-.callout{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:16px 0;display:flex}
-.callout-bar{width:4px;background:var(--amber)}
-.callout-main{flex:1;padding:14px 16px;background:var(--stone)}
-.callout-main strong{font-family:'Sora',sans-serif;font-size:13px}
-.callout-main p{font-size:13px;color:var(--muted);line-height:1.5;margin-top:4px}
-.code{margin:16px 0;background:var(--basalt);color:#F7F5F1;border-radius:8px;padding:14px 16px;font:12.5px 'IBM Plex Mono',monospace;line-height:1.6;position:relative;overflow:hidden}
-.code:after{content:"";position:absolute;top:0;right:40px;width:1px;height:100%;background:var(--amber);opacity:.3}
-.img{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:16px 0}
-.img-top{height:28px;background:var(--stone);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 12px;gap:8px;font:11px 'IBM Plex Mono',monospace;color:var(--muted)}
-.img-body{height:130px;display:grid;place-items:center;background:var(--card);color:var(--muted);font:12px 'IBM Plex Mono',monospace;position:relative}
-.img-body:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 12px,rgba(230,160,63,.07) 12px,rgba(230,160,63,.07) 13px)}
-.right{padding:16px;display:flex;flex-direction:column;gap:16px;background:var(--stone)}
-.block h3{font:10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.block h3 i{width:12px;height:12px;background:var(--amber);transform:rotate(45deg);display:inline-block}
-.link{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
-.link b{font-size:13px}
-.link small{font:11px 'IBM Plex Mono',monospace;color:var(--muted)}
-.status{height:22px;background:var(--basalt);color:var(--stone);display:flex;align-items:center;gap:12px;padding:0 12px;font:11px 'IBM Plex Mono',monospace}
-.status b{color:var(--amber)}
-</style>
-</head>
-<body>
-<div class="label">FIELD STUDY</div>
-<div class="top"><div class="vault"><b>◈ MATE</b> ~/Documents/Mate Vault</div><div class="search">⌕ Search 342 notes… <span style="margin-left:auto;background:var(--basalt);color:var(--stone);padding:2px 6px;border-radius:4px;font:10px 'IBM Plex Mono',monospace">⌘K</span></div><div style="margin-left:auto;font:11px 'IBM Plex Mono',monospace;color:var(--muted)">● index fresh</div></div>
-<div class="shell">
-  <aside class="left">
-    <div class="left-head"><i>◆</i> Strata</div>
-    <div class="tree">
-      <div class="folder"><div class="folder-title">KB</div>
-        <div class="row"><span>▾</span> auth</div>
-        <div class="row indent" style="font-weight:600">auth.md — index</div>
-        <div class="row indent active"><span class="icon">⬢</span> jwt.md</div>
-        <div class="row indent"><span class="icon">⬢</span> oauth.md</div>
-        <div class="row">▸ search</div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Field Study — cc-memory</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --stone: #f7f5f1;
+        --ink: #242625;
+        --muted: #6b6f6e;
+        --line: #e6e2dc;
+        --card: #ffffff;
+        --amber: #e6a03f;
+        --amber2: #c47f1a;
+        --basalt: #242625;
+        --slate: #6b6f6e;
+      }
+      body {
+        font-family: "IBM Plex Sans", system-ui, sans-serif;
+        background: var(--stone);
+        color: var(--ink);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .label {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: var(--basalt);
+        color: var(--amber);
+        font:
+          10px "IBM Plex Mono",
+          monospace;
+        letter-spacing: 0.12em;
+        padding: 6px 10px;
+        border-radius: 6px;
+        z-index: 20;
+        border: 1px solid var(--amber);
+      }
+      .top {
+        height: 48px;
+        background: var(--card);
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0 18px;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+      }
+      .vault {
+        font:
+          11px "IBM Plex Mono",
+          monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .vault b {
+        background: var(--basalt);
+        color: var(--stone);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+      }
+      .search {
+        flex: 1;
+        max-width: 420px;
+        background: var(--stone);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 7px 14px;
+        font:
+          13px "IBM Plex Sans",
+          sans-serif;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .shell {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 272px 1fr 300px;
+        min-height: 0;
+      }
+      .left {
+        border-right: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(4px);
+        display: flex;
+        flex-direction: column;
+      }
+      .left-head {
+        height: 44px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        padding: 0 14px;
+        gap: 10px;
+        font:
+          11px "IBM Plex Mono",
+          monospace;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .left-head i {
+        width: 20px;
+        height: 20px;
+        background: var(--basalt);
+        color: var(--amber);
+        display: grid;
+        place-items: center;
+        border-radius: 4px;
+        font-size: 10px;
+      }
+      .tree {
+        padding: 12px 8px;
+        flex: 1;
+        overflow: auto;
+      }
+      .folder {
+        margin-bottom: 16px;
+      }
+      .folder-title {
+        font:
+          10px "IBM Plex Mono",
+          monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--slate);
+        padding: 4px 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .folder-title:after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--line);
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 13px;
+      }
+      .row.active {
+        background: var(--basalt);
+        color: var(--stone);
+        box-shadow: 0 2px 10px rgba(36, 38, 37, 0.2);
+      }
+      .row.active .muted {
+        color: rgba(255, 255, 255, 0.6);
+      }
+      .row .icon {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        display: grid;
+        place-items: center;
+        font-size: 10px;
+        opacity: 0.6;
+        border: 1px solid currentColor;
+      }
+      .indent {
+        margin-left: 16px;
+      }
+      .main {
+        border-right: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        background: var(--card);
+      }
+      .tabs {
+        height: 40px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: stretch;
+        padding: 0 8px;
+        gap: 6px;
+        background: var(--stone);
+      }
+      .tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 14px;
+        font-size: 13px;
+        color: var(--muted);
+        border-bottom: 2px solid transparent;
+      }
+      .tab.active {
+        color: var(--ink);
+        border-bottom-color: var(--amber);
+        background: var(--card);
+        font-weight: 500;
+        box-shadow: 0 -1px 0 var(--amber) inset;
+      }
+      .content {
+        padding: 28px 32px;
+        overflow: auto;
+      }
+      .breadcrumb {
+        font:
+          11px "IBM Plex Mono",
+          monospace;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .breadcrumb span {
+        width: 18px;
+        height: 1px;
+        background: var(--amber);
+        display: inline-block;
+      }
+      h1 {
+        font-family: "Sora", sans-serif;
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .h-rule {
+        height: 3px;
+        background: var(--basalt);
+        margin-bottom: 14px;
+        position: relative;
+      }
+      .h-rule:after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 60px;
+        height: 3px;
+        background: var(--amber);
+      }
+      .stamps {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .stamp {
+        font:
+          10px "IBM Plex Mono",
+          monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: var(--stone);
+        border: 1px solid var(--line);
+        padding: 5px 8px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .stamp b {
+        color: var(--amber2);
+      }
+      .stamp.imp {
+        background: var(--basalt);
+        color: var(--amber);
+        border-color: var(--basalt);
+      }
+      .callout {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 16px 0;
+        display: flex;
+      }
+      .callout-bar {
+        width: 4px;
+        background: var(--amber);
+      }
+      .callout-main {
+        flex: 1;
+        padding: 14px 16px;
+        background: var(--stone);
+      }
+      .callout-main strong {
+        font-family: "Sora", sans-serif;
+        font-size: 13px;
+      }
+      .callout-main p {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+        margin-top: 4px;
+      }
+      .code {
+        margin: 16px 0;
+        background: var(--basalt);
+        color: #f7f5f1;
+        border-radius: 8px;
+        padding: 14px 16px;
+        font:
+          12.5px "IBM Plex Mono",
+          monospace;
+        line-height: 1.6;
+        position: relative;
+        overflow: hidden;
+      }
+      .code:after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 40px;
+        width: 1px;
+        height: 100%;
+        background: var(--amber);
+        opacity: 0.3;
+      }
+      .img {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 16px 0;
+      }
+      .img-top {
+        height: 28px;
+        background: var(--stone);
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        gap: 8px;
+        font:
+          11px "IBM Plex Mono",
+          monospace;
+        color: var(--muted);
+      }
+      .img-body {
+        height: 130px;
+        display: grid;
+        place-items: center;
+        background: var(--card);
+        color: var(--muted);
+        font:
+          12px "IBM Plex Mono",
+          monospace;
+        position: relative;
+      }
+      .img-body:after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          45deg,
+          transparent,
+          transparent 12px,
+          rgba(230, 160, 63, 0.07) 12px,
+          rgba(230, 160, 63, 0.07) 13px
+        );
+      }
+      .right {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        background: var(--stone);
+      }
+      .block h3 {
+        font:
+          10px "IBM Plex Mono",
+          monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .block h3 i {
+        width: 12px;
+        height: 12px;
+        background: var(--amber);
+        transform: rotate(45deg);
+        display: inline-block;
+      }
+      .link {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 10px 12px;
+      }
+      .link b {
+        font-size: 13px;
+      }
+      .link small {
+        font:
+          11px "IBM Plex Mono",
+          monospace;
+        color: var(--muted);
+      }
+      .status {
+        height: 22px;
+        background: var(--basalt);
+        color: var(--stone);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 12px;
+        font:
+          11px "IBM Plex Mono",
+          monospace;
+      }
+      .status b {
+        color: var(--amber);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="label">FIELD STUDY</div>
+    <div class="top">
+      <div class="vault"><b>◈ MATE</b> ~/Documents/Mate Vault</div>
+      <div class="search">
+        ⌕ Search 342 notes…
+        <span
+          style="
+            margin-left: auto;
+            background: var(--basalt);
+            color: var(--stone);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font:
+              10px &quot;IBM Plex Mono&quot;,
+              monospace;
+          "
+          >⌘K</span
+        >
       </div>
-      <div class="folder"><div class="folder-title">Worklogs</div>
-        <div class="row">▾ _root</div>
-        <div class="row indent">◆ STATE.md</div>
-        <div class="row indent">2026-08-20.md</div>
+      <div
+        style="
+          margin-left: auto;
+          font:
+            11px &quot;IBM Plex Mono&quot;,
+            monospace;
+          color: var(--muted);
+        "
+      >
+        ● index fresh
       </div>
     </div>
-  </aside>
-  <main class="main">
-    <div class="tabs"><div class="tab active">JWT Handling</div><div class="tab">STATE.md</div><div class="tab" style="opacity:.5">Graph</div></div>
-    <div class="content">
-      <div class="breadcrumb">auth <span></span> JWT Handling</div>
-      <h1>JWT Handling</h1>
-      <div class="h-rule"></div>
-      <div class="stamps"><span class="stamp"><b>type</b> spec</span><span class="stamp imp">imp 8</span><span class="stamp">#auth #jwt #api</span></div>
-      <div class="callout"><div class="callout-bar"></div><div class="callout-main"><strong>Field Note — Token rotation</strong><p>Refresh tokens rotate on every use. Keep old token 10s for races. See <a style="color:var(--amber2);text-decoration:none;border-bottom:1px solid var(--amber)">OAuth flow</a>.</p></div></div>
-      <div style="font-size:14px;line-height:1.7;color:var(--ink)">
-        <p>Validates <code style="background:var(--stone);border:1px solid var(--line);padding:1px 4px;border-radius:3px;font-family:'IBM Plex Mono',monospace">Authorization: Bearer &lt;token&gt;</code> and checks exp ±5s. On expiry → <a style="color:var(--amber2);border-bottom:1px solid var(--amber)">OAuth flow</a>.</p>
-        <div class="code"><span style="color:var(--amber)">const</span> payload = verify(token, SECRET);<br><span style="color:var(--amber)">if</span> (payload.exp &lt; now) throw "expired";</div>
-        <div class="img"><div class="img-top">⬢ diagram.png — vault/auth/assets — basalt</div><div class="img-body">vault image — faceted preview</div></div>
-      </div>
+    <div class="shell">
+      <aside class="left">
+        <div class="left-head"><i>◆</i> Strata</div>
+        <div class="tree">
+          <div class="folder">
+            <div class="folder-title">KB</div>
+            <div class="row"><span>▾</span> auth</div>
+            <div class="row indent" style="font-weight: 600">auth.md — index</div>
+            <div class="row indent active"><span class="icon">⬢</span> jwt.md</div>
+            <div class="row indent"><span class="icon">⬢</span> oauth.md</div>
+            <div class="row">▸ search</div>
+          </div>
+          <div class="folder">
+            <div class="folder-title">Worklogs</div>
+            <div class="row">▾ _root</div>
+            <div class="row indent">◆ STATE.md</div>
+            <div class="row indent">2026-08-20.md</div>
+          </div>
+        </div>
+      </aside>
+      <main class="main">
+        <div class="tabs">
+          <div class="tab active">JWT Handling</div>
+          <div class="tab">STATE.md</div>
+          <div class="tab" style="opacity: 0.5">Graph</div>
+        </div>
+        <div class="content">
+          <div class="breadcrumb">auth <span></span> JWT Handling</div>
+          <h1>JWT Handling</h1>
+          <div class="h-rule"></div>
+          <div class="stamps">
+            <span class="stamp"><b>type</b> spec</span><span class="stamp imp">imp 8</span
+            ><span class="stamp">#auth #jwt #api</span>
+          </div>
+          <div class="callout">
+            <div class="callout-bar"></div>
+            <div class="callout-main">
+              <strong>Field Note — Token rotation</strong>
+              <p>
+                Refresh tokens rotate on every use. Keep old token 10s for races. See
+                <a
+                  style="
+                    color: var(--amber2);
+                    text-decoration: none;
+                    border-bottom: 1px solid var(--amber);
+                  "
+                  >OAuth flow</a
+                >.
+              </p>
+            </div>
+          </div>
+          <div style="font-size: 14px; line-height: 1.7; color: var(--ink)">
+            <p>
+              Validates
+              <code
+                style="
+                  background: var(--stone);
+                  border: 1px solid var(--line);
+                  padding: 1px 4px;
+                  border-radius: 3px;
+                  font-family: &quot;IBM Plex Mono&quot;, monospace;
+                "
+                >Authorization: Bearer &lt;token&gt;</code
+              >
+              and checks exp ±5s. On expiry →
+              <a style="color: var(--amber2); border-bottom: 1px solid var(--amber)"
+                >OAuth flow</a
+              >.
+            </p>
+            <div class="code">
+              <span style="color: var(--amber)">const</span> payload = verify(token,
+              SECRET);<br /><span style="color: var(--amber)">if</span> (payload.exp &lt;
+              now) throw "expired";
+            </div>
+            <div class="img">
+              <div class="img-top">⬢ diagram.png — vault/auth/assets — basalt</div>
+              <div class="img-body">vault image — faceted preview</div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <aside class="right">
+        <div class="block">
+          <h3><i></i> Outgoing · 7</h3>
+          <div class="link">
+            <b>OAuth Flow</b><small>depends_on • auth/oauth.md</small>
+          </div>
+        </div>
+        <div class="block">
+          <h3><i></i> Backlinks · 12</h3>
+          <div class="link"><b>API Middleware</b><small>mentions JWT</small></div>
+        </div>
+        <div class="block">
+          <h3><i></i> Tags</h3>
+          <span
+            style="
+              display: inline-block;
+              background: var(--basalt);
+              color: var(--stone);
+              padding: 3px 8px;
+              border-radius: 4px;
+              font:
+                11px &quot;IBM Plex Mono&quot;,
+                monospace;
+              margin-right: 6px;
+            "
+            >#auth</span
+          ><span
+            style="
+              display: inline-block;
+              background: var(--stone);
+              border: 1px solid var(--line);
+              padding: 3px 8px;
+              border-radius: 4px;
+              font:
+                11px &quot;IBM Plex Mono&quot;,
+                monospace;
+            "
+            >#jwt</span
+          >
+        </div>
+      </aside>
     </div>
-  </main>
-  <aside class="right">
-    <div class="block"><h3><i></i> Outgoing · 7</h3><div class="link"><b>OAuth Flow</b><small>depends_on • auth/oauth.md</small></div></div>
-    <div class="block"><h3><i></i> Backlinks · 12</h3><div class="link"><b>API Middleware</b><small>mentions JWT</small></div></div>
-    <div class="block"><h3><i></i> Tags</h3><span style="display:inline-block;background:var(--basalt);color:var(--stone);padding:3px 8px;border-radius:4px;font:11px 'IBM Plex Mono',monospace;margin-right:6px">#auth</span><span style="display:inline-block;background:var(--stone);border:1px solid var(--line);padding:3px 8px;border-radius:4px;font:11px 'IBM Plex Mono',monospace">#jwt</span></div>
-  </aside>
-</div>
-<div class="status"><span>342 strata</span><span>index fresh 2m</span><span style="margin-left:auto">vault: ~/Documents/Mate Vault — <b>Field</b></span></div>
-</body>
+    <div class="status">
+      <span>342 strata</span><span>index fresh 2m</span
+      ><span style="margin-left: auto">vault: ~/Documents/Mate Vault — <b>Field</b></span>
+    </div>
+  </body>
 </html>

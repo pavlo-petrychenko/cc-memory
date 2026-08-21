@@ -1,30 +1,41 @@
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
-import pinoHttp from "pino-http";
-import pino from "pino";
 import { readFile, stat } from "node:fs/promises";
 import { join, extname, resolve } from "node:path";
-import { loadWorkspaces } from "../../server/registry.js";
-import { walkKb as legacyWalkKb, buildKbTree as legacyBuildKbTree, scanWorklogs as legacyScanWorklogs, searchNotes as legacySearchNotes } from "../../server/vault.js";
+
+import cors from "cors";
+import express from "express";
+import helmet from "helmet";
+import pino from "pino";
+import pinoHttp from "pino-http";
+
 import { parseNote } from "../../server/parser.js";
+import { loadWorkspaces } from "../../server/registry.js";
+import {
+  walkKb as legacyWalkKb,
+  buildKbTree as legacyBuildKbTree,
+  scanWorklogs as legacyScanWorklogs,
+  searchNotes as legacySearchNotes,
+} from "../../server/vault.js";
+import type { Config } from "./config/env.js";
+import { ForbiddenError, NotFoundError } from "./errors/appError.js";
+import { asyncHandler } from "./errors/asyncHandler.js";
 import { NodeFileSystem } from "./gateways/fs.gateway.js";
-import { VaultService } from "./services/vault.service.js";
+import { errorHandler, notFound } from "./middlewares/errorHandler.js";
+import { requestId } from "./middlewares/requestId.js";
+import { validate } from "./middlewares/validate.js";
 import { VaultCache } from "./services/vault.cache.js";
 import { buildKbTree, searchNotes } from "./services/vault.pure.js";
-import type { Config } from "./config/env.js";
-import { requestId } from "./middlewares/requestId.js";
-import { errorHandler, notFound } from "./middlewares/errorHandler.js";
-import { validate } from "./middlewares/validate.js";
-import { asyncHandler } from "./errors/asyncHandler.js";
-import { ForbiddenError, NotFoundError } from "./errors/appError.js";
+import { VaultService } from "./services/vault.service.js";
+import { assertInside, isSafeRelPath } from "./utils/path.js";
 import { workspaceQuerySchema } from "./validators/common.schema.js";
-import { treeQuerySchema } from "./validators/tree.schema.js";
+import { graphQuerySchema } from "./validators/graph.schema.js";
 import { noteQuerySchema, fileQuerySchema } from "./validators/note.schema.js";
 import { searchQuerySchema } from "./validators/search.schema.js";
-import { graphQuerySchema } from "./validators/graph.schema.js";
-import { worklogQuerySchema, reindexBodySchema, reindexQuerySchema } from "./validators/worklog.schema.js";
-import { assertInside, isSafeRelPath } from "./utils/path.js";
+import { treeQuerySchema } from "./validators/tree.schema.js";
+import {
+  worklogQuerySchema,
+  reindexBodySchema,
+  reindexQuerySchema,
+} from "./validators/worklog.schema.js";
 
 export function createApp(config: Config): express.Express {
   const logger = pino({ level: config.LOG_LEVEL });
@@ -92,7 +103,8 @@ export function createApp(config: Config): express.Express {
           try {
             const st = await stat(w.indexDb);
             const ageMin = Math.round((Date.now() - st.mtimeMs) / 60000);
-            indexFresh = ageMin < 60 ? `${ageMin}m ago` : `${Math.round(ageMin / 60)}h ago`;
+            indexFresh =
+              ageMin < 60 ? `${ageMin}m ago` : `${Math.round(ageMin / 60)}h ago`;
           } catch {
             // keep seed
           }
@@ -144,7 +156,10 @@ export function createApp(config: Config): express.Express {
     "/api/note",
     validate(noteQuerySchema, "query"),
     asyncHandler(async (req, res) => {
-      const { workspace: wid, path: relPath } = req.query as { workspace?: string; path: string };
+      const { workspace: wid, path: relPath } = req.query as {
+        workspace?: string;
+        path: string;
+      };
 
       if (!isSafeRelPath(relPath)) {
         throw new ForbiddenError("invalid path");
@@ -196,12 +211,19 @@ export function createApp(config: Config): express.Express {
         if (n.relPath === relPath) continue;
         for (const r of n.rels) {
           const tgt = r.target.toLowerCase();
-          if (tgt === relKey.toLowerCase() || tgt === titleLower || tgt === fallback.toLowerCase()) {
+          if (
+            tgt === relKey.toLowerCase() ||
+            tgt === titleLower ||
+            tgt === fallback.toLowerCase()
+          ) {
             const idx = n.body.toLowerCase().indexOf(`[[${r.target.toLowerCase()}`);
             let snippet = "";
             if (idx >= 0) {
               const start = Math.max(0, idx - 40);
-              snippet = n.body.slice(start, idx + 80).replace(/\s+/g, " ").trim();
+              snippet = n.body
+                .slice(start, idx + 80)
+                .replace(/\s+/g, " ")
+                .trim();
             } else {
               snippet = n.body.slice(0, 80).replace(/\s+/g, " ").trim();
             }
@@ -226,7 +248,10 @@ export function createApp(config: Config): express.Express {
     "/api/file",
     validate(fileQuerySchema, "query"),
     asyncHandler(async (req, res) => {
-      const { workspace: wid, path: relPath } = req.query as { workspace?: string; path: string };
+      const { workspace: wid, path: relPath } = req.query as {
+        workspace?: string;
+        path: string;
+      };
 
       if (!isSafeRelPath(relPath)) {
         throw new ForbiddenError("invalid path");
@@ -297,7 +322,13 @@ export function createApp(config: Config): express.Express {
     "/api/search",
     validate(searchQuerySchema, "query"),
     asyncHandler(async (req, res) => {
-      const { workspace: wid, q, type, tag, feature } = req.query as {
+      const {
+        workspace: wid,
+        q,
+        type,
+        tag,
+        feature,
+      } = req.query as {
         workspace?: string;
         q: string;
         type?: string;
@@ -339,7 +370,12 @@ export function createApp(config: Config): express.Express {
     "/api/graph",
     validate(graphQuerySchema, "query"),
     asyncHandler(async (req, res) => {
-      const { workspace: wid, focus, depth, full } = req.query as unknown as {
+      const {
+        workspace: wid,
+        focus,
+        depth,
+        full,
+      } = req.query as unknown as {
         workspace?: string;
         focus?: string;
         depth: number;
@@ -370,7 +406,11 @@ export function createApp(config: Config): express.Express {
             if (byTitle) targetRel = byTitle.relPath;
           }
           if (targetRel) {
-            allEdges.push({ source: n.relPath, target: targetRel, relationType: r.relationType });
+            allEdges.push({
+              source: n.relPath,
+              target: targetRel,
+              relationType: r.relationType,
+            });
           }
         }
       }

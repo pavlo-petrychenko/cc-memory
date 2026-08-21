@@ -1,4 +1,5 @@
 import type { WorklogResponseDto } from "@shared/contracts/worklog.contract.js";
+
 import { Markdown } from "../../markdown/components/Markdown.js";
 import { WorklogEntryCard } from "./WorklogEntryCard.js";
 
@@ -28,7 +29,15 @@ export function WorklogTimeline({
   knownTargets,
 }: Props) {
   return (
-    <div style={{ flex: 1, overflow: "auto", padding: "16px 0", display: "flex", justifyContent: "center" }}>
+    <div
+      style={{
+        flex: 1,
+        overflow: "auto",
+        padding: "16px 0",
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
       <div style={{ width: 720, maxWidth: "92%" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <select
@@ -62,7 +71,9 @@ export function WorklogTimeline({
           >
             {worklog.entries.length} entries
           </span>
-          <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted)" }}>{activePath}</span>
+          <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted)" }}>
+            {activePath}
+          </span>
         </div>
 
         {worklog.stateExists && (
@@ -90,7 +101,13 @@ export function WorklogTimeline({
               }}
             >
               <span
-                style={{ width: 6, height: 6, background: "var(--amber)", borderRadius: 2, display: "inline-block" }}
+                style={{
+                  width: 6,
+                  height: 6,
+                  background: "var(--amber)",
+                  borderRadius: 2,
+                  display: "inline-block",
+                }}
               />
               STATE.md — pinned
             </div>
