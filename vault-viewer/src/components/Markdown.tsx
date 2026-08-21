@@ -28,6 +28,7 @@ export function Markdown({ body, workspace, currentPath, onWikilink, knownTarget
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
+      urlTransform={(url) => url}
       components={{
         a(props) {
           const href = String(props.href ?? "");
