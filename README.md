@@ -1,8 +1,8 @@
 # cc-memory
 
-Persistent, layered, **per-workspace** memory for Claude Code — plain markdown
-vaults, a derived SQLite FTS5 index, five hooks and five skills. Local-first: no
-vector DB, no cloud, no remote, no background process.
+Persistent, layered, **per-workspace** memory for Claude Code and pi — plain
+markdown vaults, a derived SQLite FTS5 index, five hooks and five skills.
+Local-first: no vector DB, no cloud, no remote, no background process.
 
 ## Why
 

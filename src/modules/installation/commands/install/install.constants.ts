@@ -13,14 +13,14 @@ export const UNINSTALL_NOTHING_MESSAGE =
 
 export const INSTALL_DESCRIPTOR: CommandDescriptor = {
   path: ["install"],
-  usage: ["install [--dry-run]"],
-  summary: "wire into Claude Code",
+  usage: ["install [--dry-run] [--agents claude,pi]"],
+  summary: "wire into Claude Code and/or pi",
   hidden: false,
 };
 
 export const UNINSTALL_DESCRIPTOR: CommandDescriptor = {
   path: ["uninstall"],
   usage: ["uninstall"],
-  summary: "wire out of Claude Code",
+  summary: "wire out of Claude Code and pi",
   hidden: false,
 };

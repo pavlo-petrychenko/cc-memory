@@ -41,6 +41,19 @@ export class ManifestService extends Service {
     return value !== undefined && JsonFileService.isString(value) ? value : null;
   }
 
+  /** Absent means the field was never written (pre-pi manifest) → empty. A
+   * present-but-malformed array rejects the whole manifest, like `skills`. */
+  private static parseSkillEntries(
+    value: JsonValue | undefined,
+  ): readonly SkillManifestEntry[] | null {
+    if (value === undefined) return [];
+    if (!JsonFileService.isArray(value)) return null;
+    const parsed = value.map((entry) => ManifestService.parseSkillEntry(entry));
+    if (parsed.some((entry) => entry === null)) return null;
+    // SAFETY: every element passed the `entry === null` check above.
+    return parsed as readonly SkillManifestEntry[];
+  }
+
   private static parseManifest(value: JsonObject): InstalledManifest | null {
     const schemaVersion = value["schemaVersion"];
     const repoRoot = value["repoRoot"];
@@ -72,8 +85,9 @@ export class ManifestService extends Service {
     ) {
       return null;
     }
-    const parsedSkills = skills.map(ManifestService.parseSkillEntry);
-    if (parsedSkills.some((entry) => entry === null)) return null;
+    const parsedSkills = ManifestService.parseSkillEntries(skills);
+    const parsedPiSkills = ManifestService.parseSkillEntries(value["piSkills"]);
+    if (parsedSkills === null || parsedPiSkills === null) return null;
 
     return {
       schemaVersion,
@@ -82,10 +96,11 @@ export class ManifestService extends Service {
       distPath,
       hookCommands,
       shimPath,
-      // SAFETY: every element passed the `entry === null` check above.
-      skills: parsedSkills as readonly SkillManifestEntry[],
+      skills: parsedSkills,
       settingsBackupPath: ManifestService.parseNullableString(settingsBackupPath),
       legacyPurgeDone,
+      piExtensionPath: ManifestService.parseNullableString(value["piExtensionPath"]),
+      piSkills: parsedPiSkills,
     };
   }
 
@@ -111,6 +126,8 @@ export class ManifestService extends Service {
       skills: manifest.skills.map(ManifestService.skillEntryToJson),
       settingsBackupPath: manifest.settingsBackupPath,
       legacyPurgeDone: manifest.legacyPurgeDone,
+      piExtensionPath: manifest.piExtensionPath ?? null,
+      piSkills: (manifest.piSkills ?? []).map(ManifestService.skillEntryToJson),
     };
   }
 

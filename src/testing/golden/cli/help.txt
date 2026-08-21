@@ -10,8 +10,8 @@ Usage:
   memory notes [--workspace ID] [--cwd PATH] [--folder F] [--json]  — enumerate indexed notes
   memory commit [workspace] [-m MSG]  — MANUAL git snapshot of a KB (local; no push)
   memory doctor [--cwd PATH] [--prompt TEXT]  — self-test hooks and diagnose the install
-  memory install [--dry-run]  — wire into Claude Code
-  memory uninstall  — wire out of Claude Code
+  memory install [--dry-run] [--agents claude,pi]  — wire into Claude Code and/or pi
+  memory uninstall  — wire out of Claude Code and pi
   memory -h | --help  — show this help text
   memory -V | --version  — show the installed version
 

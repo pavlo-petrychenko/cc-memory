@@ -15,4 +15,8 @@ export type InstalledManifest = {
   readonly skills: readonly SkillManifestEntry[];
   readonly settingsBackupPath: string | null;
   readonly legacyPurgeDone: boolean;
+  /** pi artifacts, recorded only when the `pi` target was installed. Absent on
+   * manifests written before pi support, which reads as "not installed". */
+  readonly piExtensionPath?: string | null;
+  readonly piSkills?: readonly SkillManifestEntry[];
 };

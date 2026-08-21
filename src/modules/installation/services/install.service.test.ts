@@ -2,12 +2,16 @@ import { describe, expect, test } from "bun:test";
 
 import type { AppContext } from "@/core/base/context.typedefs.ts";
 import type { AbsPath } from "@/core/index.ts";
-import { registryPath } from "@/core/index.ts";
+import { joinAbs, registryPath } from "@/core/index.ts";
 import { HookEvent } from "@/core/transport/hook/hook.typedefs.ts";
 import type { Gateways } from "@/gateways/index.ts";
-import { InstallErrorKind } from "@/modules/installation/install.typedefs.ts";
+import {
+  AgentTarget,
+  InstallErrorKind,
+} from "@/modules/installation/install.typedefs.ts";
 import { InstallService } from "@/modules/installation/services/install.service.ts";
 import { ManifestService } from "@/modules/installation/steps/manifest/manifest.repository.ts";
+import { PiExtensionService } from "@/modules/installation/steps/piExtension/piExtension.repository.ts";
 import { SettingsService } from "@/modules/installation/steps/settings/settings.repository.ts";
 import { ShimService } from "@/modules/installation/steps/shim/shim.repository.ts";
 import { SkillsService } from "@/modules/installation/steps/skills/skills.repository.ts";
@@ -55,6 +59,16 @@ async function setUpBunResolution(container: Gateways, proc: ProcFake): Promise<
     result: { stdout: `${REAL_BUN_PATH}\n`, stderr: "", exitCode: 0 },
   });
   await container.fs.writeFile(REAL_BUN_PATH, "");
+  // The pi target copies this bundle; every full install below includes it,
+  // from whichever repoRoot that scenario installs.
+  await Promise.all(
+    [REPO_ROOT, OLD_REPO_ROOT].map((root) =>
+      container.fs.writeFile(
+        fixturePath(root, "/dist/ccMemoryExtension.js"),
+        "pi extension bundle",
+      ),
+    ),
+  );
   await container.fs.writeFile(registryPath(container.env.home()), "");
 }
 
@@ -447,5 +461,104 @@ describe("InstallService — uninstall", () => {
     expect(await container.fs.readFile(fixturePath(targetPath, "/SKILL.md"))).toBe(
       "the real, foreign skill",
     );
+  });
+});
+
+describe("InstallService — --agents target selection", () => {
+  test("a pi-only install never reads or writes ~/.claude/settings.json", async () => {
+    const proc = makeProcFake();
+    const container = makeTestGateways({ proc });
+    await setUpBunResolution(container, proc);
+
+    const result = await new InstallService(toContext(container)).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+      targets: [AgentTarget.Pi],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.targets).toEqual([AgentTarget.Pi]);
+    expect(
+      await container.fs.exists(SettingsService.defaultPath(container.env.home())),
+    ).toBe(false);
+    const manifest = await new ManifestService(toContext(container)).load(
+      ManifestService.defaultPath(container.env.home()),
+    );
+    expect(manifest?.hookCommands).toEqual({});
+    expect(manifest?.piExtensionPath).toBe(
+      PiExtensionService.defaultPath(container.env.home()),
+    );
+  });
+
+  test("a claude-only install skips the pi extension copy", async () => {
+    const proc = makeProcFake();
+    const container = makeTestGateways({ proc });
+    await setUpBunResolution(container, proc);
+
+    const result = await new InstallService(toContext(container)).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+      targets: [AgentTarget.ClaudeCode],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.actionLines.join("\n")).not.toContain("pi extension");
+    expect(
+      await container.fs.exists(PiExtensionService.defaultPath(container.env.home())),
+    ).toBe(false);
+    expect(
+      await container.fs.exists(SettingsService.defaultPath(container.env.home())),
+    ).toBe(true);
+  });
+
+  test("the default installs both targets and reports them", async () => {
+    const proc = makeProcFake();
+    const container = makeTestGateways({ proc });
+    await setUpBunResolution(container, proc);
+
+    const result = await new InstallService(toContext(container)).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.targets).toEqual([AgentTarget.ClaudeCode, AgentTarget.Pi]);
+    expect(result.value.actionLines).toContain("agents: claude,pi");
+    expect(
+      await container.fs.exists(SettingsService.defaultPath(container.env.home())),
+    ).toBe(true);
+    expect(
+      await container.fs.exists(PiExtensionService.defaultPath(container.env.home())),
+    ).toBe(true);
+  });
+
+  test("uninstall removes a recorded pi extension and its skills", async () => {
+    const installProc = makeProcFake();
+    const container = makeTestGateways({ proc: installProc });
+    await setUpBunResolution(container, installProc);
+    await container.fs.mkdir(fixturePath(REPO_ROOT, "/src/skills/remember"));
+    const installed = await new InstallService(toContext(container)).install({
+      repoRoot: REPO_ROOT,
+      dryRun: false,
+      targets: [AgentTarget.Pi],
+    });
+    expect(installed.ok).toBe(true);
+    const piSkillsDir = joinAbs(container.env.home(), ".pi", "agent", "skills");
+    expect(await container.fs.exists(joinAbs(piSkillsDir, "remember"))).toBe(true);
+
+    const uninstallProc = makeProcFake();
+    const report = await new InstallService(
+      toContext(rerunGateways(container, uninstallProc)),
+    ).uninstall();
+
+    expect(report.uninstalled).toBe(true);
+    expect(report.actionLines.join("\n")).toContain("removed pi extension");
+    expect(report.actionLines.join("\n")).toContain("removed pi skill remember");
+    expect(
+      await container.fs.exists(PiExtensionService.defaultPath(container.env.home())),
+    ).toBe(false);
   });
 });

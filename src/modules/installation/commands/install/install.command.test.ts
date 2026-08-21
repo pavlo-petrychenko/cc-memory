@@ -35,6 +35,18 @@ describe("InstallCommand", () => {
     expect(result.exitCode).toBe(0);
     expect(result.lines[0]).toContain("dry run");
   });
+
+  test("an unknown --agents target fails before anything is written", async () => {
+    const result = await makeInstallHandler().invoke(["--agents", "codex"]);
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderrMessage ?? "").toContain("unknown --agents target 'codex'");
+  });
+
+  test("--agents accepts a comma list and reports the resolved targets", async () => {
+    const result = await makeInstallHandler().invoke(["--dry-run", "--agents", "pi"]);
+    expect(result.exitCode).toBe(0);
+    expect(result.lines.join("\n")).toContain("agents: pi");
+  });
 });
 
 describe("UninstallCommand", () => {

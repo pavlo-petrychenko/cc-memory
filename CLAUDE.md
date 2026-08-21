@@ -1,7 +1,7 @@
 # cc-memory — working agreement
 
-Persistent, layered, per-workspace memory for Claude Code: markdown vaults as the
-source of truth, a derived SQLite FTS5 index, five Claude Code hooks and five skills.
+Persistent, layered, per-workspace memory for Claude Code and pi: markdown vaults
+as the source of truth, a derived SQLite FTS5 index, five hooks and five skills.
 Entirely session-driven — there is no background process.
 
 It began as a Python proof of concept and was rewritten in TypeScript on Bun with the
@@ -86,14 +86,13 @@ is simply **no I/O and no ambient state**.
 src/
   core/        shared kernel: Result, AbsPath, Workspace, Config, CLI outcomes, and
                dependency-free path/slug utils. Depends on nothing.
-  platform/    the ONLY place touching the outside world — fileSystem, git, proc,
-               sqlite, logger, clock, env, stdio, container.
-  workspace/   the registry, cwd→workspace resolution, worktree slugs, target resolution
-  retrieval/   tokenizing, query building, ranking, the SQLite index, search
-  knowledge/   vault notes: frontmatter/wikilink parsing, and the KB map
-  worklog/     STATE.md + the dated journal
-  install/     wiring into Claude Code, and doctor (which diagnoses an install)
-  session/     the five Claude Code hooks and their shared fail-open runtime
+  gateways/    the ONLY place touching the outside world — fileSystem, git, proc,
+               sqlite, logger, clock, env, stdio.
+  modules/     one directory per feature: memory (hooks + search), workspace,
+               worklog (STATE + journal), note, kb, installation, meta.
+  piBridge/    the pi coding-agent adapter: a bundled extension that drives the
+               same `memory hook <name>` subprocess protocol from pi's events.
+  skills/      installed skill content (symlinked into each host's skills dir).
   cli/         the composition shell: arg parsing, dispatch, output
   testing/     fakes, fixtures, goldens and helpers — imported only by tests
   quality/     tests that assert on the repo's own shape, not on any one file

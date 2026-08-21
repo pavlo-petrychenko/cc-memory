@@ -60,6 +60,8 @@ describe("ManifestService — ~/.claude/memory/installed.json", () => {
       skills: [{ name: "remember", backedUp: true }],
       settingsBackupPath: "/home/test/.claude/settings.json.pre-ccmemory.bak",
       legacyPurgeDone: true,
+      piExtensionPath: "/home/test/.pi/agent/extensions/cc-memory.js",
+      piSkills: [{ name: "remember", backedUp: false }],
     });
 
     const loaded = await service.load(path);
@@ -75,6 +77,8 @@ describe("ManifestService — ~/.claude/memory/installed.json", () => {
       skills: [{ name: "remember", backedUp: true }],
       settingsBackupPath: "/home/test/.claude/settings.json.pre-ccmemory.bak",
       legacyPurgeDone: true,
+      piExtensionPath: "/home/test/.pi/agent/extensions/cc-memory.js",
+      piSkills: [{ name: "remember", backedUp: false }],
     });
   });
 

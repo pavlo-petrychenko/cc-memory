@@ -1,14 +1,16 @@
 import { Service } from "@/core/index.ts";
 import type { AbsPath } from "@/core/index.ts";
-import { absPath, joinAbs } from "@/core/index.ts";
+import { absPath, expandPath, joinAbs } from "@/core/index.ts";
 import type { Result } from "@/core/index.ts";
 import { registryPath } from "@/core/index.ts";
 import { HOOK_DESCRIPTORS } from "@/core/transport/hook/hook.constants.ts";
 import {
   DIST_RELATIVE_PATH,
+  PI_EXTENSION_DIST_RELATIVE_PATH,
   SKILLS_SOURCE_RELATIVE_PATH,
 } from "@/modules/installation/install.constants.ts";
 import {
+  AgentTarget,
   type InstallError,
   InstallErrorKind,
   type InstallOptions,
@@ -26,6 +28,8 @@ import {
 } from "@/modules/installation/steps/manifest/manifest.constants.ts";
 import { ManifestService } from "@/modules/installation/steps/manifest/manifest.repository.ts";
 import type { InstalledManifest } from "@/modules/installation/steps/manifest/manifest.typedefs.ts";
+import { PI_SKILLS_HOME_RELATIVE_PATH } from "@/modules/installation/steps/piExtension/piExtension.constants.ts";
+import { PiExtensionService } from "@/modules/installation/steps/piExtension/piExtension.repository.ts";
 import { SeedService } from "@/modules/installation/steps/seed/seed.repository.ts";
 import { SettingsService } from "@/modules/installation/steps/settings/settings.repository.ts";
 import { ShimService } from "@/modules/installation/steps/shim/shim.repository.ts";
@@ -79,20 +83,37 @@ export class InstallService extends Service {
     return {
       home,
       distPath: InstallService.defaultDistPath(repoRoot),
+      extensionDistPath: joinAbs(repoRoot, PI_EXTENSION_DIST_RELATIVE_PATH),
       manifestPath: ManifestService.defaultPath(home),
       settingsPath: SettingsService.defaultPath(home),
       settingsBackupPath: SettingsService.defaultBackupPath(home),
       skillsSourceDir: InstallService.defaultSkillsSourceDir(repoRoot),
       skillsTargetDir: SkillsService.defaultTargetDir(home),
+      piSkillsTargetDir: expandPath(PI_SKILLS_HOME_RELATIVE_PATH, home),
+      piExtensionTargetPath: PiExtensionService.defaultPath(home),
       shimPath: ShimService.defaultPath(home),
       registryPath: registryPath(home),
     };
+  }
+
+  /** Absent `--agents` means every known host. */
+  private static resolveTargets(
+    selected: readonly AgentTarget[] | undefined,
+  ): readonly AgentTarget[] {
+    return selected ?? [AgentTarget.ClaudeCode, AgentTarget.Pi];
+  }
+
+  private static targetsLabel(targets: readonly AgentTarget[]): string {
+    return targets.map((target) => target.valueOf()).join(",");
   }
 
   async install(options: InstallOptions): Promise<Result<InstallReport, InstallError>> {
     const { fs } = this.gateways;
     const repoRoot = options.repoRoot;
     const paths = this.gatherHomePaths(repoRoot);
+    const targets = InstallService.resolveTargets(options.targets);
+    const hasClaude = targets.includes(AgentTarget.ClaudeCode);
+    const hasPi = targets.includes(AgentTarget.Pi);
 
     const bunPathResult = await this.makeService(BunPathService).resolve();
     if (!bunPathResult.ok) {
@@ -112,97 +133,149 @@ export class InstallService extends Service {
     );
     const runLegacyPurge = previousManifest === null || !previousManifest.legacyPurgeDone;
 
-    const settingsResult = await settingsService.load(paths.settingsPath);
-    if (!settingsResult.ok) {
-      return {
-        ok: false,
-        error: {
-          kind: InstallErrorKind.SettingsUnreadable,
-          message: InstallService.settingsFileErrorMessage(settingsResult.error),
-        },
-      };
-    }
-    const settingsBefore = settingsResult.value;
-    const surgery = SettingsService.surgerize(
-      settingsBefore,
-      manifestCommands,
-      runLegacyPurge,
-      bunPath,
-      paths.distPath,
-    );
-    const settingsDiffLines = SettingsService.diffLines(
-      JsonFileService.stringify(settingsBefore),
-      JsonFileService.stringify(surgery.settings),
-    );
-
-    const actionLines: string[] = [];
-    const purgeLine = SettingsService.purgeSummaryLine(surgery.summary);
-    if (purgeLine !== null) actionLines.push(purgeLine);
-    for (const registration of HOOK_DESCRIPTORS) {
-      actionLines.push(
-        SettingsService.hookRegisteredLine(registration.event, registration.name),
+    // Claude-only state: settings.json surgery and its diff. A pi-only install
+    // must not read, require, or touch `~/.claude/settings.json` at all.
+    let surgery: ReturnType<typeof SettingsService.surgerize> | null = null;
+    let settingsDiffLines: readonly string[] = [];
+    if (hasClaude) {
+      const settingsResult = await settingsService.load(paths.settingsPath);
+      if (!settingsResult.ok) {
+        return {
+          ok: false,
+          error: {
+            kind: InstallErrorKind.SettingsUnreadable,
+            message: InstallService.settingsFileErrorMessage(settingsResult.error),
+          },
+        };
+      }
+      const settingsBefore = settingsResult.value;
+      surgery = SettingsService.surgerize(
+        settingsBefore,
+        manifestCommands,
+        runLegacyPurge,
+        bunPath,
+        paths.distPath,
       );
+      settingsDiffLines = SettingsService.diffLines(
+        JsonFileService.stringify(settingsBefore),
+        JsonFileService.stringify(surgery.settings),
+      );
+    }
+
+    const actionLines: string[] = [`agents: ${InstallService.targetsLabel(targets)}`];
+    if (surgery !== null) {
+      const purgeLine = SettingsService.purgeSummaryLine(surgery.summary);
+      if (purgeLine !== null) actionLines.push(purgeLine);
+      for (const registration of HOOK_DESCRIPTORS) {
+        actionLines.push(
+          SettingsService.hookRegisteredLine(registration.event, registration.name),
+        );
+      }
     }
 
     const skillsService = this.makeService(SkillsService);
     const skillNames = await skillsService.discoverNames(paths.skillsSourceDir);
-    const previousSkills = previousManifest?.skills ?? [];
     const registryExists = await fs.exists(paths.registryPath);
 
     if (options.dryRun) {
-      for (const name of skillNames) actionLines.push(`skill ${name}`);
-      actionLines.push(
-        registryExists
-          ? "registry exists (left as-is)"
-          : `would seed registry -> ${paths.registryPath}`,
-      );
-      actionLines.push(`would write CLI shim -> ${paths.shimPath}`);
-      return { ok: true, value: { dryRun: true, actionLines, settingsDiffLines } };
+      for (const name of skillNames) {
+        if (hasClaude) actionLines.push(`skill ${name}`);
+        if (hasPi) actionLines.push(`pi skill ${name}`);
+      }
+      if (hasClaude) {
+        actionLines.push(
+          registryExists
+            ? "registry exists (left as-is)"
+            : `would seed registry -> ${paths.registryPath}`,
+        );
+        actionLines.push(`would write CLI shim -> ${paths.shimPath}`);
+      }
+      if (hasPi) {
+        actionLines.push(`would copy pi extension -> ${paths.piExtensionTargetPath}`);
+      }
+      return {
+        ok: true,
+        value: { dryRun: true, targets, actionLines, settingsDiffLines },
+      };
     }
 
-    const alreadyBackedUpSettings =
-      previousManifest !== null && previousManifest.settingsBackupPath !== null;
-    const didBackupSettings = await settingsService.backupIfNeeded(
-      paths.settingsPath,
-      paths.settingsBackupPath,
-      alreadyBackedUpSettings,
-    );
-    await settingsService.save(paths.settingsPath, surgery.settings);
+    let skillsOutcome = previousManifest?.skills ?? [];
+    let piSkillsOutcome = previousManifest?.piSkills ?? [];
+    let hookCommands: Record<string, string> = previousManifest?.hookCommands ?? {};
+    let settingsBackupPathForManifest = previousManifest?.settingsBackupPath ?? null;
 
-    const skillsOutcome = await skillsService.install(
-      paths.skillsSourceDir,
-      paths.skillsTargetDir,
-      skillNames,
-      previousSkills,
-    );
-    actionLines.push(...skillsOutcome.actionLines);
+    if (hasClaude && surgery !== null) {
+      const alreadyBackedUpSettings =
+        previousManifest !== null && previousManifest.settingsBackupPath !== null;
+      const didBackupSettings = await settingsService.backupIfNeeded(
+        paths.settingsPath,
+        paths.settingsBackupPath,
+        alreadyBackedUpSettings,
+      );
+      await settingsService.save(paths.settingsPath, surgery.settings);
+      settingsBackupPathForManifest = InstallService.resolveManifestBackupPath(
+        alreadyBackedUpSettings,
+        didBackupSettings,
+        previousManifest?.settingsBackupPath ?? null,
+        paths.settingsBackupPath,
+      );
 
+      const claudeSkills = await skillsService.install(
+        paths.skillsSourceDir,
+        paths.skillsTargetDir,
+        skillNames,
+        previousManifest?.skills ?? [],
+      );
+      actionLines.push(...claudeSkills.actionLines);
+      skillsOutcome = claudeSkills.skills;
+      hookCommands = surgery.hookCommands;
+    }
+
+    // The shim backs BOTH hosts — the pi bridge execs it exactly like Claude
+    // Code's hooks do — so it is written whenever anything is installed.
     await this.makeService(ShimService).write(paths.shimPath, bunPath, paths.distPath);
+
+    if (hasPi) {
+      await this.makeService(PiExtensionService).install(
+        paths.extensionDistPath,
+        paths.piExtensionTargetPath,
+      );
+      actionLines.push(`pi extension -> ${paths.piExtensionTargetPath}`);
+
+      const piSkills = await skillsService.install(
+        paths.skillsSourceDir,
+        paths.piSkillsTargetDir,
+        skillNames,
+        previousManifest?.piSkills ?? [],
+      );
+      for (const name of skillNames) actionLines.push(`pi skill ${name}`);
+      piSkillsOutcome = piSkills.skills;
+    }
 
     const seedOutcome = await this.makeService(SeedService).seed(repoRoot, paths.home);
     actionLines.push(seedOutcome.actionLine);
-
-    const settingsBackupPathForManifest = InstallService.resolveManifestBackupPath(
-      alreadyBackedUpSettings,
-      didBackupSettings,
-      previousManifest?.settingsBackupPath ?? null,
-      paths.settingsBackupPath,
-    );
 
     const nextManifest: InstalledManifest = {
       schemaVersion: MANIFEST_SCHEMA_VERSION,
       repoRoot,
       bunPath,
       distPath: paths.distPath,
-      hookCommands: surgery.hookCommands,
+      hookCommands,
       shimPath: paths.shimPath,
-      skills: skillsOutcome.skills,
+      skills: skillsOutcome,
       settingsBackupPath: settingsBackupPathForManifest,
       legacyPurgeDone: true,
+      piExtensionPath: hasPi
+        ? paths.piExtensionTargetPath
+        : (previousManifest?.piExtensionPath ?? null),
+      piSkills: piSkillsOutcome,
     };
     await manifestService.save(paths.manifestPath, nextManifest);
 
-    return { ok: true, value: { dryRun: false, actionLines, settingsDiffLines } };
+    return {
+      ok: true,
+      value: { dryRun: false, targets, actionLines, settingsDiffLines },
+    };
   }
 
   /** Reverses exactly what the manifest records — registry and vault content are
@@ -225,8 +298,9 @@ export class InstallService extends Service {
 
     const settingsPath = SettingsService.defaultPath(home);
     const settingsResult = await settingsService.load(settingsPath);
-    if (settingsResult.ok) {
-      const manifestCommands = new Set(Object.values(manifest.hookCommands));
+    const manifestHookCommands = Object.values(manifest.hookCommands);
+    if (settingsResult.ok && manifestHookCommands.length > 0) {
+      const manifestCommands = new Set(manifestHookCommands);
       const existingHooksField = settingsResult.value["hooks"];
       const existingHooks =
         existingHooksField !== undefined && JsonFileService.isObject(existingHooksField)
@@ -251,6 +325,22 @@ export class InstallService extends Service {
       manifest.skills.map((skill) => this.restoreOneSkill(skillsTargetDir, skill)),
     );
     for (const skill of manifest.skills) actionLines.push(`removed skill ${skill.name}`);
+
+    if (manifest.piExtensionPath) {
+      await this.makeService(PiExtensionService).remove(
+        absPath(manifest.piExtensionPath),
+      );
+      actionLines.push(`removed pi extension -> ${manifest.piExtensionPath}`);
+    }
+    const piSkillsTargetDir = expandPath(PI_SKILLS_HOME_RELATIVE_PATH, home);
+    await Promise.all(
+      (manifest.piSkills ?? []).map((skill) =>
+        this.restoreOneSkill(piSkillsTargetDir, skill),
+      ),
+    );
+    for (const skill of manifest.piSkills ?? []) {
+      actionLines.push(`removed pi skill ${skill.name}`);
+    }
 
     await fs.remove(manifestPath);
     actionLines.push("removed installed.json manifest");
