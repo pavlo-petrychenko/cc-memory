@@ -1,59 +1,215 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>cc-memory — Wireframe Options</title>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Inter,system-ui,sans-serif;background:#0B1A2E;color:#E8F0F7;padding:40px;min-height:100vh}
-  h1{font-size:28px;font-weight:700;letter-spacing:-0.03em;margin-bottom:6px}
-  p.sub{color:#8A9BB5;font-size:14px;margin-bottom:32px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;max-width:1200px}
-  a.card{background:#122A4A;border:1px solid #1E3A5F;border-radius:12px;overflow:hidden;text-decoration:none;color:inherit;display:block;transition:transform .15s,border-color .15s}
-  a.card:hover{transform:translateY(-3px);border-color:#2A9D8F}
-  .thumb{height:200px;background:#0B1A2E;position:relative;overflow:hidden;border-bottom:1px solid #1E3A5F;display:flex;align-items:center;justify-content:center}
-  .thumb iframe{width:140%;height:140%;transform:scale(0.5);transform-origin:top left;border:0;pointer-events:none}
-  .meta{padding:16px}
-  .meta h2{font-size:15px;font-weight:600;margin-bottom:4px}
-  .meta p{font-size:13px;color:#8A9BB5;line-height:1.5}
-  .badge{display:inline-block;font:10px JetBrains Mono,monospace;letter-spacing:.08em;text-transform:uppercase;background:#1E3A5F;color:#2A9D8F;padding:3px 7px;border-radius:4px;margin-bottom:8px}
-  .badge.obsidian{background:#2e2a4a;color:#8B5CF6}
-  .badge.archive{background:#3a3326;color:#B89B5C}
-  .badge.console{background:#1a1a1a;color:#8B5CF6;border:1px solid #333}
-  .badge.field{background:#332a1e;color:#E6A03F}
-  .badge.lab{background:#1E3A5F;color:#2A9D8F}
-  footer{margin-top:32px;color:#6B7A90;font-size:13px}
-  footer code{background:#122A4A;padding:2px 6px;border-radius:4px;font-family:JetBrains Mono,monospace}
-</style>
-</head>
-<body>
-<h1>cc-memory — Viewer Wireframe Options</h1>
-<p class="sub">One view (JWT Handling note) × 5 visual directions. Static, non-interactive. Click to open full preview. Tell me the name you pick.</p>
-<div class="grid">
-  <a class="card" href="wireframe-lab-notebook.html" target="_blank">
-    <div class="thumb"><iframe src="wireframe-lab-notebook.html" loading="lazy" tabindex="-1"></iframe></div>
-    <div class="meta"><span class="badge lab">Lab Notebook</span><h2>Lab Notebook</h2><p>Blueprint grid, stamped mono pills, Geist Sans + JetBrains Mono, teal circuit accent. Your pick earlier.</p></div>
-  </a>
-  <a class="card" href="wireframe-obsidian.html" target="_blank">
-    <div class="thumb"><iframe src="wireframe-obsidian.html" loading="lazy" tabindex="-1"></iframe></div>
-    <div class="meta"><span class="badge obsidian">Obsidian Native</span><h2>Obsidian Native</h2><p>Faithful clone — Inter, purple links, properties table, ribbon, stacked tabs. Zero learning curve.</p></div>
-  </a>
-  <a class="card" href="wireframe-archive-cards.html" target="_blank">
-    <div class="thumb"><iframe src="wireframe-archive-cards.html" loading="lazy" tabindex="-1"></iframe></div>
-    <div class="meta"><span class="badge archive">Archive Cards</span><h2>Archive Cards</h2><p>Card catalog, brass pulls, stone drawer, paper cards with drop shadows. Tactile archive.</p></div>
-  </a>
-  <a class="card" href="wireframe-console.html" target="_blank">
-    <div class="thumb"><iframe src="wireframe-console.html" loading="lazy" tabindex="-1"></iframe></div>
-    <div class="meta"><span class="badge console">Console</span><h2>Console</h2><p>Dev terminal — dense mono, violet accent, line numbers, command bar. For terminal natives.</p></div>
-  </a>
-  <a class="card" href="wireframe-field-study.html" target="_blank">
-    <div class="thumb"><iframe src="wireframe-field-study.html" loading="lazy" tabindex="-1"></iframe></div>
-    <div class="meta"><span class="badge field">Field Study</span><h2>Field Study</h2><p>Obsidian rock literal — limestone & basalt, Sora stone-cut titles, amber veins. Geological.</p></div>
-  </a>
-</div>
-<footer>
-  All previews use same content: <code>auth/jwt.md</code> + KB tree + Worklogs + Backlinks. Viewer-only.
-</footer>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>cc-memory — Wireframe Options</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: Inter, system-ui, sans-serif;
+        background: #0b1a2e;
+        color: #e8f0f7;
+        padding: 40px;
+        min-height: 100vh;
+      }
+      h1 {
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        margin-bottom: 6px;
+      }
+      p.sub {
+        color: #8a9bb5;
+        font-size: 14px;
+        margin-bottom: 32px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+        max-width: 1200px;
+      }
+      a.card {
+        background: #122a4a;
+        border: 1px solid #1e3a5f;
+        border-radius: 12px;
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        transition:
+          transform 0.15s,
+          border-color 0.15s;
+      }
+      a.card:hover {
+        transform: translateY(-3px);
+        border-color: #2a9d8f;
+      }
+      .thumb {
+        height: 200px;
+        background: #0b1a2e;
+        position: relative;
+        overflow: hidden;
+        border-bottom: 1px solid #1e3a5f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .thumb iframe {
+        width: 140%;
+        height: 140%;
+        transform: scale(0.5);
+        transform-origin: top left;
+        border: 0;
+        pointer-events: none;
+      }
+      .meta {
+        padding: 16px;
+      }
+      .meta h2 {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .meta p {
+        font-size: 13px;
+        color: #8a9bb5;
+        line-height: 1.5;
+      }
+      .badge {
+        display: inline-block;
+        font:
+          10px JetBrains Mono,
+          monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: #1e3a5f;
+        color: #2a9d8f;
+        padding: 3px 7px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+      }
+      .badge.obsidian {
+        background: #2e2a4a;
+        color: #8b5cf6;
+      }
+      .badge.archive {
+        background: #3a3326;
+        color: #b89b5c;
+      }
+      .badge.console {
+        background: #1a1a1a;
+        color: #8b5cf6;
+        border: 1px solid #333;
+      }
+      .badge.field {
+        background: #332a1e;
+        color: #e6a03f;
+      }
+      .badge.lab {
+        background: #1e3a5f;
+        color: #2a9d8f;
+      }
+      footer {
+        margin-top: 32px;
+        color: #6b7a90;
+        font-size: 13px;
+      }
+      footer code {
+        background: #122a4a;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family:
+          JetBrains Mono,
+          monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>cc-memory — Viewer Wireframe Options</h1>
+    <p class="sub">
+      One view (JWT Handling note) × 5 visual directions. Static, non-interactive. Click
+      to open full preview. Tell me the name you pick.
+    </p>
+    <div class="grid">
+      <a class="card" href="wireframe-lab-notebook.html" target="_blank">
+        <div class="thumb">
+          <iframe src="wireframe-lab-notebook.html" loading="lazy" tabindex="-1"></iframe>
+        </div>
+        <div class="meta">
+          <span class="badge lab">Lab Notebook</span>
+          <h2>Lab Notebook</h2>
+          <p>
+            Blueprint grid, stamped mono pills, Geist Sans + JetBrains Mono, teal circuit
+            accent. Your pick earlier.
+          </p>
+        </div>
+      </a>
+      <a class="card" href="wireframe-obsidian.html" target="_blank">
+        <div class="thumb">
+          <iframe src="wireframe-obsidian.html" loading="lazy" tabindex="-1"></iframe>
+        </div>
+        <div class="meta">
+          <span class="badge obsidian">Obsidian Native</span>
+          <h2>Obsidian Native</h2>
+          <p>
+            Faithful clone — Inter, purple links, properties table, ribbon, stacked tabs.
+            Zero learning curve.
+          </p>
+        </div>
+      </a>
+      <a class="card" href="wireframe-archive-cards.html" target="_blank">
+        <div class="thumb">
+          <iframe
+            src="wireframe-archive-cards.html"
+            loading="lazy"
+            tabindex="-1"
+          ></iframe>
+        </div>
+        <div class="meta">
+          <span class="badge archive">Archive Cards</span>
+          <h2>Archive Cards</h2>
+          <p>
+            Card catalog, brass pulls, stone drawer, paper cards with drop shadows.
+            Tactile archive.
+          </p>
+        </div>
+      </a>
+      <a class="card" href="wireframe-console.html" target="_blank">
+        <div class="thumb">
+          <iframe src="wireframe-console.html" loading="lazy" tabindex="-1"></iframe>
+        </div>
+        <div class="meta">
+          <span class="badge console">Console</span>
+          <h2>Console</h2>
+          <p>
+            Dev terminal — dense mono, violet accent, line numbers, command bar. For
+            terminal natives.
+          </p>
+        </div>
+      </a>
+      <a class="card" href="wireframe-field-study.html" target="_blank">
+        <div class="thumb">
+          <iframe src="wireframe-field-study.html" loading="lazy" tabindex="-1"></iframe>
+        </div>
+        <div class="meta">
+          <span class="badge field">Field Study</span>
+          <h2>Field Study</h2>
+          <p>
+            Obsidian rock literal — limestone & basalt, Sora stone-cut titles, amber
+            veins. Geological.
+          </p>
+        </div>
+      </a>
+    </div>
+    <footer>
+      All previews use same content: <code>auth/jwt.md</code> + KB tree + Worklogs +
+      Backlinks. Viewer-only.
+    </footer>
+  </body>
 </html>

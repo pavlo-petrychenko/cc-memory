@@ -54,7 +54,10 @@ export default [
         "error",
         {
           patterns: [
-            { group: ["server/*", "src/server/*"], message: "client may not import server" },
+            {
+              group: ["server/*", "src/server/*"],
+              message: "client may not import server",
+            },
             { group: ["src/*"], message: "use @/* alias" },
           ],
         },

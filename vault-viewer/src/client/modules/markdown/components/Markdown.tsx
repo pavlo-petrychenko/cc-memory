@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
 import { fileUrl } from "../../../services/api/client.js";
 import { Callout } from "./Callout.js";
 import { EmbedBlock } from "./EmbedBlock.js";
@@ -19,11 +20,14 @@ export function preprocessMarkdown(text: string): string {
     const t = String(targetRaw).split("|")[0]?.trim() ?? "";
     return `\n> [!EMBED] ${t}\n`;
   });
-  out = out.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, (_m: string, target: string, alias: string) => {
-    const t = String(target).trim();
-    const a = String(alias).trim();
-    return `[${a}](wikilink://${encodeURIComponent(t)})`;
-  });
+  out = out.replace(
+    /\[\[([^\]|]+)\|([^\]]+)\]\]/g,
+    (_m: string, target: string, alias: string) => {
+      const t = String(target).trim();
+      const a = String(alias).trim();
+      return `[${a}](wikilink://${encodeURIComponent(t)})`;
+    },
+  );
   out = out.replace(/\[\[([^\]]+)\]\]/g, (_m: string, targetRaw: string) => {
     const t = String(targetRaw).trim();
     return `[${t}](wikilink://${encodeURIComponent(t)})`;
@@ -31,7 +35,13 @@ export function preprocessMarkdown(text: string): string {
   return out;
 }
 
-export function Markdown({ body, workspace, currentPath, onWikilink, knownTargets }: MarkdownProps) {
+export function Markdown({
+  body,
+  workspace,
+  currentPath,
+  onWikilink,
+  knownTargets,
+}: MarkdownProps) {
   const processed = useMemo(() => preprocessMarkdown(body), [body]);
 
   return (
@@ -51,10 +61,13 @@ export function Markdown({ body, workspace, currentPath, onWikilink, knownTarget
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  const newTab = (e as React.MouseEvent).metaKey || (e as React.MouseEvent).ctrlKey;
+                  const newTab =
+                    (e as React.MouseEvent).metaKey || (e as React.MouseEvent).ctrlKey;
                   onWikilink?.(target, newTab);
                 }}
-                className={isKnown ? "wikilink wikilink-known" : "wikilink wikilink-unknown"}
+                className={
+                  isKnown ? "wikilink wikilink-known" : "wikilink wikilink-unknown"
+                }
                 title={isKnown ? target : `${target} — unresolved`}
               >
                 {props.children}
@@ -66,7 +79,9 @@ export function Markdown({ body, workspace, currentPath, onWikilink, knownTarget
         img(props) {
           let src = String(props.src ?? "");
           if (!src.startsWith("http") && !src.startsWith("/api")) {
-            const dir = currentPath.includes("/") ? currentPath.slice(0, currentPath.lastIndexOf("/")) : "";
+            const dir = currentPath.includes("/")
+              ? currentPath.slice(0, currentPath.lastIndexOf("/"))
+              : "";
             const rel = src.startsWith("./") ? src.slice(2) : src;
             const full = dir ? `${dir}/${rel}` : rel;
             src = fileUrl(workspace, full);
@@ -74,8 +89,17 @@ export function Markdown({ body, workspace, currentPath, onWikilink, knownTarget
           return <img {...props} src={src} className="md-img" />;
         },
         blockquote(props) {
-          const inner = (props.children as unknown as { props?: { children?: unknown } }[] | undefined)?.[0];
-          const raw = String((inner as { props?: { children?: unknown } } | string | undefined) && typeof inner === "object" && inner !== null && "props" in inner ? (inner as { props?: { children?: unknown } }).props?.children ?? "" : "").trim();
+          const inner = (
+            props.children as unknown as { props?: { children?: unknown } }[] | undefined
+          )?.[0];
+          const raw = String(
+            (inner as { props?: { children?: unknown } } | string | undefined) &&
+              typeof inner === "object" &&
+              inner !== null &&
+              "props" in inner
+              ? ((inner as { props?: { children?: unknown } }).props?.children ?? "")
+              : "",
+          ).trim();
 
           // Fallback: stringify children for simple cases
           const altRaw =
@@ -89,7 +113,9 @@ export function Markdown({ body, workspace, currentPath, onWikilink, knownTarget
 
           if (altRaw.startsWith("[!EMBED]")) {
             const target = altRaw.replace("[!EMBED]", "").trim();
-            return <EmbedBlock target={target} onWikilink={(t) => onWikilink?.(t, false)} />;
+            return (
+              <EmbedBlock target={target} onWikilink={(t) => onWikilink?.(t, false)} />
+            );
           }
           if (altRaw.startsWith("[!")) {
             const isWarn = altRaw.includes("WARNING");
@@ -98,9 +124,13 @@ export function Markdown({ body, workspace, currentPath, onWikilink, knownTarget
           return <blockquote className="md-blockquote">{props.children}</blockquote>;
         },
         code(props) {
-          const { children, className } = props as { children?: unknown; className?: string };
+          const { children, className } = props as {
+            children?: unknown;
+            className?: string;
+          };
           const isInline = !className;
-          if (isInline) return <code className="md-code-inline">{children as string}</code>;
+          if (isInline)
+            return <code className="md-code-inline">{children as string}</code>;
           const lang = String(className ?? "").replace("language-", "");
           const codeText = String(children).trim();
           if (lang === "mermaid") {

@@ -12,7 +12,12 @@ export const relPathSchema = z
     (v) => {
       try {
         const d = decodeURIComponent(v);
-        return !d.includes("..") && !d.startsWith("/") && !d.includes("//") && !d.includes("\\");
+        return (
+          !d.includes("..") &&
+          !d.startsWith("/") &&
+          !d.includes("//") &&
+          !d.includes("\\")
+        );
       } catch {
         return false;
       }

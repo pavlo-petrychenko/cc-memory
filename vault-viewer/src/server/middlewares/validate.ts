@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import type { z } from "zod";
+
 import { ValidationError } from "../errors/appError.js";
 
 type Where = "query" | "body" | "params";

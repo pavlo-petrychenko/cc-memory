@@ -1,5 +1,15 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Tab } from "../../../../src/types.js";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+
+/** One open IDE-style tab over a vault note. Lives here because this provider
+ * owns the tab state; `App` and the tab strip render from it. */
+export type Tab = { relPath: string; title: string };
 
 type TabsContextValue = {
   tabs: Tab[];
@@ -11,7 +21,13 @@ type TabsContextValue = {
 
 const TabsContext = createContext<TabsContextValue | null>(null);
 
-export function TabsProvider({ workspaceId, children }: { workspaceId: string; children: ReactNode }) {
+export function TabsProvider({
+  workspaceId,
+  children,
+}: {
+  workspaceId: string;
+  children: ReactNode;
+}) {
   const [tabs, setTabs] = useState<Tab[]>(() => {
     try {
       return JSON.parse(localStorage.getItem(`tabs:${workspaceId}`) ?? "[]");
@@ -50,7 +66,11 @@ export function TabsProvider({ workspaceId, children }: { workspaceId: string; c
     [activePath],
   );
 
-  return <TabsContext.Provider value={{ tabs, activePath, openPath, closeTab, setActivePath }}>{children}</TabsContext.Provider>;
+  return (
+    <TabsContext.Provider value={{ tabs, activePath, openPath, closeTab, setActivePath }}>
+      {children}
+    </TabsContext.Provider>
+  );
 }
 
 export function useTabs(): TabsContextValue {

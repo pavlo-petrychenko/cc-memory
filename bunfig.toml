@@ -19,6 +19,10 @@
 # nothing at all. Every value below was verified by seeding a file that violates it
 # and checking the exit code — do the same if you change any of them.
 [test]
+# Discovery is rooted at `src/` — `vault-viewer/` is a sibling sub-project with its
+# own vitest suite and must not be picked up (its tests import `vitest`, which the
+# root bun runner cannot resolve).
+root = "./src"
 # LINES only. Function coverage is not a usable signal here: Bun counts a class's
 # implicit constructor as an uncovered function, so a class with one method and no
 # declared constructor reads 50% however well it is tested. Chasing that number

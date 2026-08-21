@@ -1,4 +1,5 @@
 import { treeResponseSchema } from "@shared/contracts/tree.contract.js";
+
 import { fetchJson } from "./client.js";
 
 export async function getTree(

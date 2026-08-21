@@ -1,5 +1,5 @@
-import { readdir, readFile, stat, realpath as fsRealpath } from "node:fs/promises";
 import type { Dirent } from "node:fs";
+import { readdir, readFile, stat, realpath as fsRealpath } from "node:fs/promises";
 
 export type FileStat = {
   isDirectory(): boolean;
@@ -16,7 +16,10 @@ export interface FileSystem {
 }
 
 export class NodeFileSystem implements FileSystem {
-  async readdir(path: string, opts?: { withFileTypes?: boolean }): Promise<string[] | Dirent[]> {
+  async readdir(
+    path: string,
+    opts?: { withFileTypes?: boolean },
+  ): Promise<string[] | Dirent[]> {
     if (opts?.withFileTypes) {
       return readdir(path, { withFileTypes: true });
     }
@@ -59,7 +62,10 @@ export class MemoryFileSystem implements FileSystem {
     }
   }
 
-  async readdir(path: string, opts?: { withFileTypes?: boolean }): Promise<string[] | Dirent[]> {
+  async readdir(
+    path: string,
+    opts?: { withFileTypes?: boolean },
+  ): Promise<string[] | Dirent[]> {
     const prefix = path.endsWith("/") ? path : path + "/";
     const entries = new Set<string>();
     for (const f of this.files.keys()) {
@@ -82,7 +88,9 @@ export class MemoryFileSystem implements FileSystem {
       // return Dirent-like objects with isDirectory/isFile
       return result.map((name) => {
         const full = prefix + name;
-        const isDir = this.dirs.has(full) || [...this.files.keys()].some((f) => f.startsWith(full + "/"));
+        const isDir =
+          this.dirs.has(full) ||
+          [...this.files.keys()].some((f) => f.startsWith(full + "/"));
         return {
           name,
           isDirectory: () => isDir,
@@ -108,10 +116,23 @@ export class MemoryFileSystem implements FileSystem {
 
   async stat(path: string): Promise<FileStat> {
     if (this.files.has(path)) {
-      return { isDirectory: () => false, isFile: () => true, mtimeMs: Date.now(), size: this.files.get(path)!.length };
+      return {
+        isDirectory: () => false,
+        isFile: () => true,
+        mtimeMs: Date.now(),
+        size: this.files.get(path)!.length,
+      };
     }
-    if (this.dirs.has(path) || [...this.files.keys()].some((f) => f.startsWith(path + "/"))) {
-      return { isDirectory: () => true, isFile: () => false, mtimeMs: Date.now(), size: 0 };
+    if (
+      this.dirs.has(path) ||
+      [...this.files.keys()].some((f) => f.startsWith(path + "/"))
+    ) {
+      return {
+        isDirectory: () => true,
+        isFile: () => false,
+        mtimeMs: Date.now(),
+        size: 0,
+      };
     }
     throw new Error(`ENOENT: ${path}`);
   }

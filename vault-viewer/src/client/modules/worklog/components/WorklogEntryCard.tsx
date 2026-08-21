@@ -1,5 +1,6 @@
-import { memo } from "react";
 import type { WorklogEntryDto } from "@shared/contracts/worklog.contract.js";
+import { memo } from "react";
+
 import { Markdown } from "../../markdown/components/Markdown.js";
 
 type Props = {

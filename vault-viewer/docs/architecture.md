@@ -430,7 +430,7 @@ Port `purity.test.ts` (no `node:fs` in `*.pure.ts`), `moduleBoundaries.test.ts`,
 | **4** | Client slicing | Extract `AppShell`, `providers`, `modules/*` hooks, eliminate `any[]`, introduce `ui/*` atoms, move `style={{}}` → `tokens.css` classes, `TanStack Query` wiring | God splits, render hygiene |
 | **5** | Tooling | `eslint` boundaries, `oxfmt`, `vitest`, `check` gate, lazy-load `GraphCanvas` + `Mermaid` | F9 + perf |
 
-Cost: ~3 days to PR3 (highest leverage — security + testability). Graph/client modularization can land after. Each phase keeps `seed-vault` as fixture — no need for real `~/.agent/memory` in CI.
+Cost: ~3 days to PR3 (highest leverage — security + testability). Graph/client modularization can land after. Each phase keeps `seed-vault` as fixture — no need for real `~/.claude/memory` in CI.
 
 `app.ts` `createApp` with `MemoryFs` ensures integration tests run in-process, no port binding, no env mutation (avoids `process.env.HOME` vs `os.homedir()` trap).
 
@@ -443,7 +443,7 @@ Per `CLAUDE.md` discipline, these are not free parameters — they are pinned by
 - BM25-ish weights `title×10 / tags×5 / body×1 / relPath×2` in `vault.pure.ts` (divergent from main `C7` `3/1/1` and `10/1/5` — document divergence, do not reason).
 - Graph physics `DEFAULT_CONFIG` (linkDistance 72, linkStrength 0.55, charge -140, collideRadius 10, clusterStrength 0.18, centerStrength 0.08), RRF k=60, compound-split tokens.
 - Palette `FEATURE_PALETTE` 10-color ordered alphabetically, consistent across sessions.
-- Ports: API `3416` / UI `3415` (do not clash with Lab 3413 / Obsidian 3414).
+- Ports: API `3416` / UI `3415` (the wireframe-variant ports Lab 3413 / Obsidian 3414 are gone — those variants were never shipped).
 - Each constant lives in `*.constants.ts` with `// SAFETY:` or frozen comment and a golden test.
 
 ---

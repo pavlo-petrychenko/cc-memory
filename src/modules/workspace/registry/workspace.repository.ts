@@ -84,7 +84,6 @@ export class WorkspaceRepository extends Repository {
     id: string,
   ): Promise<void> {
     await this.fs.mkdir(kb);
-    await this.fs.mkdir(joinAbs(kb, ".obsidian"));
     await this.fs.mkdir(worklogs);
     await this.fs.mkdir(parentDir(indexDb));
 

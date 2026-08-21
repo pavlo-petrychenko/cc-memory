@@ -1,6 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
+
 import { parse as parseToml } from "smol-toml";
 
 export type RawWorkspace = {
@@ -34,7 +35,10 @@ function tildify(p: string): string {
   return p;
 }
 
-export async function loadWorkspaces(): Promise<{workspaces: Workspace[]; source: string}> {
+export async function loadWorkspaces(): Promise<{
+  workspaces: Workspace[];
+  source: string;
+}> {
   const candidates = [
     process.env.CCMEM_REGISTRY ? expandTilde(process.env.CCMEM_REGISTRY) : null,
     join(homedir(), ".claude/memory/registry.toml"),
@@ -46,7 +50,7 @@ export async function loadWorkspaces(): Promise<{workspaces: Workspace[]; source
       const text = await readFile(cand, "utf8");
       const parsed = parseToml(text) as { workspace?: RawWorkspace[] };
       const raws = parsed.workspace ?? [];
-      const workspaces: Workspace[] = raws.map(r=>({
+      const workspaces: Workspace[] = raws.map((r) => ({
         id: r.id,
         kb: resolve(expandTilde(r.kb)),
         worklogs: resolve(expandTilde(r.worklogs)),
@@ -55,7 +59,7 @@ export async function loadWorkspaces(): Promise<{workspaces: Workspace[]; source
         match: (r.match ?? []).map(expandTilde),
         tildifiedKb: tildify(resolve(expandTilde(r.kb))),
       }));
-      if (workspaces.length>0) return { workspaces, source: cand };
+      if (workspaces.length > 0) return { workspaces, source: cand };
     } catch {}
   }
   // fallback to seed vault

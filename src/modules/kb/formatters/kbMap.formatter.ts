@@ -24,13 +24,13 @@ function renderFeatureLine(feature: KbMapFeature): string {
 export class KbMapFormatter {
   format(input: KbMapInput): string {
     const lines = [
-      "# Obsidian KB index (auto-injected at session start)",
+      "# KB index (auto-injected at session start)",
       "",
       `Top level of the vault at \`${input.vaultLabel}\`. This is the map ` +
         "only — when a topic below matches your task, open that folder's notes " +
-        "via the `obsidian` MCP and follow the wikilinks. Capture new durable, " +
-        "feature-level knowledge with the `save-learning` skill (writes need " +
-        "approval).",
+        "directly (plain markdown) and follow the wikilinks, or search them " +
+        "with the `memory-search` skill. Capture new durable, feature-level " +
+        "knowledge with the `save-learning` skill (writes need approval).",
       "",
       "## Features",
     ];

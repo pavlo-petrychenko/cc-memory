@@ -6,13 +6,20 @@ type TabsProps = HTMLAttributes<HTMLDivElement> & {
 
 export function Tabs({ children, activeId, ...props }: TabsProps): JSX.Element {
   return (
-    <div {...props} className={`tabs ${props.className ?? ""}`.trim()} data-active={activeId}>
+    <div
+      {...props}
+      className={`tabs ${props.className ?? ""}`.trim()}
+      data-active={activeId}
+    >
       {children}
     </div>
   );
 }
 
-export function TabsList({ children, ...props }: HTMLAttributes<HTMLDivElement>): JSX.Element {
+export function TabsList({
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>): JSX.Element {
   return (
     <div
       {...props}
@@ -34,7 +41,11 @@ type TabsTriggerProps = HTMLAttributes<HTMLDivElement> & {
   isActive?: boolean;
 };
 
-export function TabsTrigger({ isActive, children, ...props }: TabsTriggerProps): JSX.Element {
+export function TabsTrigger({
+  isActive,
+  children,
+  ...props
+}: TabsTriggerProps): JSX.Element {
   return (
     <div
       {...props}
@@ -61,7 +72,10 @@ export function TabsTrigger({ isActive, children, ...props }: TabsTriggerProps):
   );
 }
 
-export function TabsContent({ children, ...props }: HTMLAttributes<HTMLDivElement>): JSX.Element {
+export function TabsContent({
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>): JSX.Element {
   return (
     <div {...props} className={`tabs-content ${props.className ?? ""}`.trim()}>
       {children}

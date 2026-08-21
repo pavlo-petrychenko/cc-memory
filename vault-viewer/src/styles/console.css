@@ -1,29 +1,68 @@
-:root{
-  --bg:#0A0A0B; --panel:#111113; --panel2:#1A1A1E; --border:#242428; --line:#2A2A2E;
-  --text:#E6E6E6; --muted:#7A7A85; --faint:#5A5A66;
-  --accent:#6C5CFF; --accent-hover:#7D6EFF; --accent2:#A3FFB5; --red:#FF4D4D; --amber:#E6A03F;
-  --radius:6px;
+:root {
+  --bg: #0a0a0b;
+  --panel: #111113;
+  --panel2: #1a1a1e;
+  --border: #242428;
+  --line: #2a2a2e;
+  --text: #e6e6e6;
+  --muted: #7a7a85;
+  --faint: #5a5a66;
+  --accent: #6c5cff;
+  --accent-hover: #7d6eff;
+  --accent2: #a3ffb5;
+  --red: #ff4d4d;
+  --amber: #e6a03f;
+  --radius: 6px;
 }
-:root[data-theme="light"]{
-  --bg:#F2F2F3; --panel:#FFFFFF; --panel2:#ECECEE; --border:#D9D9DE; --line:#E6E6EA;
-  --text:#1A1A1E; --muted:#6E6E78; --faint:#9A9AA3;
-  --accent:#6C5CFF; --accent-hover:#5B4DE6; --accent2:#1A7A3A;
+:root[data-theme="light"] {
+  --bg: #f2f2f3;
+  --panel: #ffffff;
+  --panel2: #ececee;
+  --border: #d9d9de;
+  --line: #e6e6ea;
+  --text: #1a1a1e;
+  --muted: #6e6e78;
+  --faint: #9a9aa3;
+  --accent: #6c5cff;
+  --accent-hover: #5b4de6;
+  --accent2: #1a7a3a;
 }
-*{box-sizing:border-box}
-html,body,#root{height:100%}
-body{
-  margin:0;
-  font-family:'Fragment Mono',ui-monospace,Menlo,monospace;
-  background:var(--bg);
-  color:var(--text);
-  font-size:12.5px;
-  line-height:1.5;
-  -webkit-font-smoothing:antialiased;
+* {
+  box-sizing: border-box;
 }
-button{font:inherit}
-a{color:var(--accent);text-decoration:none}
-a:hover{text-decoration:underline}
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: "Fragment Mono", ui-monospace, Menlo, monospace;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+button {
+  font: inherit;
+}
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
 /* scrollbar */
-::-webkit-scrollbar{width:8px;height:8px}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
-::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

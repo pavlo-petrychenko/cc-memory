@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import type { WorkspaceDto } from "@shared/contracts/workspace.contract.js";
 import { useQuery } from "@tanstack/react-query";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+
 import { listWorkspaces } from "../../services/api/workspaces.api.js";
 import { qk } from "../../services/query/queryKeys.js";
-import type { WorkspaceDto } from "@shared/contracts/workspace.contract.js";
 
 const WorkspaceContext = createContext<{
   workspaces: WorkspaceDto[];

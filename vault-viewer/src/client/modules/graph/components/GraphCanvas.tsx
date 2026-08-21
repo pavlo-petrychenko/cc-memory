@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as d3 from "d3";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 export type GraphNode = {
   id: string;
@@ -47,7 +47,13 @@ type Props = {
 const WIDTH = 900;
 const HEIGHT = 520;
 
-export default function GraphCanvas({ nodes, edges, config, featureList, onSelect }: Props): React.JSX.Element {
+export default function GraphCanvas({
+  nodes,
+  edges,
+  config,
+  featureList,
+  onSelect,
+}: Props): React.JSX.Element {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const gRef = useRef<SVGGElement | null>(null);
   const simRef = useRef<d3.Simulation<GraphNode, GraphEdge> | null>(null);
@@ -89,10 +95,22 @@ export default function GraphCanvas({ nodes, edges, config, featureList, onSelec
       .force(
         "link",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (d3.forceLink as unknown as (edges: unknown) => d3.ForceLink<GraphNode, GraphEdge>)(simEdges as unknown)
+        (
+          d3.forceLink as unknown as (
+            edges: unknown,
+          ) => d3.ForceLink<GraphNode, GraphEdge>
+        )(simEdges as unknown)
           .id((d) => (d as GraphNode).id)
-          .distance((d) => ((d as GraphEdge).sameFeature ? config.linkDistance * 0.62 : config.linkDistance))
-          .strength((d) => ((d as GraphEdge).sameFeature ? Math.min(1, config.linkStrength * 1.45) : config.linkStrength * 0.72)),
+          .distance((d) =>
+            (d as GraphEdge).sameFeature
+              ? config.linkDistance * 0.62
+              : config.linkDistance,
+          )
+          .strength((d) =>
+            (d as GraphEdge).sameFeature
+              ? Math.min(1, config.linkStrength * 1.45)
+              : config.linkStrength * 0.72,
+          ),
       )
       .force("charge", d3.forceManyBody<GraphNode>().strength(config.chargeStrength))
       .force("center", d3.forceCenter<GraphNode>(cx, cy).strength(config.centerStrength))
@@ -100,7 +118,11 @@ export default function GraphCanvas({ nodes, edges, config, featureList, onSelec
         "collide",
         d3
           .forceCollide<GraphNode>()
-          .radius((d) => (d.isFocus ? 18 : d.importance !== null && d.importance >= 8 ? 13 : 9) + config.collideRadius)
+          .radius(
+            (d) =>
+              (d.isFocus ? 18 : d.importance !== null && d.importance >= 8 ? 13 : 9) +
+              config.collideRadius,
+          )
           .strength(0.75),
       )
       .force(
@@ -122,8 +144,20 @@ export default function GraphCanvas({ nodes, edges, config, featureList, onSelec
     const focusNode = simNodes.find((n) => n.isFocus);
     if (focusNode) {
       sim
-        .force("focusX", d3.forceX<GraphNode>(cx).strength(0.06).x((d) => (d.isFocus ? cx : (clusterX.get(d.feature) ?? cx))))
-        .force("focusY", d3.forceY<GraphNode>(cy).strength(0.06).y((d) => (d.isFocus ? cy : (clusterY.get(d.feature) ?? cy))));
+        .force(
+          "focusX",
+          d3
+            .forceX<GraphNode>(cx)
+            .strength(0.06)
+            .x((d) => (d.isFocus ? cx : (clusterX.get(d.feature) ?? cx))),
+        )
+        .force(
+          "focusY",
+          d3
+            .forceY<GraphNode>(cy)
+            .strength(0.06)
+            .y((d) => (d.isFocus ? cy : (clusterY.get(d.feature) ?? cy))),
+        );
     }
 
     sim.on("tick", () => {
@@ -149,15 +183,26 @@ export default function GraphCanvas({ nodes, edges, config, featureList, onSelec
     const svgEl = svgRef.current;
     const gEl = gRef.current;
     if (!svgEl || !gEl) return;
-    const svg = d3.select(svgEl) as unknown as d3.Selection<SVGSVGElement, unknown, null, undefined>;
+    const svg = d3.select(svgEl) as unknown as d3.Selection<
+      SVGSVGElement,
+      unknown,
+      null,
+      undefined
+    >;
     const g = d3.select(gEl);
-    const zoom = d3.zoom<SVGSVGElement, unknown>().scaleExtent([0.18, 5]).on("zoom", (event) => {
-      g.attr("transform", event.transform.toString());
-    });
+    const zoom = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.18, 5])
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform.toString());
+      });
     (svg as unknown as { call: (fn: unknown) => void }).call(zoom);
     svg.on("dblclick.zoom", null);
     svg.on("dblclick", () => {
-      svg.transition().duration(400).call(zoom.transform as unknown as never, d3.zoomIdentity as never);
+      svg
+        .transition()
+        .duration(400)
+        .call(zoom.transform as unknown as never, d3.zoomIdentity as never);
     });
     return () => {
       svg.on(".zoom", null);
@@ -203,12 +248,23 @@ export default function GraphCanvas({ nodes, edges, config, featureList, onSelec
   void frame;
 
   return (
-    <svg ref={svgRef} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: "100%", height: "100%", display: "block", cursor: "grab" }}>
+    <svg
+      ref={svgRef}
+      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+      style={{ width: "100%", height: "100%", display: "block", cursor: "grab" }}
+    >
       <g ref={gRef}>
         {simEdges.map((e, i) => {
-          const s = typeof e.source === "object" ? (e.source as GraphNode) : simNodes.find((n) => n.id === e.source);
-          const t = typeof e.target === "object" ? (e.target as GraphNode) : simNodes.find((n) => n.id === e.target);
-          if (!s || !t || s.x == null || s.y == null || t.x == null || t.y == null) return null;
+          const s =
+            typeof e.source === "object"
+              ? (e.source as GraphNode)
+              : simNodes.find((n) => n.id === e.source);
+          const t =
+            typeof e.target === "object"
+              ? (e.target as GraphNode)
+              : simNodes.find((n) => n.id === e.target);
+          if (!s || !t || s.x == null || s.y == null || t.x == null || t.y == null)
+            return null;
           const same = e.sameFeature;
           return (
             <line
@@ -228,9 +284,37 @@ export default function GraphCanvas({ nodes, edges, config, featureList, onSelec
           const r = n.isFocus ? 13 : isHigh ? 10 : 7.5;
           const pinned = n.fx != null;
           return (
-            <g key={n.id} className="node" onClick={() => onSelect(n.id)} style={{ cursor: "pointer" }}>
-              {n.isFocus ? <circle cx={n.x} cy={n.y} r={r + 7} fill="none" stroke="var(--accent)" strokeWidth={1} opacity={0.35} style={{ pointerEvents: "none" }} /> : null}
-              {pinned ? <circle cx={n.x} cy={n.y} r={r + 3} fill="none" stroke="var(--amber)" strokeWidth={1.2} strokeDasharray="3 2" opacity={0.7} style={{ pointerEvents: "none" }} /> : null}
+            <g
+              key={n.id}
+              className="node"
+              onClick={() => onSelect(n.id)}
+              style={{ cursor: "pointer" }}
+            >
+              {n.isFocus ? (
+                <circle
+                  cx={n.x}
+                  cy={n.y}
+                  r={r + 7}
+                  fill="none"
+                  stroke="var(--accent)"
+                  strokeWidth={1}
+                  opacity={0.35}
+                  style={{ pointerEvents: "none" }}
+                />
+              ) : null}
+              {pinned ? (
+                <circle
+                  cx={n.x}
+                  cy={n.y}
+                  r={r + 3}
+                  fill="none"
+                  stroke="var(--amber)"
+                  strokeWidth={1.2}
+                  strokeDasharray="3 2"
+                  opacity={0.7}
+                  style={{ pointerEvents: "none" }}
+                />
+              ) : null}
               <circle
                 cx={n.x}
                 cy={n.y}
@@ -239,10 +323,23 @@ export default function GraphCanvas({ nodes, edges, config, featureList, onSelec
                 stroke={n.isFocus ? "#fff" : isHigh ? "#fff" : "var(--bg)"}
                 strokeWidth={n.isFocus ? 2.2 : isHigh ? 1.4 : 1}
                 style={{
-                  filter: n.isFocus ? "drop-shadow(0 0 10px var(--accent))" : isHigh ? "drop-shadow(0 0 6px rgba(163,255,181,.6))" : undefined,
+                  filter: n.isFocus
+                    ? "drop-shadow(0 0 10px var(--accent))"
+                    : isHigh
+                      ? "drop-shadow(0 0 6px rgba(163,255,181,.6))"
+                      : undefined,
                 }}
               />
-              {n.degree > 3 ? <circle cx={(n.x ?? 0) + r * 0.7} cy={(n.y ?? 0) - r * 0.7} r={3.2} fill="var(--bg)" stroke={n.color} strokeWidth={1} /> : null}
+              {n.degree > 3 ? (
+                <circle
+                  cx={(n.x ?? 0) + r * 0.7}
+                  cy={(n.y ?? 0) - r * 0.7}
+                  r={3.2}
+                  fill="var(--bg)"
+                  stroke={n.color}
+                  strokeWidth={1}
+                />
+              ) : null}
               <text
                 x={n.x}
                 y={(n.y ?? 0) + r + 13}
@@ -251,7 +348,13 @@ export default function GraphCanvas({ nodes, edges, config, featureList, onSelec
                 fontWeight={n.isFocus ? 600 : 400}
                 fill={n.isFocus ? "var(--text)" : "var(--muted)"}
                 fontFamily="Fragment Mono"
-                style={{ pointerEvents: "none", paintOrder: "stroke", stroke: "var(--bg)", strokeWidth: 3, strokeLinejoin: "round" }}
+                style={{
+                  pointerEvents: "none",
+                  paintOrder: "stroke",
+                  stroke: "var(--bg)",
+                  strokeWidth: 3,
+                  strokeLinejoin: "round",
+                }}
               >
                 {n.title.slice(0, 20)}
               </text>

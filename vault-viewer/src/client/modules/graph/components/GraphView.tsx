@@ -1,14 +1,21 @@
 import React, { Suspense, useMemo } from "react";
+
 import type { GraphConfig } from "../hooks/useGraphPhysics.js";
-import { GraphConfigPanel } from "./GraphConfigPanel.js";
-import { GraphLegend } from "./GraphLegend.js";
 import { getFeatureColorMap } from "../utils/featureColors.js";
 import type { GraphNode, GraphEdge } from "./GraphCanvas.js";
+import { GraphConfigPanel } from "./GraphConfigPanel.js";
+import { GraphLegend } from "./GraphLegend.js";
 
 const GraphCanvas = React.lazy(() => import("./GraphCanvas.js"));
 
 type GraphDto = {
-  nodes: Array<{ id: string; title: string; type: string; importance: number | null; tags: string[] | string }>;
+  nodes: Array<{
+    id: string;
+    title: string;
+    type: string;
+    importance: number | null;
+    tags: string[] | string;
+  }>;
   edges: Array<{ source: string; target: string; relationType: string }>;
 };
 
@@ -53,7 +60,13 @@ export function GraphView({
 
   const { nodesFiltered, edgesFiltered, featureColor, featureList } = useMemo(() => {
     const nodes = (
-      raw.nodes as Array<{ id: string; title: string; type: string; importance: number | null; tags: string[] | string }>
+      raw.nodes as Array<{
+        id: string;
+        title: string;
+        type: string;
+        importance: number | null;
+        tags: string[] | string;
+      }>
     ).filter((n) => {
       if (typeFilter && n.type !== typeFilter) return false;
       if (tagFilter) {
@@ -67,12 +80,17 @@ export function GraphView({
       return true;
     });
     const visibleIds = new Set(nodes.map((n) => n.id));
-    const edges = (raw.edges as Array<{ source: string; target: string; relationType: string }>).filter(
-      (e) => visibleIds.has(e.source) && visibleIds.has(e.target),
-    );
+    const edges = (
+      raw.edges as Array<{ source: string; target: string; relationType: string }>
+    ).filter((e) => visibleIds.has(e.source) && visibleIds.has(e.target));
 
     const { map, list } = getFeatureColorMap(nodes.map((n) => n.id));
-    return { nodesFiltered: nodes, edgesFiltered: edges, featureColor: map, featureList: list };
+    return {
+      nodesFiltered: nodes,
+      edgesFiltered: edges,
+      featureColor: map,
+      featureList: list,
+    };
   }, [raw.nodes, raw.edges, typeFilter, tagFilter, featureFilter]);
 
   // Build sim nodes/edges with degree, feature, color, focus
@@ -109,13 +127,19 @@ export function GraphView({
         title: n.title,
         type: n.type,
         importance: n.importance,
-        tags: Array.isArray(n.tags) ? (n.tags as string[]).join(" ") : ((n.tags as string) ?? ""),
+        tags: Array.isArray(n.tags)
+          ? (n.tags as string[]).join(" ")
+          : ((n.tags as string) ?? ""),
         feature,
         color,
         degree: deg,
         isFocus,
-        x: isFocus ? cx : cluster.x + Math.cos(jitterA) * jitterR + (Math.random() - 0.5) * 30,
-        y: isFocus ? cy : cluster.y + Math.sin(jitterA) * jitterR + (Math.random() - 0.5) * 30,
+        x: isFocus
+          ? cx
+          : cluster.x + Math.cos(jitterA) * jitterR + (Math.random() - 0.5) * 30,
+        y: isFocus
+          ? cy
+          : cluster.y + Math.sin(jitterA) * jitterR + (Math.random() - 0.5) * 30,
       };
     });
 
@@ -136,7 +160,11 @@ export function GraphView({
   const [showSettings, setShowSettings] = React.useState(false);
 
   if (!graph) {
-    return <div style={{ padding: 40, color: "var(--muted)", textAlign: "center" }}>Loading graph…</div>;
+    return (
+      <div style={{ padding: 40, color: "var(--muted)", textAlign: "center" }}>
+        Loading graph…
+      </div>
+    );
   }
 
   return (
@@ -164,7 +192,15 @@ export function GraphView({
             gap: 6,
           }}
         >
-          <span style={{ width: 6, height: 6, background: "var(--accent)", borderRadius: 2, display: "inline-block" }} />
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              background: "var(--accent)",
+              borderRadius: 2,
+              display: "inline-block",
+            }}
+          />
           Graph
         </span>
         <span
@@ -179,12 +215,27 @@ export function GraphView({
         >
           {simNodes.length} nodes · {simEdges.length} edges
         </span>
-        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--muted)" }}>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 11,
+            color: "var(--muted)",
+          }}
+        >
           Depth
           <select
             value={depth}
             onChange={(e) => setDepth(Number(e.target.value))}
-            style={{ background: "var(--panel2)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 6px", fontSize: 11 }}
+            style={{
+              background: "var(--panel2)",
+              color: "var(--text)",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              padding: "2px 6px",
+              fontSize: 11,
+            }}
           >
             <option value={1}>1 hop</option>
             <option value={2}>2 hops</option>
@@ -195,7 +246,16 @@ export function GraphView({
             value={typeFilter ?? ""}
             onChange={(e) => setTypeFilter(e.target.value)}
             placeholder="type:spec"
-            style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "3px 6px", fontSize: 11, width: 90, color: "var(--text)", fontFamily: "Fragment Mono" }}
+            style={{
+              background: "var(--bg)",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              padding: "3px 6px",
+              fontSize: 11,
+              width: 90,
+              color: "var(--text)",
+              fontFamily: "Fragment Mono",
+            }}
           />
         ) : null}
         {setTagFilter ? (
@@ -203,7 +263,16 @@ export function GraphView({
             value={tagFilter ?? ""}
             onChange={(e) => setTagFilter(e.target.value)}
             placeholder="tag:auth"
-            style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "3px 6px", fontSize: 11, width: 90, color: "var(--text)", fontFamily: "Fragment Mono" }}
+            style={{
+              background: "var(--bg)",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              padding: "3px 6px",
+              fontSize: 11,
+              width: 90,
+              color: "var(--text)",
+              fontFamily: "Fragment Mono",
+            }}
           />
         ) : null}
         {setFeatureFilter ? (
@@ -212,7 +281,16 @@ export function GraphView({
             onChange={(e) => setFeatureFilter(e.target.value)}
             placeholder="feature:auth"
             list="graph-features"
-            style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "3px 6px", fontSize: 11, width: 110, color: "var(--text)", fontFamily: "Fragment Mono" }}
+            style={{
+              background: "var(--bg)",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              padding: "3px 6px",
+              fontSize: 11,
+              width: 110,
+              color: "var(--text)",
+              fontFamily: "Fragment Mono",
+            }}
           />
         ) : null}
         <datalist id="graph-features">
@@ -257,11 +335,33 @@ export function GraphView({
         </button>
       </div>
 
-      {showSettings ? <GraphConfigPanel config={config} setConfig={setConfig} onReset={onResetConfig} /> : null}
+      {showSettings ? (
+        <GraphConfigPanel config={config} setConfig={setConfig} onReset={onResetConfig} />
+      ) : null}
 
-      <div style={{ flex: 1, position: "relative", background: "var(--bg)", overflow: "hidden" }}>
-        <Suspense fallback={<div style={{ padding: 40, color: "var(--muted)", textAlign: "center" }}>Loading canvas…</div>}>
-          <GraphCanvas nodes={simNodes} edges={simEdges} config={config} featureList={featureList} focus={focus} onSelect={onSelect} />
+      <div
+        style={{
+          flex: 1,
+          position: "relative",
+          background: "var(--bg)",
+          overflow: "hidden",
+        }}
+      >
+        <Suspense
+          fallback={
+            <div style={{ padding: 40, color: "var(--muted)", textAlign: "center" }}>
+              Loading canvas…
+            </div>
+          }
+        >
+          <GraphCanvas
+            nodes={simNodes}
+            edges={simEdges}
+            config={config}
+            featureList={featureList}
+            focus={focus}
+            onSelect={onSelect}
+          />
         </Suspense>
         <GraphLegend featureList={featureList} featureColor={featureColor} />
         <div

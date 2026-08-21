@@ -1,7 +1,8 @@
 import { join, basename } from "node:path";
+
 import { parseNote } from "../../../server/parser.js";
-import type { FileSystem } from "../gateways/fs.gateway.js";
 import type { NoteFile, WorklogSlug, WorklogEntry } from "../../../server/vault.js";
+import type { FileSystem } from "../gateways/fs.gateway.js";
 
 export class VaultService {
   constructor(private readonly fs: FileSystem) {}
@@ -23,8 +24,16 @@ export class VaultService {
         const dirents = await this.fs.readdir(dir, { withFileTypes: true });
         // dirents is Dirent[] when withFileTypes true, else string[]
         // handle both
-        if (dirents.length > 0 && typeof dirents[0] === "object" && "name" in (dirents[0] as unknown as Record<string, unknown>)) {
-          const d = dirents as unknown as { name: string; isDirectory(): boolean; isFile(): boolean }[];
+        if (
+          dirents.length > 0 &&
+          typeof dirents[0] === "object" &&
+          "name" in (dirents[0] as unknown as Record<string, unknown>)
+        ) {
+          const d = dirents as unknown as {
+            name: string;
+            isDirectory(): boolean;
+            isFile(): boolean;
+          }[];
           entries = d.map((x) => x.name);
           // sort case-insensitive
           entries.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
@@ -37,7 +46,9 @@ export class VaultService {
               const relForExclude = childRel;
               const excluded = exclude.some((e) => {
                 const trimmed = e.replace(/^\/+|\/+$/g, "");
-                return relForExclude === trimmed || relForExclude.startsWith(trimmed + "/");
+                return (
+                  relForExclude === trimmed || relForExclude.startsWith(trimmed + "/")
+                );
               });
               if (excluded) continue;
               await walk(join(dir, name), childRel);

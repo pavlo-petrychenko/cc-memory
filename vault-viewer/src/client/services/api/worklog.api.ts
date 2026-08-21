@@ -1,4 +1,8 @@
-import { worklogResponseSchema, reindexResponseSchema } from "@shared/contracts/worklog.contract.js";
+import {
+  worklogResponseSchema,
+  reindexResponseSchema,
+} from "@shared/contracts/worklog.contract.js";
+
 import { fetchJson } from "./client.js";
 
 export async function getWorklog(
@@ -10,8 +14,12 @@ export async function getWorklog(
   return fetchJson(url, worklogResponseSchema, { signal });
 }
 
-export async function reindex(workspace: string): Promise<import("@shared/contracts/worklog.contract.js").ReindexResponseDto> {
-  const res = await fetch(`/api/reindex?workspace=${encodeURIComponent(workspace)}`, { method: "POST" });
+export async function reindex(
+  workspace: string,
+): Promise<import("@shared/contracts/worklog.contract.js").ReindexResponseDto> {
+  const res = await fetch(`/api/reindex?workspace=${encodeURIComponent(workspace)}`, {
+    method: "POST",
+  });
   const json = await res.json().catch(() => null);
   if (!res.ok) throw new Error(json?.message ?? res.statusText);
   const parsed = reindexResponseSchema.safeParse(json);

@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
 import request from "supertest";
+import { describe, expect, it } from "vitest";
+
 import { createApp } from "./app.js";
 import { loadConfig } from "./config/env.js";
 

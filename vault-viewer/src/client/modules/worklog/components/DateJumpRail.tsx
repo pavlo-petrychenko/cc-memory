@@ -1,5 +1,5 @@
-import { memo } from "react";
 import type { WorklogEntryDto } from "@shared/contracts/worklog.contract.js";
+import { memo } from "react";
 
 type Props = {
   entries: WorklogEntryDto[];
@@ -48,7 +48,11 @@ export const DateJumpRail = memo(function DateJumpRail({ entries, onJump }: Prop
               display: "inline-block",
             }}
           />
-          <span style={{ fontSize: 12, color: "var(--text)", fontFamily: "Fragment Mono" }}>{e.date}</span>
+          <span
+            style={{ fontSize: 12, color: "var(--text)", fontFamily: "Fragment Mono" }}
+          >
+            {e.date}
+          </span>
           <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--muted)" }}>
             {e.relPath.split("/").pop()}
           </span>

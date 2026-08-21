@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { VaultService } from "./vault.service.js";
+
 import { MemoryFileSystem } from "../gateways/fs.gateway.js";
+import { VaultService } from "./vault.service.js";
 
 describe("VaultService.walkKb with MemoryFs", () => {
   it("walks and parses notes", async () => {
