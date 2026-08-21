@@ -1,4 +1,5 @@
 export * from "./rel.contract.js";
+export * from "./tabs.contract.js";
 export * from "./workspace.contract.js";
 export * from "./tree.contract.js";
 export * from "./note.contract.js";

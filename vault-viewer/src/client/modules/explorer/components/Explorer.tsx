@@ -1,17 +1,10 @@
+import type { TreeNodeDto, WorklogSlugDto } from "@shared/contracts/tree.contract.js";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import type { TreeNodeDto } from "@shared/contracts/tree.contract.js";
+
 import type { ExplorerState } from "../hooks/useExplorerState.js";
 import { ExplorerRow } from "./ExplorerRow.js";
 
 type TreeNode = TreeNodeDto;
-
-type WorklogEntry = { date: string; body: string; relPath: string };
-type WorklogSlug = {
-  slug: string;
-  stateExists: boolean;
-  stateBody?: string;
-  entries: WorklogEntry[];
-};
 
 const ExplorerContext = createContext<ExplorerState | null>(null);
 
@@ -34,7 +27,15 @@ export function ExplorerRoot({ state, children }: ExplorerRootProps) {
 
 // -- Group
 
-export function ExplorerGroup({ label, accent, children }: { label: string; accent?: string; children: ReactNode }) {
+export function ExplorerGroup({
+  label,
+  accent,
+  children,
+}: {
+  label: string;
+  accent?: string;
+  children: ReactNode;
+}) {
   const bg = accent ?? "var(--accent)";
   return (
     <>
@@ -51,7 +52,15 @@ export function ExplorerGroup({ label, accent, children }: { label: string; acce
           gap: 6,
         }}
       >
-        <span style={{ width: 6, height: 6, background: bg, borderRadius: 2, display: "inline-block" }} />
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            background: bg,
+            borderRadius: 2,
+            display: "inline-block",
+          }}
+        />
         {label}
         <span style={{ flex: 1, height: 1, background: "var(--border)" }} />
       </div>
@@ -90,7 +99,13 @@ export function ExplorerDir({ node, depth, active, onOpen }: ExplorerDirProps) {
       {isExpanded &&
         (children as TreeNodeDto[]).map((c) =>
           c.type === "dir" ? (
-            <ExplorerDir key={c.path} node={c} depth={depth + 1} active={active} onOpen={onOpen} />
+            <ExplorerDir
+              key={c.path}
+              node={c}
+              depth={depth + 1}
+              active={active}
+              onOpen={onOpen}
+            />
           ) : (
             <ExplorerRow
               key={c.path}
@@ -136,13 +151,18 @@ export function ExplorerFile({
 // -- Worklog group
 
 type ExplorerWorklogProps = {
-  slug: WorklogSlug;
+  slug: WorklogSlugDto;
   active: string;
   onOpen: (path: string) => void;
   onWorklogSlug: (slug: string) => void;
 };
 
-export function ExplorerWorklog({ slug, active, onOpen, onWorklogSlug }: ExplorerWorklogProps) {
+export function ExplorerWorklog({
+  slug,
+  active,
+  onOpen,
+  onWorklogSlug,
+}: ExplorerWorklogProps) {
   const { expanded, toggle } = useExplorerContext();
   const key = `wl:${slug.slug}`;
   const isWorklogExpanded = expanded.has(key);
@@ -202,7 +222,8 @@ export function ExplorerWorklog({ slug, active, onOpen, onWorklogSlug }: Explore
                 borderRadius: 4,
                 cursor: "pointer",
                 fontSize: 12,
-                background: active === `${slug.slug}/STATE.md` ? "var(--accent)" : "transparent",
+                background:
+                  active === `${slug.slug}/STATE.md` ? "var(--accent)" : "transparent",
                 color: active === `${slug.slug}/STATE.md` ? "#fff" : "var(--muted)",
               }}
             >
@@ -238,14 +259,21 @@ export function ExplorerWorklog({ slug, active, onOpen, onWorklogSlug }: Explore
 
 type LegacyExplorerProps = {
   kbTree: TreeNodeDto | null;
-  worklogs: WorklogSlug[];
+  worklogs: readonly WorklogSlugDto[];
   active: string;
   onOpen: (path: string) => void;
   onWorklogSlug: (slug: string) => void;
   state: ExplorerState;
 };
 
-export function Explorer({ kbTree, worklogs, active, onOpen, onWorklogSlug, state }: LegacyExplorerProps) {
+export function Explorer({
+  kbTree,
+  worklogs,
+  active,
+  onOpen,
+  onWorklogSlug,
+  state,
+}: LegacyExplorerProps) {
   return (
     <ExplorerRoot state={state}>
       <div style={{ padding: "8px 6px", overflow: "auto", flex: 1 }}>
@@ -253,22 +281,38 @@ export function Explorer({ kbTree, worklogs, active, onOpen, onWorklogSlug, stat
           {kbTree?.children?.length ? (
             (kbTree.children as TreeNodeDto[]).map((c) =>
               c.type === "dir" ? (
-                <ExplorerDir key={c.path} node={c} depth={0} active={active} onOpen={onOpen} />
+                <ExplorerDir
+                  key={c.path}
+                  node={c}
+                  depth={0}
+                  active={active}
+                  onOpen={onOpen}
+                />
               ) : (
                 <ExplorerFile key={c.path} node={c} active={active} onOpen={onOpen} />
               ),
             )
           ) : (
-            <div style={{ padding: "8px", color: "var(--muted)", fontSize: 12 }}>No notes</div>
+            <div style={{ padding: "8px", color: "var(--muted)", fontSize: 12 }}>
+              No notes
+            </div>
           )}
         </ExplorerGroup>
 
         <ExplorerGroup label="WORKLOGS" accent="var(--accent2)">
           {worklogs.length === 0 ? (
-            <div style={{ padding: "8px", color: "var(--muted)", fontSize: 12 }}>No worklogs</div>
+            <div style={{ padding: "8px", color: "var(--muted)", fontSize: 12 }}>
+              No worklogs
+            </div>
           ) : (
             worklogs.map((s) => (
-              <ExplorerWorklog key={s.slug} slug={s} active={active} onOpen={onOpen} onWorklogSlug={onWorklogSlug} />
+              <ExplorerWorklog
+                key={s.slug}
+                slug={s}
+                active={active}
+                onOpen={onOpen}
+                onWorklogSlug={onWorklogSlug}
+              />
             ))
           )}
         </ExplorerGroup>
