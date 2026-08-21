@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+
 import { getGraph } from "../../../services/api/graph.api.js";
 import { qk } from "../../../services/query/queryKeys.js";
 

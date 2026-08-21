@@ -1,14 +1,19 @@
+import type { SearchHitDto } from "@shared/contracts/search.contract.js";
 import { useQuery } from "@tanstack/react-query";
-import { useDebounced } from "./useDebounced.js";
+
 import { search } from "../../../services/api/search.api.js";
 import { qk } from "../../../services/query/queryKeys.js";
-import type { SearchHitDto } from "@shared/contracts/search.contract.js";
+import { useDebounced } from "./useDebounced.js";
 
 function hasFilters(filters: Record<string, string>): boolean {
   return Object.values(filters).some((v) => Boolean(v));
 }
 
-export function useSearch(workspaceId: string, q: string, filters: Record<string, string> = {}) {
+export function useSearch(
+  workspaceId: string,
+  q: string,
+  filters: Record<string, string> = {},
+) {
   const debounced = useDebounced(q, 150);
   const enabled = debounced.trim().length > 0 || hasFilters(filters);
   const query = useQuery({

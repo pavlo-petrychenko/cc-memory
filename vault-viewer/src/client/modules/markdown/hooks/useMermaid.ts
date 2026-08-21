@@ -27,7 +27,10 @@ export function useMermaid(code: string): MermaidState {
 
     getMermaid()
       .then((mermaid) => {
-        const theme = document.documentElement.getAttribute("data-theme") === "light" ? "default" : "dark";
+        const theme =
+          document.documentElement.getAttribute("data-theme") === "light"
+            ? "default"
+            : "dark";
         mermaid.initialize({ startOnLoad: false, theme });
         const id = `mmd-${Math.random().toString(36).slice(2)}`;
         return mermaid.render(id, trimmed);

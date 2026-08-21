@@ -1,7 +1,6 @@
 export { useGraph } from "./hooks/useGraph.js";
 export { useGraphFilters } from "./hooks/useGraphFilters.js";
 export { useGraphPhysics } from "./hooks/useGraphPhysics.js";
-export { useZoom, useDrag } from "./hooks/useGraphInteractions.js";
 export { default as GraphCanvas } from "./components/GraphCanvas.js";
 export { GraphLegend } from "./components/GraphLegend.js";
 export { GraphConfigPanel } from "./components/GraphConfigPanel.js";

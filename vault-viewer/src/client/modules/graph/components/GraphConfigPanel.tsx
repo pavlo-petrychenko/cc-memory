@@ -1,6 +1,7 @@
-import type { JSX } from "react";
-import type { GraphConfig } from "../hooks/useGraphPhysics.js";
 import { GRAPH_DEFAULT_CONFIG } from "@shared/contracts/constants.js";
+import type { JSX } from "react";
+
+import type { GraphConfig } from "../hooks/useGraphPhysics.js";
 
 type Props = {
   config: GraphConfig;
@@ -8,12 +9,24 @@ type Props = {
   onReset: () => void;
 };
 
-const SLIDERS: Array<{ key: keyof GraphConfig; label: string; min: number; max: number; step: number }> = [
+const SLIDERS: Array<{
+  key: keyof GraphConfig;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+}> = [
   { key: "linkDistance", label: "Link distance", min: 24, max: 160, step: 2 },
   { key: "linkStrength", label: "Link strength", min: 0.05, max: 1, step: 0.05 },
   { key: "chargeStrength", label: "Repulsion", min: -420, max: -20, step: 10 },
   { key: "collideRadius", label: "Collision", min: 2, max: 22, step: 1 },
-  { key: "clusterStrength", label: "Cluster (same feature)", min: 0, max: 0.5, step: 0.02 },
+  {
+    key: "clusterStrength",
+    label: "Cluster (same feature)",
+    min: 0,
+    max: 0.5,
+    step: 0.02,
+  },
   { key: "centerStrength", label: "Center gravity", min: 0, max: 0.4, step: 0.02 },
 ];
 
@@ -48,7 +61,8 @@ export function GraphConfigPanel({ config, setConfig, onReset }: Props): JSX.Ele
               justifyContent: "space-between",
             }}
           >
-            {f.label} <b style={{ color: "var(--text)", fontWeight: 500 }}>{config[f.key]}</b>
+            {f.label}{" "}
+            <b style={{ color: "var(--text)", fontWeight: 500 }}>{config[f.key]}</b>
           </span>
           <input
             type="range"
@@ -56,15 +70,26 @@ export function GraphConfigPanel({ config, setConfig, onReset }: Props): JSX.Ele
             max={f.max}
             step={f.step}
             value={config[f.key]}
-            onChange={(e) => setConfig((c) => ({ ...c, [f.key]: Number(e.target.value) }))}
+            onChange={(e) =>
+              setConfig((c) => ({ ...c, [f.key]: Number(e.target.value) }))
+            }
             style={{ accentColor: "var(--accent)", width: "100%" }}
           />
         </label>
       ))}
-      <div style={{ gridColumn: "1 / -1", display: "flex", gap: 8, alignItems: "center", paddingTop: 4 }}>
+      <div
+        style={{
+          gridColumn: "1 / -1",
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          paddingTop: 4,
+        }}
+      >
         <span style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.4 }}>
-          Same-feature nodes & linked nodes attract stronger. Drag nodes to pin (double-click to unpin) • Scroll to zoom • Drag background to pan •
-          Double-click background to reset zoom.
+          Same-feature nodes & linked nodes attract stronger. Drag nodes to pin
+          (double-click to unpin) • Scroll to zoom • Drag background to pan • Double-click
+          background to reset zoom.
         </span>
         <button
           type="button"
