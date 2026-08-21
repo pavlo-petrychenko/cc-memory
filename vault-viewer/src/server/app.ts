@@ -6,8 +6,12 @@ import pino from "pino";
 import { readFile, stat } from "node:fs/promises";
 import { join, extname, resolve } from "node:path";
 import { loadWorkspaces } from "../../server/registry.js";
-import { walkKb, buildKbTree, scanWorklogs, searchNotes } from "../../server/vault.js";
+import { walkKb as legacyWalkKb, buildKbTree as legacyBuildKbTree, scanWorklogs as legacyScanWorklogs, searchNotes as legacySearchNotes } from "../../server/vault.js";
 import { parseNote } from "../../server/parser.js";
+import { NodeFileSystem } from "./gateways/fs.gateway.js";
+import { VaultService } from "./services/vault.service.js";
+import { VaultCache } from "./services/vault.cache.js";
+import { buildKbTree, searchNotes } from "./services/vault.pure.js";
 import type { Config } from "./config/env.js";
 import { requestId } from "./middlewares/requestId.js";
 import { errorHandler, notFound } from "./middlewares/errorHandler.js";
@@ -24,6 +28,9 @@ import { assertInside, isSafeRelPath } from "./utils/path.js";
 
 export function createApp(config: Config): express.Express {
   const logger = pino({ level: config.LOG_LEVEL });
+  const fs = new NodeFileSystem();
+  const vaultService = new VaultService(fs);
+  const vaultCache = new VaultCache(fs, vaultService);
   const app = express();
 
   app.use(helmet());
@@ -56,6 +63,7 @@ export function createApp(config: Config): express.Express {
 
   function bustCache(): void {
     workspacesCache = null;
+    vaultCache.bustAll();
   }
 
   function requireWorkspace(
@@ -79,7 +87,7 @@ export function createApp(config: Config): express.Express {
       const { workspaces, source } = await getWorkspaces();
       const enriched = await Promise.all(
         workspaces.map(async (w) => {
-          const notes = await walkKb(w.kb, w.exclude);
+          const notes = await vaultCache.get(w.kb, w.exclude);
           let indexFresh = "seed";
           try {
             const st = await stat(w.indexDb);
@@ -114,9 +122,9 @@ export function createApp(config: Config): express.Express {
       const { workspaces } = await getWorkspaces();
       const ws = requireWorkspace(workspaces, wid);
       if (!ws) throw new NotFoundError("workspace");
-      const notes = await walkKb(ws.kb, ws.exclude);
+      const notes = await vaultCache.get(ws.kb, ws.exclude);
       const kbTree = buildKbTree(notes);
-      const worklogs = await scanWorklogs(ws.worklogs);
+      const worklogs = await vaultService.scanWorklogs(ws.worklogs);
       res.json({
         kbTree,
         worklogs,
@@ -179,7 +187,7 @@ export function createApp(config: Config): express.Express {
       const fallback = relPath.split("/").pop()?.replace(".md", "") ?? relPath;
       const parsed = parseNote(text, fallback);
 
-      const notes = await walkKb(ws.kb, ws.exclude);
+      const notes = await vaultCache.get(ws.kb, ws.exclude);
       const outgoing = parsed.rels;
       const relKey = relPath.replace(/\.md$/, "");
       const titleLower = parsed.title.toLowerCase();
@@ -310,7 +318,7 @@ export function createApp(config: Config): express.Express {
         res.json({ hits: [] });
         return;
       }
-      const notes = await walkKb(ws.kb, ws.exclude);
+      const notes = await vaultCache.get(ws.kb, ws.exclude);
       const hits = searchNotes(notes, q, { type, tag, feature });
       res.json({
         hits: hits.map((h) => ({
@@ -343,7 +351,7 @@ export function createApp(config: Config): express.Express {
         res.json({ nodes: [], edges: [] });
         return;
       }
-      const notes = await walkKb(ws.kb, ws.exclude);
+      const notes = await vaultCache.get(ws.kb, ws.exclude);
       const byRel = new Map(notes.map((n) => [n.relPath, n] as const));
       const byTitleLower = new Map(notes.map((n) => [n.title.toLowerCase(), n] as const));
       const allEdges: { source: string; target: string; relationType: string }[] = [];
@@ -417,7 +425,7 @@ export function createApp(config: Config): express.Express {
       const { workspaces } = await getWorkspaces();
       const ws = requireWorkspace(workspaces, wid);
       if (!ws) throw new NotFoundError("workspace");
-      const worklogs = await scanWorklogs(ws.worklogs);
+      const worklogs = await vaultService.scanWorklogs(ws.worklogs);
       const found = worklogs.find((s) => s.slug === slug);
       if (!found) throw new NotFoundError(`worklog ${slug}`);
       res.json(found);
@@ -450,7 +458,7 @@ export function createApp(config: Config): express.Express {
         res.json({ added: 0, updated: 0, removed: 0, total: 0 });
         return;
       }
-      const notes = await walkKb(ws.kb, ws.exclude);
+      const notes = await vaultCache.get(ws.kb, ws.exclude);
       bustCache();
       res.json({ added: notes.length, updated: 0, removed: 0, total: notes.length });
     }),
