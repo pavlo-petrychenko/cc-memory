@@ -8,7 +8,7 @@ export const workspaceDtoSchema = z.object({
   exclude: z.array(z.string()).default([]),
   noteCount: z.number().int().min(0),
   indexFresh: z.string().min(1),
-  source: z.enum(["registry", "seed-fallback"]).optional().default("seed-fallback"),
+  source: z.string().optional().default("seed-fallback"),
 });
 
 export type WorkspaceDto = z.infer<typeof workspaceDtoSchema>;
