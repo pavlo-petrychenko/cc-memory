@@ -368,14 +368,8 @@ export default function App() {
                   {note.tags && <span style={{ fontSize:10, letterSpacing:".06em", textTransform:"uppercase", background:"var(--panel2)", border:"1px solid var(--border)", padding:"3px 7px", borderRadius:4, color:"var(--muted)" }}><b style={{ color:"var(--accent2)" }}>tags</b> {note.tags}</span>}
                   {note.epic && <span style={{ fontSize:10, letterSpacing:".06em", textTransform:"uppercase", background:"var(--panel2)", border:"1px solid var(--border)", padding:"3px 7px", borderRadius:4, color:"var(--muted)" }}><b>epic</b> {note.epic}</span>}
                 </div>
-                {/* line numbers + markdown */}
-                <div style={{ display:"flex", gap:0, background:"var(--panel)", border:"1px solid var(--border)", borderRadius:8, overflow:"hidden", boxShadow:"0 2px 12px rgba(0,0,0,.2)" }}>
-                  <div style={{ width:36, background:"var(--panel2)", borderRight:"1px solid var(--border)", color:"var(--muted)", textAlign:"right", padding:"14px 6px 14px", fontSize:11, lineHeight:1.7, userSelect:"none", opacity:.6 }}>
-                    {note.body.split("\n").slice(0,40).map((_,i)=> <div key={i}>{i+1}</div>)}
-                  </div>
-                  <div style={{ flex:1, padding:"14px 18px", fontSize:12.5, lineHeight:1.7, color:"var(--text)", overflow:"auto" }}>
-                    <Markdown body={note.body} workspace={activeWs} currentPath={note.relPath} onWikilink={handleWikilink} knownTargets={knownTargets} />
-                  </div>
+                <div style={{ background:"var(--panel)", border:"1px solid var(--border)", borderRadius:8, overflow:"hidden", boxShadow:"0 2px 12px rgba(0,0,0,.2)", padding:"14px 18px", fontSize:12.5, lineHeight:1.7, color:"var(--text)" }}>
+                  <Markdown body={note.body} workspace={activeWs} currentPath={note.relPath} onWikilink={handleWikilink} knownTargets={knownTargets} />
                 </div>
               </div>
             </div>
