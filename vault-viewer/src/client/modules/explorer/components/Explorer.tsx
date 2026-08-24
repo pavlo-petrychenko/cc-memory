@@ -1,18 +1,10 @@
-import type { TreeNodeDto } from "@shared/contracts/tree.contract.js";
+import type { TreeNodeDto, WorklogSlugDto } from "@shared/contracts/tree.contract.js";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 
 import type { ExplorerState } from "../hooks/useExplorerState.js";
 import { ExplorerRow } from "./ExplorerRow.js";
 
 type TreeNode = TreeNodeDto;
-
-type WorklogEntry = { date: string; body: string; relPath: string };
-type WorklogSlug = {
-  slug: string;
-  stateExists: boolean;
-  stateBody?: string;
-  entries: WorklogEntry[];
-};
 
 const ExplorerContext = createContext<ExplorerState | null>(null);
 
@@ -159,7 +151,7 @@ export function ExplorerFile({
 // -- Worklog group
 
 type ExplorerWorklogProps = {
-  slug: WorklogSlug;
+  slug: WorklogSlugDto;
   active: string;
   onOpen: (path: string) => void;
   onWorklogSlug: (slug: string) => void;
@@ -267,7 +259,7 @@ export function ExplorerWorklog({
 
 type LegacyExplorerProps = {
   kbTree: TreeNodeDto | null;
-  worklogs: WorklogSlug[];
+  worklogs: readonly WorklogSlugDto[];
   active: string;
   onOpen: (path: string) => void;
   onWorklogSlug: (slug: string) => void;

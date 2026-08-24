@@ -6,7 +6,9 @@ export type GraphFilters = {
   featureFilter: string;
 };
 
-export function useGraphFilters(initial: Partial<GraphFilters> = {}) {
+export function useGraphFilters(
+  initial: Partial<GraphFilters> = {},
+): UseGraphFiltersReturn {
   const [typeFilter, setTypeFilter] = useState(initial.typeFilter ?? "");
   const [tagFilter, setTagFilter] = useState(initial.tagFilter ?? "");
   const [featureFilter, setFeatureFilter] = useState(initial.featureFilter ?? "");
@@ -28,3 +30,14 @@ export function useGraphFilters(initial: Partial<GraphFilters> = {}) {
     hasActive: Boolean(typeFilter || tagFilter || featureFilter),
   };
 }
+
+export type UseGraphFiltersReturn = {
+  typeFilter: string;
+  tagFilter: string;
+  featureFilter: string;
+  setTypeFilter: (v: string) => void;
+  setTagFilter: (v: string) => void;
+  setFeatureFilter: (v: string) => void;
+  clear: () => void;
+  hasActive: boolean;
+};
