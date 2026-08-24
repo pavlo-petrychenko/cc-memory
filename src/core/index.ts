@@ -97,9 +97,11 @@ export {
   HookEvent,
   HookName,
   HookResultKind,
+  SessionToggleState,
 } from "@/core/transport/hook/hook.typedefs.ts";
 export type {
   HookResult,
+  SessionTogglePort,
   WorkspaceResolver,
 } from "@/core/transport/hook/hook.typedefs.ts";
 export type {

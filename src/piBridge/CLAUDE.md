@@ -14,3 +14,8 @@ follow-up user message with a local `stop_hook_active` mirror so it cannot loop.
 
 The bundle built from this module is copied to `~/.pi/agent/extensions/` by the
 installer; skills are symlinked separately by the installation module.
+
+The bridge also registers a `/ccmemory` slash command (session-scoped toggle):
+OFF silences every dispatch site until `/ccmemory on` or a fresh session —
+nothing persists, and toggling clears the gate-delivery bookkeeping so an
+off/on cycle cannot swallow the next real prompt's injection.

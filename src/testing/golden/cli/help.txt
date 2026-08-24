@@ -9,6 +9,7 @@ Usage:
   memory search <query> [--workspace ID] [--cwd PATH] [-k N] [--worklog]  — search the knowledge base + worklogs
   memory notes [--workspace ID] [--cwd PATH] [--folder F] [--json]  — enumerate indexed notes
   memory commit [workspace] [-m MSG]  — MANUAL git snapshot of a KB (local; no push)
+  memory toggle [on|off|status] [--session ID]  — mute/unmute cc-memory for one host session (default: $CLAUDE_CODE_SESSION_ID)
   memory doctor [--cwd PATH] [--prompt TEXT]  — self-test hooks and diagnose the install
   memory install [--dry-run] [--agents claude,pi]  — wire into Claude Code and/or pi
   memory uninstall  — wire out of Claude Code and pi

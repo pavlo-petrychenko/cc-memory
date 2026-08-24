@@ -47,6 +47,31 @@ export type ParsedHookOutput =
   | { readonly kind: ParsedHookOutputKind.Context; readonly text: string }
   | { readonly kind: ParsedHookOutputKind.Block; readonly reason: string };
 
+/** One argument completion row pi renders for a command's arguments; the
+ * structural subset of pi's AutocompleteItem this bridge needs. */
+export type PiAutocompleteItem = { readonly value: string; readonly label?: string };
+
+/** The slice of a command handler's context this bridge reads. `ui.notify` is
+ * absent outside interactive contexts, so feedback is always best-effort. */
+export type PiCommandContext = {
+  readonly ui?: {
+    readonly notify?: (message: string, level?: string) => void;
+  };
+};
+
+export type PiCommandHandler = (
+  args: string,
+  ctx: PiCommandContext,
+) => void | Promise<void>;
+
+export type PiCommandOptions = {
+  readonly description?: string;
+  readonly getArgumentCompletions?: (
+    prefix: string,
+  ) => readonly PiAutocompleteItem[] | null;
+  readonly handler: PiCommandHandler;
+};
+
 /** The result of one spawned CLI run, already collected. A timeout or spawn
  * failure surfaces as `ok: false` with whatever output was captured. */
 export type SpawnOutcome = {
@@ -106,5 +131,6 @@ export type PiHostMessageResult = {
 
 export type PiExtensionApi = {
   on(event: string, handler: PiEventHandler): void;
+  registerCommand(name: string, options: PiCommandOptions): void;
   sendUserMessage(content: string, options?: { readonly deliverAs: "followUp" }): void;
 };

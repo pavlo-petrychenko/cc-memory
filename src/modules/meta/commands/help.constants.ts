@@ -24,6 +24,7 @@ import type {
   CommandDescriptor,
   EnvVarDescriptor,
 } from "@/modules/meta/commands/help.typedefs.ts";
+import { TOGGLE_DESCRIPTOR } from "@/modules/sessionToggle/sessionToggle.constants.ts";
 import { COMMIT_DESCRIPTOR } from "@/modules/worklog/commands/commit/commit.constants.ts";
 import { RESOLVE_DESCRIPTOR } from "@/modules/workspace/commands/resolve/resolve.constants.ts";
 import { WORKSPACE_ADD_DESCRIPTOR } from "@/modules/workspace/commands/workspaceAdd/workspaceAdd.constants.ts";
@@ -62,6 +63,7 @@ export const COMMAND_DESCRIPTORS: readonly CommandDescriptor[] = [
   SEARCH_DESCRIPTOR,
   NOTES_DESCRIPTOR,
   COMMIT_DESCRIPTOR,
+  TOGGLE_DESCRIPTOR,
   DOCTOR_DESCRIPTOR,
   INSTALL_DESCRIPTOR,
   UNINSTALL_DESCRIPTOR,

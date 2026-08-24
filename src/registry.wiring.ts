@@ -10,6 +10,7 @@ import {
 } from "@/modules/memory/index.ts";
 import { NotesCommand } from "@/modules/memory/index.ts";
 import { HelpCommand, VersionCommand } from "@/modules/meta/index.ts";
+import { ToggleCommand } from "@/modules/sessionToggle/index.ts";
 import {
   CompactCheckpointHookResolver,
   CommitCommand,
@@ -33,6 +34,7 @@ export const commands = [
   SearchCommand,
   NotesCommand,
   CommitCommand,
+  ToggleCommand,
   DoctorCommand,
   InstallCommand,
   UninstallCommand,

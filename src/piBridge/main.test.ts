@@ -1,10 +1,18 @@
 import { describe, expect, test } from "bun:test";
 
 import createCcMemoryExtension from "@/piBridge/main.ts";
+import {
+  CCMEMORY_DISABLED_NOTICE,
+  CCMEMORY_ENABLED_NOTICE,
+  CCMEMORY_USAGE_NOTICE,
+  TOGGLE_COMMAND_NAME,
+} from "@/piBridge/piBridge.constants.ts";
 import type {
   HookDispatchPort,
   HookWirePayload,
   PiBeforeAgentStartResult,
+  PiCommandContext,
+  PiCommandOptions,
   PiEventContext,
   ParsedHookOutput,
   PiEventHandler,
@@ -35,9 +43,11 @@ function makeDispatcher(script: readonly ParsedHookOutput[]) {
 
 function makePi() {
   const registered: [string, PiEventHandler][] = [];
+  const commands: [string, PiCommandOptions][] = [];
   const sentMessages: string[] = [];
   const pi: PiExtensionApi = {
     on: (event, handler) => registered.push([event, handler]),
+    registerCommand: (name, options) => commands.push([name, options]),
     sendUserMessage: (content) => sentMessages.push(content),
   };
   function handlerOf(name: string): PiEventHandler {
@@ -45,7 +55,17 @@ function makePi() {
     if (found === undefined) throw new Error(`handler '${name}' not registered`);
     return found[1];
   }
-  return { pi, handlerOf, sentMessages, registered };
+  /** Runs the named command with a notify-collecting context; returns the
+   * notices in delivery order. */
+  async function runCommand(name: string, args = ""): Promise<string[]> {
+    const found = commands.find(([candidate]) => candidate === name);
+    if (found === undefined) throw new Error(`command '${name}' not registered`);
+    const notices: string[] = [];
+    const ctx: PiCommandContext = { ui: { notify: (message) => notices.push(message) } };
+    await found[1].handler(args, ctx);
+    return notices;
+  }
+  return { pi, handlerOf, runCommand, sentMessages, registered, commands };
 }
 
 const CTX: PiEventContext = { cwd: "/repo" };
@@ -230,5 +250,121 @@ describe("cc-memory extension wiring", () => {
     await wired.handlerOf("agent_settled")({}, noCwd);
     await wired.handlerOf("session_shutdown")({}, noCwd);
     expect(dispatched.calls).toEqual([]);
+  });
+});
+
+describe("the /ccmemory session toggle", () => {
+  test("registers exactly one command, named ccmemory", () => {
+    const wired = makePi();
+    createCcMemoryExtension(wired.pi);
+    expect(wired.commands.map(([name]) => name)).toEqual([TOGGLE_COMMAND_NAME]);
+  });
+
+  test("completions filter on/off by prefix, null when nothing matches", () => {
+    const wired = makePi();
+    createCcMemoryExtension(wired.pi);
+    const options = wired.commands[0]?.[1];
+    if (options?.getArgumentCompletions === undefined) {
+      throw new Error("command has no completions");
+    }
+    const completions = options.getArgumentCompletions;
+    const values = (prefix: string): readonly string[] =>
+      completions(prefix)?.map((item) => item.value) ?? [];
+
+    expect(values("")).toEqual(["off", "on"]);
+    expect(values("o")).toEqual(["off", "on"]);
+    expect(completions("x")).toBeNull();
+  });
+
+  test("off silences every dispatch site until on", async () => {
+    const wired = makePi();
+    const dispatched = makeDispatcher([]); // any unexpected dispatch throws
+    createCcMemoryExtension(wired.pi, dispatched.dispatcher);
+
+    await wired.runCommand(TOGGLE_COMMAND_NAME, "off");
+
+    const handler = wired.handlerOf("before_agent_start");
+    await handler({ prompt: "first" }, CTX); // no session-start either
+    await handler({ prompt: "second" }, CTX);
+    await wired.handlerOf("agent_settled")({}, CTX);
+    await wired.handlerOf("session_compact")(
+      { compactionEntry: { summary: "did things" }, reason: "manual" },
+      CTX,
+    );
+    await wired.handlerOf("session_shutdown")({ reason: "quit" }, CTX);
+    expect(dispatched.calls).toEqual([]);
+    expect(wired.sentMessages).toEqual([]);
+  });
+
+  test("on restores injection, firing a not-yet-fired session start", async () => {
+    const wired = makePi();
+    const dispatched = makeDispatcher([context("KB map"), context("hits")]);
+    createCcMemoryExtension(wired.pi, dispatched.dispatcher);
+
+    await wired.runCommand(TOGGLE_COMMAND_NAME, "off");
+    await wired.runCommand(TOGGLE_COMMAND_NAME, "on");
+    const result = await runBeforeAgentStart(
+      wired.handlerOf("before_agent_start"),
+      "back again",
+    );
+
+    expect(dispatched.calls.map((call) => call.hookName)).toEqual([
+      PiHookName.SessionStart,
+      PiHookName.MemoryInject,
+    ]);
+    expect(result?.message?.content).toBe("KB map\n\n---\n\nhits");
+  });
+
+  test("a bare /ccmemory flips and reports the new state", async () => {
+    const wired = makePi();
+    createCcMemoryExtension(wired.pi);
+
+    expect(await wired.runCommand(TOGGLE_COMMAND_NAME)).toEqual([
+      CCMEMORY_DISABLED_NOTICE,
+    ]);
+    expect(await wired.runCommand(TOGGLE_COMMAND_NAME)).toEqual([
+      CCMEMORY_ENABLED_NOTICE,
+    ]);
+  });
+
+  test("an unrecognized argument reports usage and changes nothing", async () => {
+    const wired = makePi();
+    const dispatched = makeDispatcher([context("KB map"), context("hits")]);
+    createCcMemoryExtension(wired.pi, dispatched.dispatcher);
+
+    expect(await wired.runCommand(TOGGLE_COMMAND_NAME, "banana")).toEqual([
+      CCMEMORY_USAGE_NOTICE,
+    ]);
+
+    // Still enabled: the next prompt injects as usual.
+    await runBeforeAgentStart(wired.handlerOf("before_agent_start"), "real prompt");
+    expect(dispatched.calls.map((call) => call.hookName)).toEqual([
+      PiHookName.SessionStart,
+      PiHookName.MemoryInject,
+    ]);
+  });
+
+  test("toggling after a gate delivery does not swallow the next real prompt", async () => {
+    const wired = makePi();
+    const dispatched = makeDispatcher([
+      { kind: ParsedHookOutputKind.Block, reason: "write STATE" },
+      context("KB map"),
+      context("hits"),
+    ]);
+    createCcMemoryExtension(wired.pi, dispatched.dispatcher);
+
+    await wired.handlerOf("agent_settled")({}, CTX);
+    expect(wired.sentMessages).toEqual(["write STATE"]);
+
+    await wired.runCommand(TOGGLE_COMMAND_NAME, "off");
+    await wired.runCommand(TOGGLE_COMMAND_NAME, "on");
+    await runBeforeAgentStart(wired.handlerOf("before_agent_start"), "my real prompt");
+
+    // The stale suppress flag was cleared: the real prompt injected normally.
+    expect(dispatched.calls.map((call) => call.hookName)).toEqual([
+      PiHookName.WrapGate,
+      PiHookName.SessionStart,
+      PiHookName.MemoryInject,
+    ]);
   });
 });

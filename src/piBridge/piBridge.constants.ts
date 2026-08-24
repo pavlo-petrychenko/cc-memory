@@ -25,3 +25,16 @@ export const SHUTDOWN_REASON_RELOAD = "reload";
 
 /** Reason reported to the worklog floor when pi does not name one. */
 export const DEFAULT_SHUTDOWN_REASON = "quit";
+
+/** The slash command the bridge registers in pi for the session-scoped toggle. */
+export const TOGGLE_COMMAND_NAME = "ccmemory";
+
+export const TOGGLE_COMMAND_DESCRIPTION =
+  "Toggle cc-memory (injections, wrap-gate, journaling) for this pi session";
+
+/** Feedback lines the toggle command reports back through `ui.notify`. */
+export const CCMEMORY_ENABLED_NOTICE =
+  "cc-memory ON — context injection, wrap-gate and journaling active.";
+export const CCMEMORY_DISABLED_NOTICE =
+  "cc-memory OFF — silent until /ccmemory on or a new session.";
+export const CCMEMORY_USAGE_NOTICE = "usage: /ccmemory [on|off] — no argument toggles.";

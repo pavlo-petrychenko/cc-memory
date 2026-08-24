@@ -58,6 +58,23 @@ export interface HookHandler<TPayload> {
   handle(payload: HookInput<TPayload>): Promise<HookResult>;
 }
 
+/** Whether memory activity is switched on for a host session. A missing marker
+ * means enabled — the toggle can only ever silence, never enable by accident. */
+export enum SessionToggleState {
+  Enabled = "enabled",
+  Disabled = "disabled",
+}
+
+/** Per-session mute state for memory activity, keyed by the session id both the
+ * host's slash commands and its hook events know. Read failures fail open to
+ * Enabled at the call site; writes surface errors to the caller. */
+export interface SessionTogglePort {
+  stateFor(sessionId: string): Promise<SessionToggleState>;
+  disable(sessionId: string): Promise<void>;
+  /** Re-enables by removing any marker; idempotent when none exists. */
+  enable(sessionId: string): Promise<void>;
+}
+
 /** Resolves exactly one workspace for a cwd, or null when none matches. The
  * runtime depends on this port rather than on the workspace module — the
  * composition root supplies the implementation, keeping core free of feature

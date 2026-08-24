@@ -1,9 +1,14 @@
 import type { AbsPath } from "@/core/core.typedefs.ts";
 import type { HookHandler } from "@/core/decorators/hook.decorator.ts";
 import type { Workspace } from "@/core/domain.typedefs.ts";
-import { HookResultKind } from "@/core/transport/hook/hook.typedefs.ts";
+import {
+  HookName,
+  HookResultKind,
+  SessionToggleState,
+} from "@/core/transport/hook/hook.typedefs.ts";
 import type {
   HookResult,
+  SessionTogglePort,
   WorkspaceResolver,
 } from "@/core/transport/hook/hook.typedefs.ts";
 import { HookResultSerializer } from "@/core/transport/hook/hookResult.serializer.ts";
@@ -28,11 +33,38 @@ export class HookRuntimeService {
     private readonly payloadParser: PayloadParser,
     private readonly hookResultSerializer: HookResultSerializer,
     private readonly resolveWorkspace: WorkspaceResolver,
+    private readonly sessionToggle: SessionTogglePort,
   ) {}
 
   private resolveHookCwd(rawCwd: string | null): AbsPath {
     if (rawCwd === null || rawCwd === "") return this.container.env.cwd();
     return expandPath(rawCwd, this.container.env.home());
+  }
+
+  /** The session-scoped `/ccmemory` toggle: a marker for THIS session id means
+   * every dispatch goes silent. The worklog floor clears its session's marker
+   * first — cleanup must happen even while disabled. Any read failure fails
+   * open to enabled, logged, per the hooks-fail-open invariant. */
+  private async silencedBySessionToggle(
+    hookLabel: string,
+    record: JsonRecord,
+  ): Promise<boolean> {
+    const sessionId = this.payloadParser.parseSessionId(record);
+    if (sessionId === null) return false;
+    try {
+      const state = await this.sessionToggle.stateFor(sessionId);
+      if (state !== SessionToggleState.Disabled) return false;
+      if (hookLabel === HookName.WorklogFloor) {
+        await this.sessionToggle.enable(sessionId);
+      }
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.container.logger.error(
+        `hook '${hookLabel}': toggle check failed for session '${sessionId}': ${message}`,
+      );
+      return false;
+    }
   }
 
   /** No resolved workspace means `handler` is never called. Never throws and never
@@ -41,6 +73,7 @@ export class HookRuntimeService {
     try {
       const rawStdin = await this.container.stdio.readStdin();
       const record = this.payloadParser.parseTolerantJson(rawStdin);
+      if (await this.silencedBySessionToggle(hookLabel, record)) return;
       const cwd = this.resolveHookCwd(this.payloadParser.parseSessionStart(record).cwd);
       const workspace = await this.resolveWorkspace(cwd);
 
@@ -67,6 +100,7 @@ export async function runHookDispatch(
   handlers: readonly HookHandler[],
   container: Gateways,
   resolveWorkspace: WorkspaceResolver,
+  sessionToggle: SessionTogglePort,
 ): Promise<void> {
   const handler = handlers.find((candidate) => candidate.name === name);
   if (handler === undefined) {
@@ -80,6 +114,7 @@ export async function runHookDispatch(
     new PayloadParser(),
     new HookResultSerializer(),
     resolveWorkspace,
+    sessionToggle,
   );
   await runtime.run(name, handler.handle);
 }

@@ -1,12 +1,17 @@
 import { describe, expect, test } from "bun:test";
 
-import { absPath } from "@/core/index.ts";
+import { absPath, HookName } from "@/core/index.ts";
 import type { Workspace } from "@/core/index.ts";
 import { HookRuntimeService } from "@/core/transport/hook/hook.runtime.ts";
 import type { HookHandle } from "@/core/transport/hook/hook.runtime.ts";
-import { HookEvent, HookResultKind } from "@/core/transport/hook/hook.typedefs.ts";
+import {
+  HookEvent,
+  HookResultKind,
+  SessionToggleState,
+} from "@/core/transport/hook/hook.typedefs.ts";
 import type {
   HookResult,
+  SessionTogglePort,
   WorkspaceResolver,
 } from "@/core/transport/hook/hook.typedefs.ts";
 import { HookResultSerializer } from "@/core/transport/hook/hookResult.serializer.ts";
@@ -40,6 +45,11 @@ async function runWith(
   resolveWorkspace: WorkspaceResolver,
   handle: HookHandle,
   logger = makeLoggerFake(),
+  options: {
+    readonly stdin?: string;
+    readonly hookLabel?: string;
+    readonly sessionToggle?: SessionTogglePort;
+  } = {},
 ) {
   const io = makeIoFake();
   const container = makeTestGateways({ stdio: io, logger });
@@ -48,10 +58,19 @@ async function runWith(
     new PayloadParser(),
     new HookResultSerializer(),
     resolveWorkspace,
+    options.sessionToggle ?? alwaysEnabledToggle(),
   );
-  io.setStdin(JSON.stringify({ cwd: CWD }));
-  await service.run("test-hook", handle);
+  io.setStdin(options.stdin ?? JSON.stringify({ cwd: CWD }));
+  await service.run(options.hookLabel ?? "test-hook", handle);
   return { io, logger };
+}
+
+function alwaysEnabledToggle(): SessionTogglePort {
+  return {
+    stateFor: () => Promise.resolve(SessionToggleState.Enabled),
+    disable: () => Promise.resolve(),
+    enable: () => Promise.resolve(),
+  };
 }
 
 describe("HookRuntimeService.run (shared preamble/postamble)", () => {
@@ -112,5 +131,128 @@ describe("HookRuntimeService.run (shared preamble/postamble)", () => {
       }),
     ]);
     expect(io.exitCode).toBe(0);
+  });
+
+  test("a disabled session marker silences the hook before the handler runs", async () => {
+    let handlerCalled = false;
+    const toggle: SessionTogglePort = {
+      stateFor: (sessionId) => {
+        expect(sessionId).toBe("session-abc");
+        return Promise.resolve(SessionToggleState.Disabled);
+      },
+      disable: () => Promise.resolve(),
+      enable: () => Promise.resolve(),
+    };
+    const { io } = await runWith(
+      async () => WORKSPACE,
+      async (): Promise<HookResult> => {
+        handlerCalled = true;
+        return { kind: HookResultKind.Silent };
+      },
+      undefined,
+      {
+        hookLabel: HookName.MemoryInject,
+        stdin: JSON.stringify({ cwd: CWD, session_id: "session-abc", prompt: "hi" }),
+        sessionToggle: toggle,
+      },
+    );
+    expect(handlerCalled).toBe(false);
+    expect(io.written).toEqual([]);
+    expect(io.exitCode).toBe(0);
+  });
+
+  test("the worklog floor clears its session's marker while silenced", async () => {
+    const cleared: string[] = [];
+    const toggle: SessionTogglePort = {
+      stateFor: () => Promise.resolve(SessionToggleState.Disabled),
+      disable: () => Promise.resolve(),
+      enable: (sessionId) => {
+        cleared.push(sessionId);
+        return Promise.resolve();
+      },
+    };
+    const { io, logger } = await runWith(
+      async () => WORKSPACE,
+      async (): Promise<HookResult> => ({ kind: HookResultKind.Silent }),
+      undefined,
+      {
+        hookLabel: HookName.WorklogFloor,
+        stdin: JSON.stringify({ cwd: CWD, session_id: "session-abc", reason: "quit" }),
+        sessionToggle: toggle,
+      },
+    );
+    expect(cleared).toEqual(["session-abc"]);
+    expect(io.written).toEqual([]);
+    expect(io.exitCode).toBe(0);
+    expect(logger.entries.length).toBe(0);
+  });
+
+  test("an enabled session runs the handler as usual", async () => {
+    let handlerCalled = false;
+    const { io } = await runWith(
+      async () => WORKSPACE,
+      async (): Promise<HookResult> => {
+        handlerCalled = true;
+        return { kind: HookResultKind.Silent };
+      },
+      undefined,
+      {
+        hookLabel: HookName.MemoryInject,
+        stdin: JSON.stringify({ cwd: CWD, session_id: "session-abc", prompt: "hi" }),
+      },
+    );
+    expect(handlerCalled).toBe(true);
+    expect(io.exitCode).toBe(0);
+  });
+
+  test("a failing toggle check fails open to enabled and logs the failure", async () => {
+    let handlerCalled = false;
+    const toggle: SessionTogglePort = {
+      stateFor: () => Promise.reject(new Error("toggle store exploded")),
+      disable: () => Promise.resolve(),
+      enable: () => Promise.resolve(),
+    };
+    const { io, logger } = await runWith(
+      async () => WORKSPACE,
+      async (): Promise<HookResult> => {
+        handlerCalled = true;
+        return { kind: HookResultKind.Silent };
+      },
+      undefined,
+      {
+        hookLabel: HookName.MemoryInject,
+        stdin: JSON.stringify({ cwd: CWD, session_id: "session-abc", prompt: "hi" }),
+        sessionToggle: toggle,
+      },
+    );
+    expect(handlerCalled).toBe(true);
+    expect(io.exitCode).toBe(0);
+    expect(
+      logger.entries.some((entry) => entry.message.includes("toggle check failed")),
+    ).toBe(true);
+  });
+
+  test("stdin without a session id skips the toggle entirely", async () => {
+    let checkedSessionIds = 0;
+    const toggle: SessionTogglePort = {
+      stateFor: (_sessionId) => {
+        checkedSessionIds += 1;
+        return Promise.resolve(SessionToggleState.Enabled);
+      },
+      disable: () => Promise.resolve(),
+      enable: () => Promise.resolve(),
+    };
+    let handlerCalled = false;
+    await runWith(
+      async () => WORKSPACE,
+      async (): Promise<HookResult> => {
+        handlerCalled = true;
+        return { kind: HookResultKind.Silent };
+      },
+      undefined,
+      { stdin: JSON.stringify({ cwd: CWD }), sessionToggle: toggle },
+    );
+    expect(checkedSessionIds).toBe(0);
+    expect(handlerCalled).toBe(true);
   });
 });

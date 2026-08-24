@@ -8,6 +8,7 @@ import {
   DIST_RELATIVE_PATH,
   PI_EXTENSION_DIST_RELATIVE_PATH,
   SKILLS_SOURCE_RELATIVE_PATH,
+  COMMANDS_SOURCE_RELATIVE_PATH,
 } from "@/modules/installation/install.constants.ts";
 import {
   AgentTarget,
@@ -22,6 +23,8 @@ import {
   type BunPathError,
   BunPathErrorKind,
 } from "@/modules/installation/steps/bunPath/bunPath.typedefs.ts";
+import { CCMEMORY_COMMAND_FILENAME } from "@/modules/installation/steps/claudeCommand/claudeCommand.constants.ts";
+import { ClaudeCommandService } from "@/modules/installation/steps/claudeCommand/claudeCommand.repository.ts";
 import {
   MANIFEST_SCHEMA_VERSION,
   PRE_CCMEMORY_BACKUP_SUFFIX,
@@ -88,6 +91,8 @@ export class InstallService extends Service {
       settingsPath: SettingsService.defaultPath(home),
       settingsBackupPath: SettingsService.defaultBackupPath(home),
       skillsSourceDir: InstallService.defaultSkillsSourceDir(repoRoot),
+      commandsSourceDir: joinAbs(repoRoot, COMMANDS_SOURCE_RELATIVE_PATH),
+      commandTargetPath: ClaudeCommandService.defaultTargetPath(home),
       skillsTargetDir: SkillsService.defaultTargetDir(home),
       piSkillsTargetDir: expandPath(PI_SKILLS_HOME_RELATIVE_PATH, home),
       piExtensionTargetPath: PiExtensionService.defaultPath(home),
@@ -189,6 +194,7 @@ export class InstallService extends Service {
             : `would seed registry -> ${paths.registryPath}`,
         );
         actionLines.push(`would write CLI shim -> ${paths.shimPath}`);
+        actionLines.push(`would link command ${CCMEMORY_COMMAND_FILENAME}`);
       }
       if (hasPi) {
         actionLines.push(`would copy pi extension -> ${paths.piExtensionTargetPath}`);
@@ -201,6 +207,7 @@ export class InstallService extends Service {
 
     let skillsOutcome = previousManifest?.skills ?? [];
     let piSkillsOutcome = previousManifest?.piSkills ?? [];
+    let claudeCommandsOutcome = previousManifest?.claudeCommands ?? [];
     let hookCommands: Record<string, string> = previousManifest?.hookCommands ?? {};
     let settingsBackupPathForManifest = previousManifest?.settingsBackupPath ?? null;
 
@@ -228,6 +235,16 @@ export class InstallService extends Service {
       );
       actionLines.push(...claudeSkills.actionLines);
       skillsOutcome = claudeSkills.skills;
+
+      const claudeCommandService = this.makeService(ClaudeCommandService);
+      await claudeCommandService.install(
+        paths.commandsSourceDir,
+        paths.commandTargetPath,
+      );
+      actionLines.push(
+        `command ${CCMEMORY_COMMAND_FILENAME} -> ${paths.commandTargetPath}`,
+      );
+      claudeCommandsOutcome = [{ name: CCMEMORY_COMMAND_FILENAME, backedUp: false }];
       hookCommands = surgery.hookCommands;
     }
 
@@ -269,6 +286,7 @@ export class InstallService extends Service {
         ? paths.piExtensionTargetPath
         : (previousManifest?.piExtensionPath ?? null),
       piSkills: piSkillsOutcome,
+      claudeCommands: claudeCommandsOutcome,
     };
     await manifestService.save(paths.manifestPath, nextManifest);
 
@@ -325,6 +343,13 @@ export class InstallService extends Service {
       manifest.skills.map((skill) => this.restoreOneSkill(skillsTargetDir, skill)),
     );
     for (const skill of manifest.skills) actionLines.push(`removed skill ${skill.name}`);
+
+    if ((manifest.claudeCommands ?? []).length > 0) {
+      await this.makeService(ClaudeCommandService).uninstall(
+        ClaudeCommandService.defaultTargetPath(home),
+      );
+      actionLines.push(`removed command ${CCMEMORY_COMMAND_FILENAME}`);
+    }
 
     if (manifest.piExtensionPath) {
       await this.makeService(PiExtensionService).remove(

@@ -5,6 +5,7 @@ import { registerCommands, registerHooks, runCli } from "@/core/index.ts";
 import { runHookDispatch } from "@/core/index.ts";
 import { AppGateways } from "@/gateways/index.ts";
 import { SearchIndexAdapter } from "@/gateways/index.ts";
+import { ToggleMarkerRepository } from "@/modules/sessionToggle/index.ts";
 import { TargetResolutionService } from "@/modules/workspace/index.ts";
 import { commands, hooks } from "@/registry.wiring.ts";
 
@@ -28,6 +29,7 @@ if (import.meta.main) {
       registerHooks(hooks, ctx),
       gateways,
       resolveWorkspace,
+      new ToggleMarkerRepository(ctx),
     );
   } else {
     const handlers = registerCommands(commands, ctx);

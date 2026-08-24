@@ -58,6 +58,12 @@ export class PayloadParser {
     }
   }
 
+  /** The host session id every hook event carries in its stdin JSON. Absent or
+   * mistyped reads as `null` — callers treat that as "no toggle applies". */
+  parseSessionId(record: JsonRecord): string | null {
+    return stringField(record, "session_id");
+  }
+
   parseSessionStart(record: JsonRecord): SessionStartPayload {
     return { cwd: stringField(record, "cwd") };
   }

@@ -15,8 +15,9 @@ export type InstalledManifest = {
   readonly skills: readonly SkillManifestEntry[];
   readonly settingsBackupPath: string | null;
   readonly legacyPurgeDone: boolean;
-  /** pi artifacts, recorded only when the `pi` target was installed. Absent on
-   * manifests written before pi support, which reads as "not installed". */
   readonly piExtensionPath?: string | null;
   readonly piSkills?: readonly SkillManifestEntry[];
+  /** Claude Code slash commands, recorded only when the `claude` target was
+   * installed. Absent on manifests written before the toggle command existed. */
+  readonly claudeCommands?: readonly SkillManifestEntry[];
 };
