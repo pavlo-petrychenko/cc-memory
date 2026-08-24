@@ -237,8 +237,10 @@ export class InstallService extends Service {
       skillsOutcome = claudeSkills.skills;
 
       const claudeCommandService = this.makeService(ClaudeCommandService);
+      // SAFETY: the source is the exact file inside the commands source dir —
+      // linking the directory itself would leave Claude Code an unreadable target.
       await claudeCommandService.install(
-        paths.commandsSourceDir,
+        joinAbs(paths.commandsSourceDir, CCMEMORY_COMMAND_FILENAME),
         paths.commandTargetPath,
       );
       actionLines.push(

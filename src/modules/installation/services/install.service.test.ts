@@ -10,6 +10,7 @@ import {
   InstallErrorKind,
 } from "@/modules/installation/install.typedefs.ts";
 import { InstallService } from "@/modules/installation/services/install.service.ts";
+import { ClaudeCommandService } from "@/modules/installation/steps/claudeCommand/claudeCommand.repository.ts";
 import { ManifestService } from "@/modules/installation/steps/manifest/manifest.repository.ts";
 import { PiExtensionService } from "@/modules/installation/steps/piExtension/piExtension.repository.ts";
 import { SettingsService } from "@/modules/installation/steps/settings/settings.repository.ts";
@@ -198,6 +199,14 @@ describe("InstallService — install full apply", () => {
       "hook session-start",
     );
     expect(manifest?.legacyPurgeDone).toBe(true);
+
+    // The command link must name the FILE inside src/commands — linking the
+    // directory would leave Claude Code an unreadable ~/.claude/commands entry.
+    const commandTarget = ClaudeCommandService.defaultTargetPath(container.env.home());
+    expect(await container.fs.readFile(commandTarget)).toBe(
+      fixturePath(REPO_ROOT, "/src/commands/", "ccmemory.md"),
+    );
+    expect(manifest?.claudeCommands).toEqual([{ name: "ccmemory.md", backedUp: false }]);
   });
 
   test("re-running twice is idempotent: identical settings.json, no duplicate hook groups", async () => {

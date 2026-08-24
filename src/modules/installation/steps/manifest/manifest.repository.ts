@@ -87,7 +87,11 @@ export class ManifestService extends Service {
     }
     const parsedSkills = ManifestService.parseSkillEntries(skills);
     const parsedPiSkills = ManifestService.parseSkillEntries(value["piSkills"]);
-    if (parsedSkills === null || parsedPiSkills === null) return null;
+    const parsedClaudeCommands = ManifestService.parseSkillEntries(
+      value["claudeCommands"],
+    );
+    if (parsedSkills === null || parsedPiSkills === null || parsedClaudeCommands === null)
+      return null;
 
     return {
       schemaVersion,
@@ -101,6 +105,7 @@ export class ManifestService extends Service {
       legacyPurgeDone,
       piExtensionPath: ManifestService.parseNullableString(value["piExtensionPath"]),
       piSkills: parsedPiSkills,
+      claudeCommands: parsedClaudeCommands,
     };
   }
 
@@ -128,6 +133,9 @@ export class ManifestService extends Service {
       legacyPurgeDone: manifest.legacyPurgeDone,
       piExtensionPath: manifest.piExtensionPath ?? null,
       piSkills: (manifest.piSkills ?? []).map(ManifestService.skillEntryToJson),
+      claudeCommands: (manifest.claudeCommands ?? []).map(
+        ManifestService.skillEntryToJson,
+      ),
     };
   }
 
